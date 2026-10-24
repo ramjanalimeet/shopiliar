@@ -13,10 +13,23 @@ python3 -m http.server 8000 -d public
 - `templates.html` — Templates (search, sort, category filters and live preview)
 - `pricing.html` — Pricing (monthly / yearly toggle, FAQ)
 - `signin.html` — Sign in
-- `signup.html` — Sign up (creates the account and opens `/admin`)
+- `signup.html` — Sign up (creates the account and opens `/admin`; `?template=` / `?plan=` carry the pick from Templates or Pricing)
 
 Shared styles live in `public/assets/styles.css`, shared behaviour in `public/assets/main.js`. Deployed to Cloudflare Workers with `npx wrangler deploy` (see `wrangler.jsonc`).
-The sign-in / sign-up forms are front-end only until a backend is connected.
+
+## Accounts
+`src/index.js` is the Worker. It serves `public/` and an account API backed by the D1 database `shopiliar-db` (tables in `schema.sql`):
+
+- `POST /api/signup`, `POST /api/signin`, `POST /api/signout` — passwords hashed with PBKDF2, session in an HttpOnly cookie, 10 attempts/min per IP
+- `GET /api/me` — the signed-in account and its store
+- `PUT /api/store` — saves the store dashboard and account details
+
+`/admin` redirects to sign in when there is no session. Local development:
+
+```
+npx wrangler d1 execute shopiliar-db --local --file=schema.sql
+npx wrangler dev
+```
 
 ## Dashboards
 - `/admin` — store owner dashboard (Notion style): home, orders, products, customers,
@@ -26,5 +39,5 @@ The sign-in / sign-up forms are front-end only until a backend is connected.
 
 Shared files: `public/assets/dash.css` and `public/assets/dash.js`.
 
-Until a backend is connected, dashboard data is saved in the browser (`localStorage`),
-so it is per device. Protect `/master-admin*` with Cloudflare Access before using real data.
+The store dashboard (`/admin`) is saved to the signed-in account. The master dashboard still keeps
+its data in the browser (`localStorage`) and is protected with Cloudflare Access.

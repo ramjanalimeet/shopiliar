@@ -1,16 +1,22 @@
 // Shopiliar store owner dashboard (/admin)
-(() => {
-  const { esc, taka, uid, day, daysAgo, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
+(async () => {
+  const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
   // Plan prices and limits are managed from /master-admin when available
   const PLANS = (load("shopiliar.master", null) || {}).plans || Dash.PLANS();
-  const ACCOUNT_KEY = "shopiliar.account";
-  const STORE_KEY = "shopiliar.store";
+  const SIGN_IN = "/signin.html?next=" + encodeURIComponent(location.pathname + location.search);
 
-  // ---------- Data ----------
-  const account = load(ACCOUNT_KEY, () => ({
-    demo: true, name: "Alex Carter", business: "Lume Furniture", email: "alex@lume.com.bd",
-    plan: "business", billing: "monthly", template: "luxe-store", createdAt: new Date().toISOString(),
-  }));
+  // ---------- Data (saved to the signed-in account by the Worker) ----------
+  let me;
+  try {
+    const res = await fetch("/api/me");
+    if (res.status === 401) { location.href = SIGN_IN; return; }
+    if (!res.ok) throw new Error();
+    me = await res.json();
+  } catch (e) {
+    document.getElementById("view").innerHTML = '<p class="muted" style="padding:24px">Couldn\'t load your store. Check your connection and refresh the page.</p>';
+    return;
+  }
+  const account = me.account;
   const catalog = (load("shopiliar.master", null) || {}).templates || Dash.TEMPLATES();
   const findTemplate = (id) => catalog.find((t) => t.id === id) || catalog[0];
 
@@ -67,8 +73,42 @@
       customized: false,
     };
   };
-  const store = load(STORE_KEY, seedStore);
-  const persist = () => { save(STORE_KEY, store); save(ACCOUNT_KEY, account); refreshChrome(); };
+  const store = me.store || seedStore();
+  let saveTimer = null, saving = Promise.resolve();
+  const saveNow = () => {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    saving = saving.then(async () => {
+      const res = await fetch("/api/store", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ store, account }) });
+      if (res.status === 401) { location.href = SIGN_IN; return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // e.g. the new email belongs to another account: go back to what's saved
+        if (res.status === 409) { const fresh = await fetch("/api/me").then((r) => r.json()); Object.assign(account, fresh.account); refreshChrome(); }
+        throw new Error(data.error || "Couldn't save your changes. Check your connection.");
+      }
+      Object.assign(account, data.account);
+    }).catch((err) => toast(err.message));
+    return saving;
+  };
+  const persist = () => { refreshChrome(); clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); };
+  // Send a pending save when the tab is closed
+  window.addEventListener("pagehide", () => {
+    if (!saveTimer) return;
+    clearTimeout(saveTimer);
+    fetch("/api/store", { method: "PUT", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ store, account }) }).catch(() => {});
+  });
+
+  // A template picked on the Templates page while signed in (/admin/?template=id)
+  const picked = new URLSearchParams(location.search).get("template");
+  if (picked && catalog.some((t) => t.id === picked) && picked !== store.site.template) {
+    const t = findTemplate(picked);
+    Object.assign(store.site, { template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, headline: t.headline, sub: t.sub, cta: t.cta });
+    account.template = t.id;
+    if (me.store) setTimeout(() => toast("Template changed to " + t.name));
+  }
+  if (picked) history.replaceState(null, "", location.pathname + location.hash);
+  if (!me.store || picked) saveNow();
   const plan = () => PLANS[account.plan] || PLANS.starter;
 
   // ---------- Chrome ----------
@@ -89,10 +129,11 @@
     if (store.orders.some((o) => o.status === "Pending")) bell.insertAdjacentHTML("beforeend", '<span class="dot"></span>');
   };
   document.getElementById("logout").addEventListener("click", async () => {
-    const ok = await confirm("Log out?", "You'll go back to the sign-in page. Your store data stays saved in this browser.", "Log out");
+    const ok = await confirm("Log out?", "You'll go back to the sign-in page. Your store stays saved in your account.", "Log out");
     if (!ok) return;
-    try { sessionStorage.removeItem("shopiliar.session"); } catch (e) { /* ignore */ }
-    location.href = "../signin.html";
+    if (saveTimer) await saveNow();
+    await fetch("/api/signout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
+    location.href = "/signin.html";
   });
 
   // ---------- Helpers ----------
@@ -414,7 +455,7 @@
             <div style="margin-top:18px;display:flex;justify-content:flex-end"><button class="btn btn-primary" type="submit">Save settings</button></div>
           </form>
           <div class="card" style="margin-top:18px;border-color:#fecaca"><div class="card-head"><span class="card-title" style="color:var(--danger)">Danger zone</span></div>
-            <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="flex:1">Reset this store: deletes its products, orders and website changes in this browser.</span><button class="btn btn-danger" data-action="reset-all">Reset store</button></div></div>
+            <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="flex:1">Reset this store: deletes its products, orders and website changes.</span><button class="btn btn-danger" data-action="reset-all">Reset store</button></div></div>
         </div>`;
       },
       mount: (view) => {
@@ -603,8 +644,11 @@
     }),
     "set-plan": (el) => { account.plan = el.dataset.plan; persist(); go(); toast("Plan updated to " + PLANS[account.plan].name); },
     "reset-all": async () => {
-      if (!(await confirm("Reset store?", "All products, orders, customers, pages and website changes in this browser will be deleted.", "Reset store"))) return;
-      remove(STORE_KEY); location.reload();
+      if (!(await confirm("Reset store?", "All products, orders, customers, pages and website changes will be deleted.", "Reset store"))) return;
+      const fresh = seedStore();
+      Object.keys(store).forEach((k) => delete store[k]);
+      Object.assign(store, fresh);
+      await saveNow(); location.reload();
     },
   };
 
