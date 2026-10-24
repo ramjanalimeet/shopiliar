@@ -203,21 +203,6 @@ button { font: inherit; cursor: pointer; }
 .toggle button.on { background: var(--ink); color: #fff; }
 .toggle small { color: var(--green); font-weight: 600; margin-left: 4px; }
 .toggle button.on small { color: #8ef0b4; }
-.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; text-align: left; padding-bottom: 40px; }
-.plan { background: #fff; border: 1px solid #eef0f4; border-radius: 18px; padding: 30px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
-.plan.featured { background: var(--ink); color: #e6e8ee; border-color: var(--ink); position: relative; }
-.plan.featured h3, .plan.featured .price strong { color: #fff; }
-.plan .tag { position: absolute; top: 18px; right: 18px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--violet)); color: #fff; }
-.plan h3 { font-size: 18px; color: var(--ink); }
-.plan > p { font-size: 14px; color: var(--muted); margin-top: 6px; }
-.plan.featured > p { color: #a3a9b6; }
-.price { margin: 22px 0; display: flex; align-items: baseline; gap: 6px; }
-.price strong { font-size: 44px; letter-spacing: -.03em; color: var(--ink); }
-.price span { color: var(--muted); font-size: 14px; }
-.plan ul { list-style: none; margin: 22px 0 0; display: grid; gap: 12px; font-size: 14px; }
-.plan li { display: flex; gap: 10px; align-items: flex-start; }
-.plan li svg { width: 16px; height: 16px; color: var(--green); flex: none; margin-top: 2px; }
-.plan.featured .btn-dark { background: #fff; color: var(--ink); }
 
 .faq { max-width: 760px; margin: 40px auto 90px; }
 .faq h2 { text-align: center; font-size: 30px; color: var(--ink); letter-spacing: -.02em; margin-bottom: 24px; }
@@ -256,7 +241,6 @@ button { font: inherit; cursor: pointer; }
   .showcase { height: auto; display: flex; justify-content: center; }
   .picker, .phone { display: none; }
   .dash { position: relative; left: auto; right: auto; width: 100%; max-width: 720px; }
-  .plans { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 760px) {
   .main-nav, .auth { display: none; }
@@ -280,7 +264,6 @@ button { font: inherit; cursor: pointer; }
   .stat:nth-child(3) { display: none; }
   .orders th:nth-child(2), .orders td:nth-child(2) { display: none; }
   .dash-head .url { display: none; }
-  .plans { grid-template-columns: 1fr; }
   .logos { gap: 20px 32px; }
 }
 

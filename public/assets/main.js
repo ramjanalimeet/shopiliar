@@ -80,13 +80,19 @@ if (tplList) {
   });
 }
 
-// Sign up: show the template picked on the Templates page
+// Sign up: show the template or plan picked earlier
 const pickedNote = document.querySelector("[data-picked-template]");
 if (pickedNote) {
-  const slug = new URLSearchParams(location.search).get("template");
+  const params = new URLSearchParams(location.search);
+  const title = (s) => s.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+  const slug = params.get("template");
+  const plan = params.get("plan");
+  const period = params.get("billing") === "yearly" ? "yearly" : "monthly";
   if (slug && /^[a-z0-9-]+$/.test(slug)) {
-    const name = slug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-    pickedNote.textContent = "Template selected: " + name;
+    pickedNote.textContent = "Template selected: " + title(slug);
+    pickedNote.hidden = false;
+  } else if (plan && /^(starter|business|pro)$/.test(plan)) {
+    pickedNote.textContent = "Plan selected: " + title(plan) + " (" + period + ")";
     pickedNote.hidden = false;
   }
 }
@@ -94,16 +100,26 @@ if (pickedNote) {
 // Pricing monthly / yearly toggle
 const billing = document.querySelector("[data-billing]");
 if (billing) {
+  const taka = (n) => n.toLocaleString("en-US");
   billing.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
-    billing.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b === btn));
     const yearly = btn.dataset.period === "yearly";
-    document.querySelectorAll("[data-monthly]").forEach((el) => {
-      el.textContent = "$" + (yearly ? el.dataset.yearly : el.dataset.monthly);
+    billing.querySelectorAll("button").forEach((b) => {
+      b.classList.toggle("on", b === btn);
+      b.setAttribute("aria-pressed", String(b === btn));
     });
-    document.querySelectorAll("[data-period-label]").forEach((el) => {
-      el.textContent = yearly ? "/mo, billed yearly" : "/month";
+    document.body.classList.toggle("is-yearly", yearly);
+    document.querySelectorAll(".pcard").forEach((card) => {
+      const price = card.querySelector("[data-month]");
+      const month = Number(price.dataset.month);
+      price.textContent = taka(yearly ? month * 12 : month);
+      card.querySelector("[data-per]").textContent = yearly ? "/year" : "/month";
+      card.querySelector("[data-bill]").textContent = yearly
+        ? "৳" + taka(month) + "/month, billed yearly"
+        : "Billed monthly";
+      card.querySelector("[data-plan-link]").href =
+        "signup.html?plan=" + card.dataset.plan + "&billing=" + (yearly ? "yearly" : "monthly");
     });
   });
 }

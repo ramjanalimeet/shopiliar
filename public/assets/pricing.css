@@ -1,0 +1,90 @@
+/* ---------- Pricing page ---------- */
+/* Inter has no Taka sign, so ৳ falls back to Noto Sans Bengali. */
+.price-page { font-family: "Inter", "Noto Sans Bengali", system-ui, sans-serif; }
+.pcard-price .tk { font-family: "Noto Sans Bengali", "Inter", sans-serif; }
+.price-page .page-head h1 { font-size: clamp(36px, 5.2vw, 62px); }
+.toggle small { font-size: 11px; background: var(--green-soft); color: var(--green); padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
+.toggle button.on small { background: rgba(142, 240, 180, .18); color: #8ef0b4; }
+
+.pcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: stretch; max-width: 1140px; margin: 0 auto; }
+.pcard {
+  position: relative; background: #fff; border: 1px solid #eceef2; border-radius: 20px; padding: 30px 28px 28px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .04); display: flex; flex-direction: column; transition: transform .2s, box-shadow .2s;
+}
+.pcard:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.pcard h3 { font-size: 20px; color: var(--ink); letter-spacing: -.01em; }
+.pcard-sub { font-size: 14px; color: var(--muted); margin-top: 4px; }
+.pcard-price { display: flex; align-items: baseline; gap: 2px; margin-top: 24px; color: var(--ink); }
+.pcard-price .tk { font-size: 28px; font-weight: 700; margin-right: 2px; }
+.pcard-price strong { font-size: 50px; line-height: 1; font-weight: 800; letter-spacing: -.04em; }
+.pcard-price .per { font-size: 15px; color: var(--muted); margin-left: 4px; }
+.pcard-bill { font-size: 13px; color: var(--muted); margin: 8px 0 22px; min-height: 20px; }
+.pcard-list { list-style: none; display: grid; gap: 12px; font-size: 15px; color: var(--text); }
+.pcard-list li { display: flex; gap: 10px; align-items: flex-start; }
+.pcard-list svg { width: 18px; height: 18px; flex: none; margin-top: 1px; color: var(--green); }
+.pcard-list b { color: var(--ink); }
+.pcard > .btn { margin-bottom: 22px; height: 48px; }
+.pcard-every {
+  font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint);
+  margin: 22px 0 12px; padding-top: 20px; border-top: 1px dashed #e3e5ea;
+}
+
+.yearly-gift {
+  display: flex; gap: 10px; align-items: center; font-size: 13px; line-height: 1.4; color: #4b3fb8;
+  background: var(--violet-soft); border-radius: 12px; padding: 10px 12px; margin-bottom: 20px;
+  transition: background .2s, color .2s, box-shadow .2s;
+}
+.yearly-gift svg { width: 20px; height: 20px; flex: none; }
+.is-yearly .yearly-gift { background: linear-gradient(90deg, var(--blue), var(--violet)); color: #fff; box-shadow: 0 6px 18px rgba(91, 76, 240, .3); }
+
+.pcard-pop { background: var(--ink); border-color: var(--ink); color: #d7dae2; box-shadow: 0 20px 50px rgba(11, 13, 18, .25); }
+.pcard-pop:hover { box-shadow: 0 24px 60px rgba(11, 13, 18, .3); }
+.pcard-pop h3, .pcard-pop .pcard-price, .pcard-pop .pcard-list b { color: #fff; }
+.pcard-pop .pcard-sub, .pcard-pop .pcard-bill, .pcard-pop .per { color: #9aa1ad; }
+.pcard-pop .pcard-list { color: #d7dae2; }
+.pcard-pop .pcard-list svg { color: #6ee7a0; }
+.pcard-pop .pcard-every { border-color: #2a2e38; color: #6b7280; }
+.pcard-pop .yearly-gift { background: rgba(255, 255, 255, .08); color: #c9c3ff; }
+.is-yearly .pcard-pop .yearly-gift { background: linear-gradient(90deg, var(--blue), var(--violet)); color: #fff; }
+.pcard-tag {
+  position: absolute; top: 22px; right: 22px; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), var(--violet)); color: #fff;
+}
+.btn-light { background: #fff; color: var(--ink); }
+.btn-light:hover { box-shadow: 0 8px 20px rgba(255, 255, 255, .15); }
+
+.perks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1140px; margin: 40px auto 0; }
+.perk { display: flex; gap: 14px; align-items: flex-start; background: #fff; border: 1px solid #eceef2; border-radius: 16px; padding: 20px; }
+.perk-ico { width: 44px; height: 44px; border-radius: 12px; background: var(--violet-soft); color: #5b46d6; display: grid; place-items: center; flex: none; }
+.perk-ico svg { width: 22px; height: 22px; }
+.perk h3 { font-size: 16px; color: var(--ink); }
+.perk p { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+.compare { max-width: 1140px; margin: 70px auto 0; }
+.compare h2, .price-page .faq h2 { text-align: center; font-size: 30px; color: var(--ink); letter-spacing: -.02em; margin-bottom: 24px; }
+.compare-wrap { background: #fff; border: 1px solid #eceef2; border-radius: 16px; overflow-x: auto; }
+.compare table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 15px; }
+.compare th, .compare td { padding: 16px 20px; text-align: center; border-bottom: 1px solid #f0f1f5; }
+.compare tbody tr:last-child th, .compare tbody tr:last-child td { border-bottom: 0; }
+.compare th:first-child { text-align: left; font-weight: 500; color: var(--text); }
+.compare thead th { font-size: 16px; font-weight: 700; color: var(--ink); background: #fafbfc; }
+.compare thead th:first-child { font-weight: 600; color: var(--muted); font-size: 14px; }
+.compare thead small { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+.compare .hl { background: var(--violet-soft) !important; }
+.compare td:nth-child(3) { background: #faf8ff; font-weight: 600; color: var(--ink); }
+.compare td { color: var(--ink); font-weight: 500; }
+.compare .yes { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--green-soft); color: var(--green); }
+.compare .yes svg { width: 14px; height: 14px; }
+.compare .no { color: #c4c8d0; }
+
+.price-page .faq { margin-top: 70px; }
+
+@media (max-width: 1000px) {
+  .pcards { grid-template-columns: 1fr; max-width: 520px; }
+  .perks { grid-template-columns: 1fr; max-width: 520px; }
+}
+@media (max-width: 760px) {
+  .pcard { padding: 26px 22px 24px; }
+  .pcard-price strong { font-size: 44px; }
+  .compare th, .compare td { padding: 14px 12px; }
+}
