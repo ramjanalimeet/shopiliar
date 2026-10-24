@@ -10,42 +10,57 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/dash.css">
+  <link rel="stylesheet" href="admin.css">
 </head>
-<body data-app-name="Shopiliar">
+<body data-app-name="Shopiliar" class="store-admin">
   <div class="app">
     <aside class="side" aria-label="Dashboard navigation">
-      <a class="brand" href="../index.html"><span class="brand-mark">S</span>Shopiliar</a>
-      <div class="ws">
-        <span class="ws-logo" id="ws-logo">S</span>
-        <div><div class="ws-name" id="ws-name">My Store</div><div class="ws-sub" id="ws-plan">Business plan</div></div>
-      </div>
-      <a class="nav-item" data-route="home" href="#/home"><span data-icon="home"></span>Dashboard</a>
-      <a class="nav-item" data-route="orders" href="#/orders"><span data-icon="orders"></span>Orders<span class="count" id="count-orders"></span></a>
-      <a class="nav-item" data-route="products" href="#/products"><span data-icon="products"></span>Products<span class="count" id="count-products"></span></a>
-      <a class="nav-item" data-route="customers" href="#/customers"><span data-icon="customers"></span>Customers</a>
-      <a class="nav-item" data-route="analytics" href="#/analytics"><span data-icon="analytics"></span>Analytics</a>
+      <a class="brand" href="/"><span class="brand-mark">S</span>Shopiliar</a>
+      <nav class="side-nav">
+        <a class="nav-item" data-route="home" href="#/home"><span data-icon="home"></span>Home</a>
+        <a class="nav-item" data-route="orders" href="#/orders"><span data-icon="orders"></span>Orders<span class="count" id="count-orders"></span></a>
+        <a class="nav-item" data-route="products" href="#/products"><span data-icon="tag"></span>Products</a>
+        <a class="nav-item" data-route="customers" href="#/customers"><span data-icon="customers"></span>Customers</a>
+        <a class="nav-item" data-route="analytics" href="#/analytics"><span data-icon="barchart"></span>Analytics</a>
+        <a class="nav-item" data-route="marketing" href="#/marketing"><span data-icon="megaphone"></span>Marketing</a>
+        <a class="nav-item" data-route="discounts" href="#/discounts"><span data-icon="discount"></span>Discounts</a>
+        <a class="nav-item" data-route="apps" href="#/apps"><span data-icon="grid"></span>Apps</a>
+      </nav>
       <div class="side-group">
-        <div class="side-label">Website</div>
-        <a class="nav-item" data-route="website" href="#/website"><span data-icon="brush"></span>Customize website</a>
-        <a class="nav-item" data-route="pages" href="#/pages"><span data-icon="pages"></span>Pages<span class="count" id="count-pages"></span></a>
-      </div>
-      <div class="side-group">
-        <div class="side-label">Account</div>
-        <a class="nav-item" data-route="settings" href="#/settings"><span data-icon="settings"></span>Settings</a>
-        <a class="nav-item" data-route="billing" href="#/billing"><span data-icon="billing"></span>Plan &amp; billing</a>
+        <a class="side-head" href="#/channels" data-route="channels">Sales channels<span data-icon="chevronRight"></span></a>
+        <a class="nav-item" data-route="website" href="#/website"><span data-icon="store"></span>Online Store</a>
+        <a class="nav-item sub" data-route="pages" href="#/pages">Pages<span class="count" id="count-pages"></span></a>
+        <a class="nav-item" data-route="pos" href="#/pos"><span data-icon="pos"></span>Point of Sale</a>
+        <a class="nav-item" data-route="buy-button" href="#/buy-button"><span data-icon="button"></span>Buy Button</a>
+        <a class="nav-item" data-route="facebook" href="#/facebook"><span data-icon="facebook"></span>Facebook</a>
+        <a class="nav-item" data-route="instagram" href="#/instagram"><span data-icon="instagram"></span>Instagram</a>
+        <a class="nav-item" data-route="google" href="#/google"><span data-icon="google"></span>Google</a>
       </div>
       <div class="side-foot">
-        <div class="me"><span id="me-avatar"></span><div><b id="me-name">Owner</b><span id="me-email"></span></div>
-          <button class="icon-btn" type="button" id="logout" aria-label="Log out" title="Log out"><span data-icon="logout"></span></button></div>
+        <a class="nav-item" data-route="settings" href="#/settings"><span data-icon="settings"></span>Settings</a>
+        <a class="nav-item" data-route="billing" href="#/billing"><span data-icon="billing"></span>Billing</a>
+        <a class="nav-item" data-route="help" href="#/help"><span data-icon="help"></span>Help Center</a>
       </div>
     </aside>
     <div class="main">
       <header class="topbar">
         <button class="top-icon menu-btn" type="button" aria-label="Open menu"><span data-icon="menu"></span></button>
-        <div class="crumbs"><span id="crumb-store">My Store</span><span class="sep">/</span><b id="crumb">Dashboard</b></div>
-        <label class="top-search"><span data-icon="search"></span><input id="top-search" type="search" placeholder="Search orders & products…" aria-label="Search orders and products"></label>
-        <a class="top-icon" href="#/orders" id="bell" aria-label="Pending orders" title="Pending orders"><span data-icon="bell"></span></a>
-        <a class="btn" href="#/website" id="view-site"><span data-icon="external"></span>My website</a>
+        <label class="top-search"><span data-icon="search"></span><input id="top-search" type="search" placeholder="Search products, orders, customers…" aria-label="Search products, orders and customers"></label>
+        <a class="top-bell" href="#/orders" id="bell" aria-label="Pending orders" title="Pending orders"><span data-icon="bell"></span><span class="badge" id="bell-count"></span></a>
+        <div class="profile">
+          <button class="profile-btn" type="button" id="profile-btn" aria-haspopup="menu" aria-expanded="false">
+            <span class="profile-avatar" id="me-avatar"></span>
+            <span class="profile-text"><b id="me-name">Owner</b><span id="me-store"></span></span>
+            <span data-icon="chevronDown"></span>
+          </button>
+          <div class="profile-menu" id="profile-menu" role="menu" hidden>
+            <div class="profile-menu-head"><b id="menu-name"></b><span id="me-email"></span><span class="tag green" id="me-plan"></span></div>
+            <a role="menuitem" href="#/website"><span data-icon="external"></span>My website</a>
+            <a role="menuitem" href="#/settings"><span data-icon="settings"></span>Settings</a>
+            <a role="menuitem" href="#/billing"><span data-icon="billing"></span>Plan &amp; billing</a>
+            <button role="menuitem" type="button" id="logout"><span data-icon="logout"></span>Log out</button>
+          </div>
+        </div>
       </header>
       <div class="scroll"><div id="view"></div></div>
     </div>

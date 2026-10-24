@@ -74,6 +74,7 @@
     };
   };
   const store = me.store || seedStore();
+  store.discounts ||= [];
   let saveTimer = null, saving = Promise.resolve();
   const saveNow = () => {
     clearTimeout(saveTimer);
@@ -113,24 +114,28 @@
 
   // ---------- Chrome ----------
   const refreshChrome = () => {
-    const name = store.site.name || "My Store";
-    document.getElementById("ws-name").textContent = name;
-    document.getElementById("crumb-store").textContent = name;
-    document.getElementById("ws-logo").textContent = name.trim()[0]?.toUpperCase() || "S";
-    document.getElementById("ws-plan").textContent = plan().name + " plan · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
-    document.getElementById("count-orders").textContent = store.orders.filter((o) => o.status === "Pending").length || "";
-    document.getElementById("count-products").textContent = store.products.length;
+    const pending = store.orders.filter((o) => o.status === "Pending").length;
+    document.getElementById("count-orders").textContent = pending || "";
     document.getElementById("count-pages").textContent = store.pages.length;
+    document.getElementById("bell-count").textContent = pending ? (pending > 9 ? "9+" : pending) : "";
     document.getElementById("me-avatar").innerHTML = avatar(account.name);
-    document.getElementById("me-name").textContent = account.name;
+    document.getElementById("me-name").textContent = account.name.split(" ")[0];
+    document.getElementById("me-store").textContent = siteUrl();
+    document.getElementById("menu-name").textContent = account.name;
     document.getElementById("me-email").textContent = account.email;
-    const bell = document.getElementById("bell");
-    bell.querySelector(".dot")?.remove();
-    if (store.orders.some((o) => o.status === "Pending")) bell.insertAdjacentHTML("beforeend", '<span class="dot"></span>');
+    document.getElementById("me-plan").textContent = plan().name + " plan · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
   };
+  const profileBtn = document.getElementById("profile-btn");
+  const profileMenu = document.getElementById("profile-menu");
+  const toggleMenu = (open) => { profileMenu.hidden = !open; profileBtn.setAttribute("aria-expanded", String(open)); };
+  profileBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMenu(profileMenu.hidden); });
+  document.addEventListener("click", (e) => { if (!profileMenu.hidden && !e.target.closest(".profile")) toggleMenu(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !profileMenu.hidden) { toggleMenu(false); profileBtn.focus(); } });
+  profileMenu.addEventListener("click", (e) => { if (e.target.closest("a")) toggleMenu(false); });
   document.getElementById("logout").addEventListener("click", async () => {
     const ok = await confirm("Log out?", "You'll go back to the sign-in page. Your store stays saved in your account.", "Log out");
     if (!ok) return;
+    toggleMenu(false);
     if (saveTimer) await saveNow();
     await fetch("/api/signout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
     location.href = "/signin.html";
@@ -141,7 +146,6 @@
   const PAYMENT_LABEL = { cod: "Cash on delivery", bkash: "bKash", nagad: "Nagad", card: "Card" };
   const PAY_COLOR = { "Cash on delivery": "gray", bKash: "pink", Nagad: "orange", Card: "blue" };
   const sales = (orders) => orders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
-  const greeting = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
   const siteUrl = () => store.settings.domain && store.settings.domainStatus === "connected" ? store.settings.domain : store.settings.subdomain + ".shopiliar.com";
   const orderNo = (o) => "#" + o.number;
   const head = (title, desc, actions = "") => `<div class="page"><div class="page-head"><div><h1>${title}</h1><p>${desc}</p></div><div class="page-actions">${actions}</div></div>`;
@@ -152,13 +156,82 @@
     : "";
   const usage = (kind, used, limit) => limit == null ? `<span class="muted small">Unlimited ${kind}</span>` : `<span class="muted small">${used} / ${limit} ${kind}</span>`;
 
-  const checklist = () => [
-    { done: store.products.length > 0, text: "Add your first product", href: "#/products" },
-    { done: !!store.customized, text: "Customize your website", href: "#/website" },
-    { done: Object.values(store.settings.payments).some(Boolean), text: "Choose how customers pay", href: "#/settings" },
-    { done: !!store.settings.domain, text: "Connect your domain", href: "#/settings" },
-    { done: store.published, text: "Publish your website", href: "#/website" },
-  ];
+  // ---------- Home helpers ----------
+  let range = 30; // days shown on Home
+  const inPeriod = (orders, from, to) => orders.filter((o) => { const t = new Date(o.date).getTime(); return t >= from && t < to; });
+  const delta = (cur, prev, points = false) => {
+    if (!prev) return `<span class="delta flat">${cur ? "New" : "—"}</span>`;
+    const change = points ? cur - prev : ((cur - prev) / prev) * 100;
+    const dir = change >= 0 ? "up" : "down";
+    return `<span class="delta ${dir}">${icon(dir === "up" ? "arrowUp" : "arrowDown")}${Math.abs(Math.round(change))}${points ? " pts" : "%"}</span>`;
+  };
+  // Share of this period's customers who had ordered before
+  const returning = (orders, from) => {
+    const names = [...new Set(orders.map((o) => o.customer.toLowerCase()))];
+    if (!names.length) return 0;
+    const counts = {};
+    orders.forEach((o) => { const k = o.customer.toLowerCase(); counts[k] = (counts[k] || 0) + 1; });
+    const back = names.filter((n) => counts[n] > 1 || store.orders.some((o) => o.customer.toLowerCase() === n && new Date(o.date).getTime() < from));
+    return (back.length / names.length) * 100;
+  };
+  const shortDay = (t) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  // Smooth line through points (Catmull-Rom as cubic Béziers). Control points stay
+  // between their two neighbours so the curve never overshoots, e.g. below ৳0.
+  const smooth = (pts) => pts.map((p, i) => {
+    if (!i) return `M${p[0].toFixed(1)},${p[1].toFixed(1)}`;
+    const p0 = pts[i - 2] || pts[i - 1], p1 = pts[i - 1], p3 = pts[i + 1] || p;
+    const lo = Math.min(p1[1], p[1]), hi = Math.max(p1[1], p[1]), clampY = (v) => Math.min(hi, Math.max(lo, v));
+    const c1 = [p1[0] + (p[0] - p0[0]) / 6, clampY(p1[1] + (p[1] - p0[1]) / 6)], c2 = [p[0] - (p3[0] - p1[0]) / 6, clampY(p[1] - (p3[1] - p1[1]) / 6)];
+    return `C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p[0].toFixed(1)},${p[1].toFixed(1)}`;
+  }).join("");
+  const salesChart = (now, span) => {
+    const n = range, W = 760, H = 250, L = 50, R = 10, T = 10, B = 30;
+    const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+    const daily = (offset) => Array.from({ length: n }, (_, i) => {
+      const from = dayStart.getTime() - (n - 1 - i) * 864e5 - offset;
+      return sales(inPeriod(store.orders, from, from + 864e5));
+    });
+    const now1 = daily(0), prev1 = daily(span);
+    const step = (v) => { const raw = v / 5, mag = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw); };
+    const tick = step(Math.max(500, ...now1, ...prev1));
+    const top = tick * 5;
+    const x = (i) => L + (i / Math.max(1, n - 1)) * (W - L - R);
+    const y = (v) => T + (1 - v / top) * (H - T - B);
+    const pts = (arr) => arr.map((v, i) => [x(i), y(v)]);
+    const short = (v) => v >= 1000 ? "৳" + (v / 1000).toFixed(v % 1000 ? 1 : 0).replace(/\.0$/, "") + "K" : "৳" + v;
+    const labels = Array.from({ length: 8 }, (_, k) => Math.round((k / 7) * (n - 1)));
+    const line = smooth(pts(now1));
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Sales per day, this period and the previous one">
+      <defs><linearGradient id="sales-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0e7a4b" stop-opacity=".2"/><stop offset="1" stop-color="#0e7a4b" stop-opacity="0"/></linearGradient></defs>
+      ${Array.from({ length: 6 }, (_, k) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(k * tick)}" y2="${y(k * tick)}"/><text x="${L - 10}" y="${y(k * tick) + 4}" text-anchor="end">${short(k * tick)}</text>`).join("")}
+      ${labels.map((i) => `<line class="grid" x1="${x(i)}" x2="${x(i)}" y1="${T}" y2="${H - B}"/><text x="${x(i)}" y="${H - 8}" text-anchor="middle">${shortDay(dayStart.getTime() - (n - 1 - i) * 864e5)}</text>`).join("")}
+      <path d="${line}L${x(n - 1)},${y(0)}L${x(0)},${y(0)}Z" fill="url(#sales-fill)"/>
+      <path class="prev" d="${smooth(pts(prev1))}"/>
+      <path class="now" d="${line}"/>
+      <circle class="dot" cx="${x(n - 1)}" cy="${y(now1[n - 1])}" r="4.5"/>
+    </svg>`;
+  };
+  const topProducts = (orders) => {
+    if (!store.products.length) return `<p class="empty-note">No products yet. <a class="link" href="#/products" data-action="add-product">Add your first product</a></p>`;
+    const sold = {};
+    orders.filter((o) => o.status !== "Cancelled").forEach((o) => o.items.forEach((it) => {
+      const s = sold[it.name] || (sold[it.name] = { qty: 0, revenue: 0 });
+      s.qty += it.qty; s.revenue += it.qty * it.price;
+    }));
+    const list = store.products.map((p) => ({ p, ...(sold[p.name] || { qty: 0, revenue: 0 }) }))
+      .sort((a, b) => b.revenue - a.revenue || b.qty - a.qty).slice(0, 4);
+    return `<ul class="top-list">${list.map(({ p, qty, revenue }) => `<li><span class="top-img" style="background:${esc(p.color || "#eee")}">${icon("products")}</span><span class="t"><b>${esc(p.name)}</b><span>${qty} sold</span></span><span class="v">${taka(revenue)}</span></li>`).join("")}</ul>`;
+  };
+  const feature = (ico, title, text, action = '<button class="btn" disabled>Coming soon</button>') =>
+    `<div class="card feature"><span class="mk-ico">${icon(ico)}</span><h3>${title}</h3><p>${text}</p>${action}</div>`;
+  const CHANNELS = {
+    pos: { name: "Point of Sale", icon: "pos", short: "Sell in person at your shop", text: "Use your phone as a till: take payments in your shop or at markets, with stock shared with your website." },
+    "buy-button": { name: "Buy Button", icon: "button", short: "Add products to any website or blog", text: "Get a small piece of code that puts a Buy button for any product on another website or blog." },
+    facebook: { name: "Facebook", icon: "facebook", short: "Sell on your Facebook Page", text: "Show your products in a shop on your Facebook Page and get orders straight into Shopiliar." },
+    instagram: { name: "Instagram", icon: "instagram", short: "Tag products in your posts", text: "Tag products in posts and stories so followers can buy in a few taps." },
+    google: { name: "Google", icon: "google", short: "Show products in Google Search", text: "List your products for free on Google Search, Shopping and Maps." },
+  };
+
 
   const orderRows = (orders, compact = false) => orders.length ? orders.map((o) => `
     <tr>
@@ -179,46 +252,125 @@
 
   const routes = {
     home: {
-      title: "Dashboard",
+      title: "Home",
       render: () => {
-        const list = checklist();
-        const done = list.filter((c) => c.done).length;
-        const month = store.orders.filter((o) => Date.now() - new Date(o.date) < 30 * 864e5);
-        const visitors = store.visitors.reduce((a, b) => a + b, 0);
-        const days = Array.from({ length: 14 }, (_, i) => {
-          const d = new Date(Date.now() - (13 - i) * 864e5);
-          const v = sales(store.orders.filter((o) => new Date(o.date).toDateString() === d.toDateString()));
-          return { label: String(d.getDate()), v, text: taka(v) };
-        });
-        return `${head(`${greeting()}, ${esc(account.name.split(" ")[0])} 👋`, `Here's what's happening with <b>${esc(store.site.name)}</b> today.`,
-          `<button class="btn" data-action="add-order">${icon("plus")}New order</button><button class="btn btn-primary" data-action="add-product">${icon("plus")}Add product</button>`)}
-          ${account.demo ? `<div class="callout blue"><span class="ico">${icon("info")}</span><div>You're viewing a <b>demo store</b>. <a class="u" href="../signup.html">Sign up</a> to start your own — your details and chosen plan will appear here.</div></div>` : ""}
-          ${store.published
-            ? `<div class="callout green"><span class="ico">${icon("globe")}</span><div><b>Your website is live</b> at ${esc(siteUrl())}</div></div>`
-            : `<div class="callout yellow"><span class="ico">${icon("rocket")}</span><div><b>Your website isn't live yet.</b> Customize it, then publish when you're ready.</div><a class="btn btn-sm btn-dark" href="#/website">Customize &amp; publish</a></div>`}
+        const now = Date.now(), span = range * 864e5;
+        const cur = inPeriod(store.orders, now - span, now), prev = inPeriod(store.orders, now - 2 * span, now - span);
+        const live = (list) => list.filter((o) => o.status !== "Cancelled");
+        const visits = store.visitors.slice(-Math.min(range, store.visitors.length)).reduce((a, b) => a + b, 0);
+        const visitsPrev = range === 7 ? store.visitors.slice(0, 7).reduce((a, b) => a + b, 0) : 0;
+        const vsText = `<span class="muted">vs. previous ${range} days</span>`;
+        const stat = (label, value, ico, color, d) => `<div class="stat"><div class="stat-top"><span class="stat-label">${label}</span><span class="stat-ico ${color}">${icon(ico)}</span></div><div class="stat-value">${value}</div><div class="stat-delta">${d}</div></div>`;
+        const curSales = sales(cur), prevSales = sales(prev);
+        const ret = returning(cur, now - span), retPrev = returning(prev, now - 2 * span);
+        return `${head(`Welcome back, ${esc(account.name.split(" ")[0])}`, "Here's what's happening with your store today.",
+          `<label class="range">${icon("calendar")}<select data-action="range" aria-label="Date range">${[7, 30, 90].map((d) => `<option value="${d}"${d === range ? " selected" : ""}>Last ${d} days</option>`).join("")}</select>${icon("chevronDown")}</label>`)}
+          ${store.published ? "" : `<div class="callout yellow"><span class="ico">${icon("rocket")}</span><div><b>Your website isn't live yet.</b> Customize it, then publish when you're ready.</div><a class="btn btn-sm btn-dark" href="#/website">Customize &amp; publish</a></div>`}
           <div class="stats">
-            <div class="stat"><div class="stat-top"><span class="stat-label">Total sales · 30 days</span><span class="stat-ico c1">${icon("money")}</span></div><div class="stat-value">${taka(sales(month))}</div><div class="stat-delta">${month.filter((o) => o.status !== "Cancelled").length} paid or open orders</div></div>
-            <div class="stat"><div class="stat-top"><span class="stat-label">Orders · 30 days</span><span class="stat-ico c2">${icon("orders")}</span></div><div class="stat-value">${month.length}</div><div class="stat-delta ${store.orders.some((o) => o.status === "Pending") ? "down" : ""}">${store.orders.filter((o) => o.status === "Pending").length} waiting for you</div></div>
-            <div class="stat"><div class="stat-top"><span class="stat-label">Visitors · 14 days</span><span class="stat-ico c3">${icon("eye")}</span></div><div class="stat-value">${visitors.toLocaleString("en-IN")}</div><div class="stat-delta">${account.demo ? "Sample data" : "Counting starts when you publish"}</div></div>
-            <div class="stat"><div class="stat-top"><span class="stat-label">Products</span><span class="stat-ico c4">${icon("products")}</span></div><div class="stat-value">${store.products.length}</div><div class="stat-delta">of ${limitText(plan().products)} on ${plan().name}</div></div>
+            ${stat("Total sales", taka(curSales), "bag", "c1", delta(curSales, prevSales) + vsText)}
+            ${stat("Total orders", cur.length.toLocaleString("en-IN"), "cart", "c2", delta(cur.length, prev.length) + vsText)}
+            ${stat("Online store sessions", visits.toLocaleString("en-IN"), "barchart", "c3", store.published || visits ? (visitsPrev ? delta(visits, visitsPrev) + vsText : `<span class="muted">Last ${Math.min(range, 14)} days</span>`) : '<span class="muted">Counting starts when you publish</span>')}
+            ${stat("Returning customers", ret.toFixed(1).replace(/\.0$/, "") + "%", "customers", "c4", delta(ret, retPrev, true) + vsText)}
           </div>
-          <div class="grid-3-1" style="margin-top:18px">
-            <div class="card"><div class="card-head"><span class="card-title">Sales overview<small>last 14 days</small></span><span class="muted">${taka(days.reduce((a, b) => a + b.v, 0))}</span></div><div class="card-body">${bars(days)}</div></div>
-            <div class="card"><div class="card-head"><span class="card-title">Store setup</span><span class="muted small">${done}/${list.length}</span></div>
-              <div class="card-body"><div class="progress" style="margin-bottom:6px"><i style="width:${(done / list.length) * 100}%"></i></div>
-              <ul class="todo">${list.map((c) => `<li class="${c.done ? "done" : ""}"><span class="tick">${c.done ? icon("check") : ""}</span><span class="t">${esc(c.text)}</span>${c.done ? "" : `<a href="${c.href}">Start</a>`}</li>`).join("")}</ul></div></div>
-          </div>
-          <div class="grid-3-1" style="margin-top:18px">
-            <div class="card"><div class="card-head"><span class="card-title">Recent orders</span><a class="btn btn-sm" href="#/orders">View all</a></div>${orderTable(store.orders.slice(0, 5), true)}</div>
-            <div class="card"><div class="card-head"><span class="card-title">Quick actions</span></div><div class="card-body"><div class="quick" style="grid-template-columns:1fr">
-              <button data-action="add-product"><span class="qi">${icon("products")}</span>Add a product</button>
-              <button data-action="add-order"><span class="qi">${icon("orders")}</span>Record an order</button>
-              <a href="#/website"><span class="qi">${icon("brush")}</span>Change colors &amp; text</a>
-              <a href="#/pages"><span class="qi">${icon("pages")}</span>Add a page</a>
-            </div></div></div>
+          <div class="home-grid">
+            <div class="home-main">
+              <div class="card"><div class="card-head"><span class="card-title">Sales overview</span><a class="btn" href="#/analytics">View report</a></div>
+                <div class="card-body">
+                  <div class="sales-top"><span class="sales-total">${taka(curSales)}</span><span class="stat-delta" style="margin:0">${delta(curSales, prevSales)}${vsText}</span>
+                    <span class="legend"><span><i></i>This period</span><span><i class="prev"></i>Previous period</span></span></div>
+                  ${salesChart(now, span)}
+                </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Recent orders</span><a class="link" href="#/orders">View all</a></div>
+                <div class="table-wrap"><table class="orders-mini">
+                  <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th></tr></thead>
+                  <tbody>${store.orders.length ? store.orders.slice(0, 5).map((o) => {
+                    const n = o.items.reduce((a, it) => a + it.qty, 0);
+                    return `<tr><td><button class="ord" data-action="view-order" data-id="${o.id}">${orderNo(o)}</button></td><td>${esc(o.customer)}</td><td>${n} item${n === 1 ? "" : "s"}</td><td>${taka(o.total)}</td><td><span class="pill ${esc(o.status)}">${esc(o.status)}</span></td></tr>`;
+                  }).join("") : `<tr><td colspan="5" class="table-empty">No orders yet. They'll appear here as soon as customers buy.</td></tr>`}</tbody>
+                </table></div></div>
+            </div>
+            <div class="home-side">
+              <div class="card"><div class="card-body" style="padding-top:20px">
+                <div class="live-top"><span class="card-title">Visitors</span><span class="live-dot ${store.published ? "" : "off"}">${store.published ? "Live" : "Offline"}</span></div>
+                <div class="live-value">${store.visitors.reduce((a, b) => a + b, 0).toLocaleString("en-IN")}</div>
+                <div class="muted">visitors in the last 14 days</div>
+                <div class="spark">${(() => { const max = Math.max(1, ...store.visitors); return store.visitors.map((v) => `<i style="height:${Math.max(7, (v / max) * 100)}%" title="${v}"></i>`).join(""); })()}</div>
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Top products</span><a class="link" href="#/products">View all</a></div>
+                <div class="card-body">${topProducts(cur)}</div></div>
+              <div class="card"><div class="card-head"><a class="card-title card-title-link" href="#/marketing">Marketing${icon("chevronRight")}</a></div>
+                <div class="card-body"><div class="mk-list">
+                  <button class="mk-item" data-action="add-discount"><span class="mk-ico">${icon("tag")}</span><span class="t"><b>Create discount</b><span>Run a promotion to boost sales</span></span>${icon("chevronRight")}</button>
+                  <a class="mk-item" href="#/marketing"><span class="mk-ico">${icon("mail")}</span><span class="t"><b>Create email campaign</b><span>Reach more customers</span></span>${icon("chevronRight")}</a>
+                  <a class="mk-item" href="#/marketing"><span class="mk-ico">${icon("megaphone")}</span><span class="t"><b>Create ad campaign</b><span>Grow your audience</span></span>${icon("chevronRight")}</a>
+                </div></div></div>
+            </div>
           </div>
         </div>`;
       },
+    },
+
+    marketing: {
+      title: "Marketing",
+      render: () => `${head("Marketing", "Bring more customers to your store.")}
+        <div class="feature-grid">
+          ${feature("tag", "Discount codes", "Create codes like EID20 for a percentage or Taka off.", `<button class="btn btn-primary" data-action="add-discount">${icon("plus")}Create discount</button>`)}
+          ${feature("mail", "Email campaigns", "Send news and offers to your customers by email.")}
+          ${feature("facebook", "Facebook & Instagram ads", "Promote your products to people near you.")}
+          ${feature("phone", "SMS campaigns", "Text offers straight to your customers' phones.")}
+        </div></div>`,
+    },
+
+    discounts: {
+      title: "Discounts",
+      render: () => `${head("Discounts", "Codes customers can use for money off.", `<button class="btn btn-primary" data-action="add-discount">${icon("plus")}Create discount</button>`)}
+        <div class="card"><div class="table-wrap"><table class="table">
+          <thead><tr><th>Code</th><th>Discount</th><th>Status</th><th>Created</th><th class="t-actions"></th></tr></thead>
+          <tbody>${store.discounts.length ? store.discounts.map((d) => `<tr>
+            <td class="t-title">${esc(d.code)}</td>
+            <td>${d.type === "percent" ? esc(d.value) + "% off" : taka(d.value) + " off"}${d.min ? `<span class="sub">On orders over ${taka(d.min)}</span>` : ""}</td>
+            <td><label class="switch" title="${d.active ? "Active" : "Paused"}"><input type="checkbox" data-action="discount-active" data-id="${d.id}" ${d.active ? "checked" : ""} aria-label="Active"><i></i></label></td>
+            <td class="muted">${day(d.created)}</td>
+            <td class="t-actions"><button class="icon-btn danger" data-action="delete-discount" data-id="${d.id}" aria-label="Delete discount">${icon("trash")}</button></td>
+          </tr>`).join("") : `<tr><td colspan="5" class="table-empty">No discounts yet. Create one to run a promotion.</td></tr>`}</tbody>
+        </table></div></div></div>`,
+    },
+
+    apps: {
+      title: "Apps",
+      render: () => `${head("Apps", "Add features to your store.")}
+        <div class="feature-grid">
+          ${feature("money", "bKash & Nagad payments", "Take mobile payments online at checkout.")}
+          ${feature("orders", "Courier delivery", "Book Pathao, Steadfast or RedX pickups from your orders.")}
+          ${feature("phone", "WhatsApp chat", "Let customers message you from your website.")}
+          ${feature("analytics", "Google Analytics", "See where your visitors come from.")}
+          ${feature("facebook", "Facebook Pixel", "Measure your Facebook and Instagram ads.")}
+          ${feature("star", "Product reviews", "Show ratings and reviews on product pages.")}
+        </div></div>`,
+    },
+
+    channels: {
+      title: "Sales channels",
+      render: () => `${head("Sales channels", "Every place you sell.")}
+        <div class="card"><div class="mk-list" style="padding:12px 22px">
+          <a class="mk-item" href="#/website"><span class="mk-ico">${icon("store")}</span><span class="t"><b>Online Store</b><span>${store.published ? "Live at " + esc(siteUrl()) : "Not published yet"}</span></span>${store.published ? '<span class="tag green">Live</span>' : '<span class="tag yellow">Draft</span>'}${icon("chevronRight")}</a>
+          ${Object.entries(CHANNELS).map(([id, c]) => `<a class="mk-item" href="#/${id}"><span class="mk-ico">${icon(c.icon)}</span><span class="t"><b>${c.name}</b><span>${c.short}</span></span><span class="tag gray">Coming soon</span>${icon("chevronRight")}</a>`).join("")}
+        </div></div></div>`,
+    },
+
+    help: {
+      title: "Help Center",
+      render: () => `${head("Help Center", "Answers to common questions.")}
+        <div class="card"><div class="card-body help-list">
+          ${[
+            ["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."],
+            ["How do I change how my website looks?", "Open Online Store. Pick a template, change colors and text, and watch the live preview."],
+            ["How do I publish my website?", "In Online Store, click Publish. Your site goes live at your free shopiliar.com address."],
+            ["Can I use my own domain?", "Yes. Go to Settings and add your domain. Yearly Business and Pro plans include a free domain."],
+            ["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."],
+            ["How do I change my plan?", "Open Billing and choose Switch next to the plan you want."],
+          ].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
+        </div></div></div>`,
     },
 
     orders: {
@@ -505,6 +657,14 @@
     },
   };
 
+  Object.entries(CHANNELS).forEach(([id, c]) => {
+    routes[id] = {
+      title: c.name,
+      render: () => `${head(c.name, c.short)}
+        <div class="card feature" style="max-width:640px"><span class="mk-ico">${icon(c.icon)}</span><h3>Connect ${c.name}</h3><p>${c.text}</p><button class="btn" disabled>Coming soon</button></div></div>`,
+    };
+  });
+
   // ---------- Actions ----------
   const go = () => rerender();
   let rerender;
@@ -568,6 +728,28 @@
   });
 
   const actions = {
+    "add-discount": () => dialog({
+      title: "Create discount",
+      body: `<div class="field"><label>Code</label><input class="input" name="code" required maxlength="20" placeholder="e.g. EID20" style="text-transform:uppercase"></div>
+        <div class="row"><div class="field"><label>Type</label><select class="select" name="type"><option value="percent">Percentage off</option><option value="fixed">Taka off (৳)</option></select></div>
+        <div class="field"><label>Amount</label><input class="input" name="value" type="number" min="1" step="1" required placeholder="20"></div></div>
+        <div class="field"><label>Minimum order (৳, optional)</label><input class="input" name="min" type="number" min="0" step="1" placeholder="0"></div>`,
+      submit: "Create discount",
+      onSubmit: (v, close, form) => {
+        const code = v.code.toUpperCase().replace(/\s+/g, "");
+        if (store.discounts.some((d) => d.code === code)) { toast("That code already exists"); return false; }
+        const value = Math.max(1, Number(v.value) || 0);
+        if (v.type === "percent" && value > 100) { toast("A percentage can't be more than 100"); return false; }
+        store.discounts.unshift({ id: uid("d"), code, type: v.type, value, min: Math.max(0, Number(v.min) || 0), active: true, created: new Date().toISOString() });
+        persist();
+        if (location.hash === "#/discounts") go(); else location.hash = "#/discounts";
+        toast("Discount " + code + " created");
+      },
+    }),
+    "delete-discount": async (el) => {
+      const d = store.discounts.find((x) => x.id === el.dataset.id);
+      if (await confirm("Delete discount?", `${d.code} will stop working.`)) { store.discounts = store.discounts.filter((x) => x !== d); persist(); go(); }
+    },
     "add-product": () => {
       if (!withinLimit(plan().products, store.products.length)) { toast(`Your ${plan().name} plan allows ${plan().products} products — upgrade to add more`); return; }
       productDialog(null);
@@ -661,6 +843,11 @@
   });
   view.addEventListener("change", (e) => {
     const el = e.target;
+    if (el.dataset.action === "range") { range = Number(el.value); go(); }
+    if (el.dataset.action === "discount-active") {
+      const d = store.discounts.find((x) => x.id === el.dataset.id);
+      d.active = el.checked; persist(); toast(`${d.code} ${d.active ? "is active" : "is paused"}`);
+    }
     if (el.dataset.action === "order-status") {
       const o = store.orders.find((x) => x.id === el.dataset.id);
       o.status = el.value; persist(); toast(`Order #${o.number} marked ${o.status}`);
