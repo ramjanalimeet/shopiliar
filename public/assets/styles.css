@@ -283,3 +283,11 @@ button { font: inherit; cursor: pointer; }
   .plans { grid-template-columns: 1fr; }
   .logos { gap: 20px 32px; }
 }
+
+/* ---------- Desktop scale ----------
+   Laptops and desktops show the site at 80% scale (the same as 80% browser zoom).
+   Phones and tablets keep full size so text stays readable. */
+@media (min-width: 1024px) {
+  body { zoom: .8; min-height: 125vh; }
+  .auth-wrap { min-height: calc(125vh - 82px); }
+}
