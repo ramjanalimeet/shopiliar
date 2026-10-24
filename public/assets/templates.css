@@ -140,19 +140,156 @@
 .t-mia .s-copy p { color: #7a5a48; margin-top: 1.4cqw; }
 .t-mia .s-art { left: 50%; top: 15cqw; width: 26cqw; height: 26cqw; transform: translateX(-50%); border-radius: 50%; overflow: hidden; }
 
+/* Extra sections only appear in the full preview */
+.s-more, .s-foot { display: none; }
+
 /* ---------- Preview modal ---------- */
 .modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px 16px; background: rgba(11, 13, 18, .6); backdrop-filter: blur(4px); }
 .modal[hidden] { display: none; }
-.modal-box { width: min(1000px, 100%); background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.35); }
+.modal-box { width: min(1240px, 100%); background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.35); }
 .modal-bar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 .modal-bar .dots { display: flex; gap: 6px; }
 .modal-bar .dots i { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; }
 .modal-bar .dots i:nth-child(2) { background: #febc2e; }
 .modal-bar .dots i:nth-child(3) { background: #28c840; }
-.modal-bar strong { flex: 1; font-size: 14px; color: var(--ink); }
+.modal-bar strong { flex: 1; font-size: 14px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .modal-bar .btn { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
-.modal-close { width: 36px; height: 36px; border: 0; background: #f2f3f6; border-radius: 8px; font-size: 20px; line-height: 1; color: var(--ink); }
-.modal .shot { border-radius: 0; }
+.modal-close { width: 36px; height: 36px; border: 0; background: #f2f3f6; border-radius: 8px; font-size: 20px; line-height: 1; color: var(--ink); flex: none; }
+
+.device-switch { display: inline-flex; background: #f2f3f6; border-radius: 10px; padding: 3px; gap: 2px; }
+.device-switch button {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; background: none;
+  border-radius: 8px; font-size: 13px; font-weight: 500; color: #4b5260;
+}
+.device-switch button svg { width: 16px; height: 16px; }
+.device-switch button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+.device-size { font-size: 12px; color: var(--faint); min-width: 112px; }
+
+.device-stage {
+  height: calc(100vh - 140px); display: flex; justify-content: center; align-items: flex-start;
+  background: #eceef3; padding: 20px; overflow: hidden;
+}
+.device {
+  width: 100%; height: 100%; background: #fff; border-radius: 8px; overflow: hidden; display: flex;
+  box-shadow: 0 10px 30px rgba(16, 24, 40, .12); transition: width .35s ease, border-radius .35s ease;
+}
+.device[data-device="tablet"] { width: 792px; max-height: 1048px; max-width: 100%; border: 12px solid #15171c; border-radius: 30px; }
+.device[data-device="mobile"] { width: 410px; max-height: 864px; max-width: 100%; border: 10px solid #15171c; border-radius: 42px; }
+.device-screen { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; container-type: inline-size; scrollbar-width: thin; }
+
+/* The desktop 80% scale shrinks vh units, so give the stage back its height. */
+@media (min-width: 1024px) {
+  .modal { padding: 20px; }
+  .device-stage { height: calc(125vh - 160px); }
+}
+
+/* ---------- Live (responsive) template preview ----------
+   Inside the device frame the preview becomes a real page: px sizes and
+   container queries instead of the card's scaled cqw layout. */
+.shot.live {
+  aspect-ratio: auto; border-radius: 0; overflow: visible; min-height: 100%;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "nav nav" "copy art" "more more" "foot foot";
+}
+.shot.live .s-nav {
+  grid-area: nav; position: relative; inset: auto; height: 72px; padding: 0 40px; gap: 28px; font-size: 14px;
+}
+.shot.live .s-nav b { font-size: 22px; }
+.shot.live .s-nav nav { gap: 28px; }
+.shot.live .s-nav .s-ico { gap: 16px; }
+.shot.live .s-nav .s-ico svg { width: 18px; height: 18px; }
+.shot.live .s-nav .s-cta { padding: 10px 16px; border-radius: 6px; font-size: 13px; }
+.shot.live .s-burger { display: none; width: 22px; height: 22px; }
+.shot.live .s-copy {
+  grid-area: copy; position: relative; inset: auto; width: auto; align-self: center; padding: 64px 40px; text-align: left;
+}
+.shot.live .s-copy h4 { font-size: 50px; }
+.shot.live .s-copy p { font-size: 16px; margin-top: 16px; width: auto; max-width: 460px; }
+.shot.live .s-copy small { font-size: 14px; margin-bottom: 10px; }
+.shot.live .s-btns { margin-top: 26px; gap: 10px; flex-wrap: wrap; }
+.shot.live .s-btn { padding: 13px 22px; border-radius: 6px; font-size: 14px; }
+.shot.live .s-art {
+  grid-area: art; position: relative; inset: auto; width: auto; height: auto; min-height: 420px; transform: none;
+  border-radius: 0; margin: 0;
+}
+
+/* centered hero */
+.shot.live[data-layout="center"] { grid-template-columns: 1fr; grid-template-areas: "nav" "copy" "art" "more" "foot"; }
+.shot.live[data-layout="center"] .s-copy { text-align: center; padding: 72px 40px 36px; }
+.shot.live[data-layout="center"] .s-copy p { margin-left: auto; margin-right: auto; }
+.shot.live[data-layout="center"] .s-art { min-height: 0; height: 240px; width: 78%; justify-self: center; }
+
+/* full-bleed hero: art sits behind the copy */
+.shot.live[data-layout="bleed"] { grid-template-columns: 1fr; grid-template-areas: "nav" "hero" "more" "foot"; }
+.shot.live[data-layout="bleed"] .s-art { grid-area: hero; min-height: 480px; }
+.shot.live[data-layout="bleed"] .s-copy { grid-area: hero; z-index: 2; padding: 64px 40px; max-width: 640px; }
+.shot.live.t-launch .s-copy { max-width: none; text-align: center; }
+.shot.live.t-launch .s-copy p { margin-left: auto; margin-right: auto; }
+
+/* profile hero (photo above name) */
+.shot.live[data-layout="profile"] { grid-template-columns: 1fr; grid-template-areas: "nav" "art" "copy" "more" "foot"; }
+.shot.live[data-layout="profile"] .s-art { min-height: 0; width: 180px; height: 180px; border-radius: 50%; justify-self: center; margin-top: 48px; overflow: hidden; }
+.shot.live[data-layout="profile"] .s-copy { text-align: center; padding: 24px 40px 40px; }
+.shot.live[data-layout="profile"] .s-copy p { margin-left: auto; margin-right: auto; }
+
+.shot.live .s-art svg { position: absolute; inset: 0; }
+.shot.live.t-nova .s-art, .shot.live.t-writely .s-art { margin: 0 40px 0 0; border-radius: 10px; overflow: hidden; align-self: center; height: 420px; }
+
+.shot.live .s-more { display: block; grid-area: more; padding: 56px 40px; }
+.shot.live .s-more h5 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin-bottom: 22px; }
+.shot.live .s-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.shot.live .s-swatch { display: block; height: 170px; border-radius: 10px; margin-bottom: 12px; }
+.shot.live .s-item b { display: block; font-size: 15px; font-weight: 600; }
+.shot.live .s-item em { display: block; font-style: normal; font-size: 13px; opacity: .65; margin-top: 4px; }
+.shot.live .s-foot {
+  display: flex; grid-area: foot; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 24px 40px; border-top: 1px solid rgba(127, 127, 127, .2); font-size: 13px;
+}
+.shot.live .s-foot span { opacity: .6; }
+
+/* Tablet */
+@container (max-width: 900px) {
+  .shot.live .s-nav { padding: 0 28px; gap: 20px; }
+  .shot.live .s-nav nav { gap: 18px; }
+  .shot.live .s-copy { padding: 48px 28px; }
+  .shot.live .s-copy h4 { font-size: 38px; }
+  .shot.live .s-art { min-height: 340px; }
+  .shot.live.t-nova .s-art, .shot.live.t-writely .s-art { margin-right: 28px; height: 340px; }
+  .shot.live .s-more { padding: 44px 28px; }
+  .shot.live .s-swatch { height: 130px; }
+  .shot.live .s-foot { padding: 22px 28px; }
+  .shot.live[data-layout="center"] .s-art { width: 90%; height: 200px; }
+}
+
+/* Mobile */
+@container (max-width: 560px) {
+  .shot.live, .shot.live[data-layout] { grid-template-columns: 1fr; }
+  .shot.live:not([data-layout]), .shot.live[data-layout="split"] { grid-template-areas: "nav" "copy" "art" "more" "foot"; }
+  .shot.live .s-nav { height: 60px; padding: 0 20px; gap: 14px; }
+  .shot.live .s-nav b { font-size: 19px; }
+  .shot.live .s-nav nav, .shot.live .s-nav .s-cta { display: none; }
+  .shot.live .s-burger { display: block; }
+  .shot.live .s-copy, .shot.live[data-layout] .s-copy { padding: 36px 20px; text-align: left; }
+  .shot.live[data-layout="center"] .s-copy, .shot.live[data-layout="profile"] .s-copy, .shot.live.t-launch .s-copy { text-align: center; }
+  .shot.live .s-copy h4 { font-size: 32px; }
+  .shot.live .s-copy p { font-size: 15px; }
+  .shot.live .s-btns { flex-direction: column; }
+  .shot.live .s-btn { text-align: center; }
+  .shot.live .s-art { min-height: 260px; }
+  .shot.live.t-nova .s-art, .shot.live.t-writely .s-art { margin: 0 20px; height: 240px; }
+  .shot.live[data-layout="center"] .s-art { width: calc(100% - 40px); height: 150px; }
+  .shot.live[data-layout="bleed"] .s-art { min-height: 520px; }
+  /* Bistro's dish photo would cover the text on a phone, so stack it below */
+  .shot.live.t-bistro { grid-template-areas: "nav" "copy" "art" "more" "foot"; }
+  .shot.live.t-bistro .s-copy { grid-area: copy; }
+  .shot.live.t-bistro .s-art { grid-area: art; min-height: 280px; }
+  .shot.live[data-layout="profile"] .s-art { width: 140px; height: 140px; min-height: 0; margin-top: 32px; }
+  .shot.live .s-more { padding: 36px 20px; }
+  .shot.live .s-more h5 { font-size: 22px; }
+  .shot.live .s-grid { grid-template-columns: 1fr; gap: 18px; }
+  .shot.live .s-swatch { height: 150px; }
+  .shot.live .s-foot { padding: 20px; flex-direction: column; align-items: flex-start; }
+}
+
 body.no-scroll { overflow: hidden; }
 
 @media (max-width: 1100px) {
@@ -168,5 +305,7 @@ body.no-scroll { overflow: hidden; }
   .tcard-foot { flex-wrap: wrap; }
   .tcard-foot > div { flex-basis: 100%; }
   .tcard .btn { flex: 1; }
-  .modal-bar .btn { display: none; }
+  .modal-bar .btn, .device-size, .modal-bar .dots { display: none; }
+  .device-switch button span { display: none; }
+  .device-stage { padding: 10px; height: calc(100vh - 110px); }
 }

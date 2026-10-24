@@ -53,7 +53,26 @@ if (tplList) {
 
   const modal = document.getElementById("tpl-modal");
   const modalShot = document.getElementById("tpl-modal-shot");
+  const device = document.getElementById("tpl-device");
+  const deviceSwitch = document.getElementById("tpl-devices");
+  const deviceSize = document.getElementById("tpl-device-size");
+  const deviceLabels = { desktop: "Desktop · full width", tablet: "Tablet · 768px", mobile: "Mobile · 390px" };
   let lastFocus = null;
+
+  const setDevice = (name) => {
+    device.dataset.device = name;
+    deviceSize.textContent = deviceLabels[name];
+    deviceSwitch.querySelectorAll("button").forEach((b) => {
+      const on = b.dataset.device === name;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    modalShot.scrollTop = 0;
+  };
+  deviceSwitch.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (btn) setDevice(btn.dataset.device);
+  });
   const closeModal = () => {
     modal.hidden = true;
     modalShot.innerHTML = "";
@@ -67,7 +86,14 @@ if (tplList) {
     lastFocus = btn;
     document.getElementById("tpl-modal-title").textContent = card.dataset.name;
     document.getElementById("tpl-modal-use").href = card.querySelector(".btn-dark").getAttribute("href");
-    modalShot.appendChild(card.querySelector(".shot").cloneNode(true));
+    const live = card.querySelector(".shot").cloneNode(true);
+    live.classList.add("live");
+    const burger = document.createElement("span");
+    burger.className = "s-burger";
+    burger.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+    live.querySelector(".s-nav").appendChild(burger);
+    modalShot.appendChild(live);
+    setDevice("desktop");
     modal.hidden = false;
     document.body.classList.add("no-scroll");
     modal.querySelector(".modal-close").focus();
