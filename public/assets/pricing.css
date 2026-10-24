@@ -4,7 +4,7 @@
 .pcard-price .tk { font-family: "Noto Sans Bengali", "Inter", sans-serif; }
 .price-page .page-head h1 { font-size: clamp(36px, 5.2vw, 62px); }
 .toggle small { font-size: 11px; background: var(--green-soft); color: var(--green); padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
-.toggle button.on small { background: rgba(151, 230, 94, .18); color: var(--brand); }
+.toggle button.on small { background: rgba(65, 162, 18, .28); color: #9be07a; }
 
 .pcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: stretch; max-width: 1140px; margin: 0 auto; }
 .pcard {
@@ -35,7 +35,7 @@
   transition: background .2s, color .2s, box-shadow .2s;
 }
 .yearly-gift svg { width: 20px; height: 20px; flex: none; }
-.is-yearly .yearly-gift { background: var(--brand); color: #16330a; box-shadow: 0 6px 18px rgba(80, 160, 30, .25); }
+.is-yearly .yearly-gift { background: var(--brand-text); color: #fff; box-shadow: 0 6px 18px rgba(47, 125, 12, .25); }
 
 .pcard-pop { background: var(--ink); border-color: var(--ink); color: #d7dae2; box-shadow: 0 20px 50px rgba(11, 13, 18, .25); }
 .pcard-pop:hover { box-shadow: 0 24px 60px rgba(11, 13, 18, .3); }
@@ -44,11 +44,11 @@
 .pcard-pop .pcard-list { color: #d7dae2; }
 .pcard-pop .pcard-list svg { color: var(--brand); }
 .pcard-pop .pcard-every { border-color: #2a2e38; color: #6b7280; }
-.pcard-pop .yearly-gift { background: rgba(151, 230, 94, .12); color: var(--brand); }
-.is-yearly .pcard-pop .yearly-gift { background: var(--brand); color: #16330a; }
+.pcard-pop .yearly-gift { background: rgba(65, 162, 18, .18); color: #9be07a; }
+.is-yearly .pcard-pop .yearly-gift { background: var(--brand-text); color: #fff; }
 .pcard-tag {
   position: absolute; top: 22px; right: 22px; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
-  background: var(--brand); color: #16330a;
+  background: var(--brand-text); color: #fff;
 }
 .btn-light { background: #fff; color: var(--ink); }
 .btn-light:hover { box-shadow: 0 8px 20px rgba(255, 255, 255, .15); }
@@ -71,7 +71,7 @@
 .compare thead th:first-child { font-weight: 600; color: var(--muted); font-size: 14px; }
 .compare thead small { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-top: 2px; }
 .compare .hl { background: var(--brand-soft) !important; }
-.compare td:nth-child(3) { background: #f7fdf2; font-weight: 600; color: var(--ink); }
+.compare td:nth-child(3) { background: #f6fbf2; font-weight: 600; color: var(--ink); }
 .compare td { color: var(--ink); font-weight: 500; }
 .compare .yes { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--green-soft); color: var(--green); }
 .compare .yes svg { width: 14px; height: 14px; }

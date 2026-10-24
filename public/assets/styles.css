@@ -6,13 +6,13 @@
   --line: #e9ebf0;
   --bg: #f7f8fc;
   --card: #ffffff;
-  /* Brand green from the logo. --brand itself is too light for text on white,
-     so text and links use the deeper shades. */
-  --brand: #97e65e;
+  /* Brand green from the logo. Small text and links use the deeper
+     --brand-text so they stay readable on white. */
+  --brand: #41a212;
   --brand-text: #2f7d0c;
   --brand-deep: #245f0a;
-  --brand-soft: #eefbe4;
-  --brand-ring: rgba(151, 230, 94, .45);
+  --brand-soft: #eef8e7;
+  --brand-ring: rgba(65, 162, 18, .22);
   --green: var(--brand-text);
   --green-soft: var(--brand-soft);
   --radius: 14px;
@@ -25,7 +25,7 @@ body {
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(1200px 600px at 50% -10%, #eefbe4 0%, rgba(238, 251, 228, 0) 60%),
+    radial-gradient(1200px 600px at 50% -10%, #eef8e7 0%, rgba(238, 248, 231, 0) 60%),
     var(--bg);
   min-height: 100vh;
   line-height: 1.5;
@@ -70,7 +70,7 @@ button { font: inherit; cursor: pointer; }
 .hero { text-align: center; padding: 28px 0 0; }
 .pill {
   display: inline-flex; align-items: center; gap: 14px; padding: 6px 16px; border-radius: 999px;
-  background: var(--brand-soft); color: var(--brand-deep); font-size: 14px; font-weight: 600; box-shadow: inset 0 0 0 1px rgba(151, 230, 94, .6);
+  background: var(--brand-soft); color: var(--brand-deep); font-size: 14px; font-weight: 600; box-shadow: inset 0 0 0 1px rgba(65, 162, 18, .3);
 }
 .pill i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
 .hero h1 {
@@ -78,7 +78,7 @@ button { font: inherit; cursor: pointer; }
   color: var(--ink); margin: 20px auto 0;
 }
 .gradient-text {
-  background: linear-gradient(90deg, #3f9a12 0%, #2f7d0c 55%, #245f0a 100%);
+  background: linear-gradient(90deg, #41a212 0%, #2f7d0c 55%, #245f0a 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .hero p.lead { max-width: 520px; margin: 24px auto 0; font-size: 18px; color: #555c69; line-height: 1.55; }
@@ -108,8 +108,8 @@ button { font: inherit; cursor: pointer; }
 .tpl .thumb { height: 68px; border-radius: 6px 6px 0 0; overflow: hidden; }
 .tpl .label { font-size: 8px; font-weight: 500; padding: 5px 5px 6px; color: var(--ink); }
 .tpl .badge {
-  position: absolute; right: -6px; top: -4px; background: var(--brand); color: #16330a;
-  font-family: "Caveat", cursive; font-size: 8px; padding: 1px 8px; border-radius: 6px; box-shadow: 0 2px 6px rgba(80, 160, 30, .25);
+  position: absolute; right: -6px; top: -4px; background: var(--brand-text); color: #fff;
+  font-family: "Caveat", cursive; font-size: 8px; padding: 1px 8px; border-radius: 6px; box-shadow: 0 2px 6px rgba(47, 125, 12, .25);
 }
 .thumb-store { background: linear-gradient(135deg, #f4f1ec, #e6e1d8); position: relative; }
 .thumb-store::before { content: "Elegant Home Store"; position: absolute; left: 7px; top: 8px; font-size: 5px; font-weight: 700; width: 30px; line-height: 1.2; color: #222; }
