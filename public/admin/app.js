@@ -1,6 +1,6 @@
 // Shopiliar store owner dashboard (/admin)
 (async () => {
-  const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
+  const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
   // Plan prices and limits are managed from /master-admin when available
   const PLANS = (load("shopiliar.master", null) || {}).plans || Dash.PLANS();
   const SIGN_IN = "/signin.html?next=" + encodeURIComponent(location.pathname + location.search);
@@ -75,6 +75,7 @@
   };
   const store = me.store || seedStore();
   store.discounts ||= [];
+  store.marketing ||= { pixels: {}, headCode: "", bodyCode: "" };
   let saveTimer = null, saving = Promise.resolve();
   const saveNow = () => {
     clearTimeout(saveTimer);
@@ -89,7 +90,8 @@
         throw new Error(data.error || "Couldn't save your changes. Check your connection.");
       }
       Object.assign(account, data.account);
-    }).catch((err) => toast(err.message));
+      return true;
+    }).catch((err) => { toast(err.message); return false; });
     return saving;
   };
   const persist = () => { refreshChrome(); clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); };
@@ -152,7 +154,7 @@
   const statusTag = (s) => `<span class="tag dot ${ORDER_STATUS[s]}">${esc(s)}</span>`;
   const searchBox = (action, value, label) => `<label class="box-search">${icon("search")}<input data-action="${action}" value="${esc(value)}" placeholder="${label}" aria-label="${label}"></label>`;
   const limitCallout = (kind, used, limit) => limit == null ? "" : used >= limit
-    ? `<div class="callout yellow"><span class="ico">${icon("alert")}</span><div><b>You've used all ${limit} ${kind} on the ${plan().name} plan.</b> <a class="u" href="#/billing">Upgrade your plan</a> to add more.</div></div>`
+    ? `<div class="callout yellow"><span class="ico">${icon("alert")}</span><div><b>You've used all ${limit} ${kind} on the ${plan().name} plan.</b> <a class="u" href="#" data-settings="billing">Upgrade your plan</a> to add more.</div></div>`
     : "";
   const usage = (kind, used, limit) => limit == null ? `<span class="muted small">Unlimited ${kind}</span>` : `<span class="muted small">${used} / ${limit} ${kind}</span>`;
 
@@ -224,13 +226,6 @@
   };
   const feature = (ico, title, text, action = '<button class="btn" disabled>Coming soon</button>') =>
     `<div class="card feature"><span class="mk-ico">${icon(ico)}</span><h3>${title}</h3><p>${text}</p>${action}</div>`;
-  const CHANNELS = {
-    pos: { name: "Point of Sale", icon: "pos", short: "Sell in person at your shop", text: "Use your phone as a till: take payments in your shop or at markets, with stock shared with your website." },
-    "buy-button": { name: "Buy Button", icon: "button", short: "Add products to any website or blog", text: "Get a small piece of code that puts a Buy button for any product on another website or blog." },
-    facebook: { name: "Facebook", icon: "facebook", short: "Sell on your Facebook Page", text: "Show your products in a shop on your Facebook Page and get orders straight into Shopiliar." },
-    instagram: { name: "Instagram", icon: "instagram", short: "Tag products in your posts", text: "Tag products in posts and stories so followers can buy in a few taps." },
-    google: { name: "Google", icon: "google", short: "Show products in Google Search", text: "List your products for free on Google Search, Shopping and Maps." },
-  };
 
 
   const orderRows = (orders, compact = false) => orders.length ? orders.map((o) => `
@@ -312,13 +307,48 @@
 
     marketing: {
       title: "Marketing",
-      render: () => `${head("Marketing", "Bring more customers to your store.")}
-        <div class="feature-grid">
-          ${feature("tag", "Discount codes", "Create codes like EID20 for a percentage or Taka off.", `<button class="btn btn-primary" data-action="add-discount">${icon("plus")}Create discount</button>`)}
-          ${feature("mail", "Email campaigns", "Send news and offers to your customers by email.")}
-          ${feature("facebook", "Facebook & Instagram ads", "Promote your products to people near you.")}
-          ${feature("phone", "SMS campaigns", "Text offers straight to your customers' phones.")}
-        </div></div>`,
+      render: () => {
+        const mk = store.marketing;
+        const connected = PIXELS.filter((p) => mk.pixels[p.id]?.id).length;
+        return `${head("Marketing", "Connect your ad accounts so you can measure and run paid campaigns.",
+          `<button class="btn" data-action="view-code">${icon("code")}View installed code</button><button class="btn btn-primary" data-action="add-discount">${icon("plus")}Create discount</button>`)}
+          <div class="callout blue"><span class="ico">${icon("info")}</span><div>Pixels and custom code are added to <b>every page of your website</b> once it's published, so your ad platforms can count visits and build audiences.</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">Ad &amp; analytics pixels<small>${connected} of ${PIXELS.length} connected</small></span></div>
+            <div class="pixel-list">${PIXELS.map((p) => {
+              const px = mk.pixels[p.id];
+              const status = !px?.id ? '<span class="tag gray">Not connected</span>' : px.on ? '<span class="tag dot green">Active</span>' : '<span class="tag dot yellow">Paused</span>';
+              return `<div class="pixel">
+                <span class="pixel-logo" style="background:${p.color}${p.id === "snapchat" ? ";color:#111" : ""}">${esc(p.letter)}</span>
+                <span class="t"><b>${esc(p.name)}</b><span>${esc(p.covers)}</span>${px?.id ? `<code>${esc(p.label)}: ${esc(px.id)}</code>` : ""}</span>
+                ${status}
+                ${px?.id ? `<label class="switch" title="${px.on ? "Pause" : "Turn on"}"><input type="checkbox" data-action="pixel-on" data-id="${p.id}" ${px.on ? "checked" : ""} aria-label="${esc(p.name)} on"><i></i></label>` : ""}
+                <button class="btn btn-sm${px?.id ? "" : " btn-primary"}" data-action="pixel-edit" data-id="${p.id}">${px?.id ? "Edit" : "Connect"}</button>
+                ${px?.id ? `<button class="icon-btn danger" data-action="pixel-remove" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon("trash")}</button>` : ""}
+              </div>`;
+            }).join("")}</div></div>
+          <div class="card"><div class="card-head"><span class="card-title">Custom code</span></div>
+            <form class="card-body" id="code-form">
+              <p class="muted" style="margin-bottom:14px">For any other platform or tool (for example Quora, Taboola, Hotjar or a chat widget). Paste the code they give you. Only use code from services you trust: it runs on every page of your website.</p>
+              <div class="field"><label for="head-code">Code for the &lt;head&gt; of every page</label><textarea class="textarea code" id="head-code" name="headCode" maxlength="20000" placeholder="<script>…</script>" spellcheck="false">${esc(mk.headCode)}</textarea></div>
+              <div class="field"><label for="body-code">Code for the end of the &lt;body&gt;</label><textarea class="textarea code" id="body-code" name="bodyCode" maxlength="20000" placeholder="<noscript>…</noscript>" spellcheck="false">${esc(mk.bodyCode)}</textarea></div>
+              <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" type="submit">Save code</button></div>
+            </form></div>
+          <div class="feature-grid" style="margin-top:20px">
+            ${feature("tag", "Discount codes", `Codes like EID20 for a percentage or Taka off. You have ${store.discounts.length}.`, `<a class="btn" href="#/discounts">Manage discounts</a>`)}
+            ${feature("mail", "Email campaigns", "Send news and offers to your customers by email.")}
+            ${feature("phone", "SMS campaigns", "Text offers straight to your customers' phones.")}
+          </div>
+        </div>`;
+      },
+      mount: (view) => {
+        view.querySelector("#code-form").addEventListener("submit", (e) => {
+          e.preventDefault();
+          store.marketing.headCode = e.target.elements.headCode.value.trim();
+          store.marketing.bodyCode = e.target.elements.bodyCode.value.trim();
+          persist();
+          toast("Custom code saved");
+        });
+      },
     },
 
     discounts: {
@@ -334,28 +364,6 @@
             <td class="t-actions"><button class="icon-btn danger" data-action="delete-discount" data-id="${d.id}" aria-label="Delete discount">${icon("trash")}</button></td>
           </tr>`).join("") : `<tr><td colspan="5" class="table-empty">No discounts yet. Create one to run a promotion.</td></tr>`}</tbody>
         </table></div></div></div>`,
-    },
-
-    apps: {
-      title: "Apps",
-      render: () => `${head("Apps", "Add features to your store.")}
-        <div class="feature-grid">
-          ${feature("money", "bKash & Nagad payments", "Take mobile payments online at checkout.")}
-          ${feature("orders", "Courier delivery", "Book Pathao, Steadfast or RedX pickups from your orders.")}
-          ${feature("phone", "WhatsApp chat", "Let customers message you from your website.")}
-          ${feature("analytics", "Google Analytics", "See where your visitors come from.")}
-          ${feature("facebook", "Facebook Pixel", "Measure your Facebook and Instagram ads.")}
-          ${feature("star", "Product reviews", "Show ratings and reviews on product pages.")}
-        </div></div>`,
-    },
-
-    channels: {
-      title: "Sales channels",
-      render: () => `${head("Sales channels", "Every place you sell.")}
-        <div class="card"><div class="mk-list" style="padding:12px 22px">
-          <a class="mk-item" href="#/website"><span class="mk-ico">${icon("store")}</span><span class="t"><b>Online Store</b><span>${store.published ? "Live at " + esc(siteUrl()) : "Not published yet"}</span></span>${store.published ? '<span class="tag green">Live</span>' : '<span class="tag yellow">Draft</span>'}${icon("chevronRight")}</a>
-          ${Object.entries(CHANNELS).map(([id, c]) => `<a class="mk-item" href="#/${id}"><span class="mk-ico">${icon(c.icon)}</span><span class="t"><b>${c.name}</b><span>${c.short}</span></span><span class="tag gray">Coming soon</span>${icon("chevronRight")}</a>`).join("")}
-        </div></div></div>`,
     },
 
     help: {
@@ -568,105 +576,12 @@
         </div>`;
       },
     },
-
-    settings: {
-      title: "Settings",
-      render: () => {
-        const st = store.settings;
-        const freeDomain = account.billing === "yearly" && account.plan !== "starter";
-        return `${head("Settings", "Your store details, domain and payment options.")}
-          <form id="settings-form">
-            <div class="grid-2">
-              <div class="card"><div class="card-head"><span class="card-title">Store details</span></div><div class="card-body">
-                <div class="row">
-                  <div class="field"><label for="s-business">Business name</label><input class="input" id="s-business" name="business" value="${esc(account.business)}"></div>
-                  <div class="field"><label for="s-owner">Your name</label><input class="input" id="s-owner" name="owner" value="${esc(account.name)}"></div>
-                  <div class="field"><label for="s-email">Email</label><input class="input" id="s-email" name="email" type="email" value="${esc(account.email)}"></div>
-                  <div class="field"><label for="s-phone">Phone</label><input class="input" id="s-phone" name="phone" value="${esc(st.phone)}"></div>
-                </div>
-                <div class="field" style="margin:0"><label for="s-address">Address</label><input class="input" id="s-address" name="address" value="${esc(st.address)}"></div>
-              </div></div>
-              <div class="card"><div class="card-head"><span class="card-title">Domain</span></div><div class="card-body">
-                <p class="muted" style="margin-bottom:12px">Free address: <b style="color:var(--ink)">${esc(st.subdomain)}.shopiliar.com</b></p>
-                ${freeDomain ? `<div class="callout green" style="margin-bottom:12px"><span class="ico">${icon("gift")}</span><div><b>Your yearly ${plan().name} plan includes a free custom domain.</b></div></div>` : ""}
-                <div style="display:flex;gap:8px;align-items:flex-end">
-                  <div class="field" style="flex:1;margin:0"><label for="s-domain">Custom domain</label><input class="input" id="s-domain" name="domain" placeholder="www.yourbusiness.com" value="${esc(st.domain)}"></div>
-                  <button type="button" class="btn" data-action="connect-domain">${st.domain ? "Update" : "Connect"}</button>
-                </div>
-                ${st.domain ? `<p style="margin-top:10px">${st.domainStatus === "connected" ? '<span class="tag dot green">Connected</span>' : '<span class="tag dot yellow">Waiting for DNS</span>'} <span class="muted small">${esc(st.domain)}</span></p>` : ""}
-              </div></div>
-            </div>
-            <div class="grid-2" style="margin-top:18px">
-              <div class="card"><div class="card-head"><span class="card-title">How customers pay</span></div><div class="card-body" style="padding-top:6px;padding-bottom:6px">
-                ${Object.entries(PAYMENT_LABEL).map(([k, l]) => `<div class="set-row"><span>${l}</span><label class="switch"><input type="checkbox" name="pay_${k}" ${st.payments[k] ? "checked" : ""} aria-label="${l}"><i></i></label></div>`).join("")}
-              </div></div>
-              <div class="card"><div class="card-head"><span class="card-title">Notifications</span></div><div class="card-body" style="padding-top:6px;padding-bottom:6px">
-                <div class="set-row"><span>Email me when a new order arrives<small>Sent to ${esc(account.email)}</small></span><label class="switch"><input type="checkbox" name="orderEmails" ${st.orderEmails ? "checked" : ""} aria-label="Order emails"><i></i></label></div>
-              </div></div>
-            </div>
-            <div style="margin-top:18px;display:flex;justify-content:flex-end"><button class="btn btn-primary" type="submit">Save settings</button></div>
-          </form>
-          <div class="card" style="margin-top:18px;border-color:#fecaca"><div class="card-head"><span class="card-title" style="color:var(--danger)">Danger zone</span></div>
-            <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="flex:1">Reset this store: deletes its products, orders and website changes.</span><button class="btn btn-danger" data-action="reset-all">Reset store</button></div></div>
-        </div>`;
-      },
-      mount: (view) => {
-        view.querySelector("#settings-form").addEventListener("submit", (e) => {
-          e.preventDefault();
-          const d = new FormData(e.target);
-          account.business = d.get("business").trim() || account.business;
-          account.name = d.get("owner").trim() || account.name;
-          account.email = d.get("email").trim() || account.email;
-          store.settings.phone = d.get("phone").trim();
-          store.settings.address = d.get("address").trim();
-          Object.keys(PAYMENT_LABEL).forEach((k) => { store.settings.payments[k] = e.target.elements["pay_" + k].checked; });
-          store.settings.orderEmails = e.target.elements.orderEmails.checked;
-          persist();
-          toast("Settings saved");
-        });
-      },
-    },
-
-    billing: {
-      title: "Plan & billing",
-      render: () => {
-        const p = plan();
-        const yearly = account.billing === "yearly";
-        return `${head("Plan & billing", "Your plan, what it includes and how much of it you're using.", `<button class="btn btn-primary" data-action="change-plan">Change plan</button>`)}
-          <div class="grid-2">
-            <div class="card"><div class="card-head"><span class="card-title">Current plan</span><span class="tag purple">${esc(p.name)}</span></div><div class="card-body">
-              <div class="stat-value" style="margin:0">${yearly ? `${taka(p.price * 12)}<span class="muted" style="font-size:14px;font-weight:500"> /year</span>` : `${taka(p.price)}<span class="muted" style="font-size:14px;font-weight:500"> /month</span>`}</div>
-              <p class="muted" style="margin-top:4px">${yearly ? "Billed yearly" : "Billed monthly"}${yearly && account.plan !== "starter" ? " · includes a free custom domain" : ""}</p>
-              <div class="divider"></div>
-              <ul class="todo">${["Free website", "Free CMS access", "Free support"].map((t) => `<li class="done"><span class="tick">${icon("check")}</span><span>${t}</span></li>`).join("")}</ul>
-            </div></div>
-            <div class="card"><div class="card-head"><span class="card-title">Usage</span></div><div class="card-body">
-              ${[["Pages", store.pages.length, p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
-                <div class="meter"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
-                <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
-            </div></div>
-          </div>
-          <div class="card" style="margin-top:18px"><div class="card-head"><span class="card-title">Compare plans</span></div>
-            <div class="table-wrap"><table class="table"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Free domain (yearly)</th><th class="t-actions"></th></tr></thead>
-            <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</td><td class="t-right">${taka(pl.price)}</td><td>${limitText(pl.pages)}</td><td>${pl.products == null ? "Unlimited" : id === "business" ? "150+" : pl.products}</td><td>${id === "starter" ? '<span class="muted">—</span>' : '<span class="tag green">Included</span>'}</td>
-              <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
-            <div class="card-foot muted small">Online payment for plans isn't connected yet — switching plans here updates your limits in this demo.</div>
-          </div>
-        </div>`;
-      },
-    },
   };
 
-  Object.entries(CHANNELS).forEach(([id, c]) => {
-    routes[id] = {
-      title: c.name,
-      render: () => `${head(c.name, c.short)}
-        <div class="card feature" style="max-width:640px"><span class="mk-ico">${icon(c.icon)}</span><h3>Connect ${c.name}</h3><p>${c.text}</p><button class="btn" disabled>Coming soon</button></div></div>`,
-    };
-  });
 
   // ---------- Actions ----------
-  const go = () => rerender();
+  // Re-render the page, and the Settings popup when it's open
+  const go = () => { rerender(); if (settingsEl) settingsEl.refresh(); };
   let rerender;
 
   const productDialog = (p) => {
@@ -727,7 +642,39 @@
     },
   });
 
+  const pixelById = (id) => PIXELS.find((p) => p.id === id);
   const actions = {
+    "pixel-edit": (el) => {
+      const p = pixelById(el.dataset.id), px = store.marketing.pixels[p.id];
+      dialog({
+        title: (px?.id ? "Edit " : "Connect ") + p.name,
+        body: `<p class="muted" style="margin-bottom:14px">${esc(p.covers)}.</p>
+          <div class="field"><label for="px-id">${esc(p.label)}</label><input class="input" id="px-id" name="id" required placeholder="${esc(p.placeholder)}" value="${esc(px?.id || "")}" autocomplete="off" spellcheck="false"></div>
+          <p class="muted small" style="margin:-6px 0 14px">Where to find it: ${esc(p.where)}</p>`,
+        submit: px?.id ? "Save" : "Connect",
+        onSubmit: (v) => {
+          const id = normalizePixelId(p, v.id);
+          if (!p.pattern.test(id)) { toast(`That doesn't look like a ${p.label} — it should look like ${p.placeholder}`); return false; }
+          store.marketing.pixels[p.id] = { id, on: true };
+          persist(); go(); toast(p.name + (px?.id ? " saved" : " connected"));
+        },
+      });
+    },
+    "pixel-remove": async (el) => {
+      const p = pixelById(el.dataset.id);
+      if (await confirm(`Remove ${p.name}?`, "Its code will be taken off your website.", "Remove")) { delete store.marketing.pixels[p.id]; persist(); go(); toast(p.name + " removed"); }
+    },
+    "view-code": () => {
+      const code = trackingCode(store.marketing);
+      dialog({
+        title: "Code added to your website",
+        size: "lg",
+        submit: "",
+        body: !code.head && !code.body ? `<p class="muted" style="padding-bottom:14px">Nothing yet. Connect a pixel or add custom code first.</p>`
+          : `<p class="muted" style="margin-bottom:10px">This goes in the &lt;head&gt; of every page:</p><pre class="code-view">${esc(code.head || "—")}</pre>
+             <p class="muted" style="margin:14px 0 10px">And this at the end of the &lt;body&gt;:</p><pre class="code-view" style="margin-bottom:14px">${esc(code.body || "—")}</pre>`,
+      });
+    },
     "add-discount": () => dialog({
       title: "Create discount",
       body: `<div class="field"><label>Code</label><input class="input" name="code" required maxlength="20" placeholder="e.g. EID20" style="text-transform:uppercase"></div>
@@ -834,6 +781,174 @@
     },
   };
 
+  // ---------- Settings popup ----------
+  const SETTINGS_TABS = [
+    ["general", "General", "store"],
+    ["billing", "Plan & billing", "billing"],
+    ["domain", "Domain", "globe"],
+    ["payments", "Payments", "money"],
+    ["notifications", "Notifications", "bellRing"],
+    ["security", "Account & security", "lock"],
+  ];
+  const settingsTab = {
+    general: () => `<form data-form="general">
+        <h2>General</h2><p class="muted">Your store details. Customers see these on your website.</p>
+        <div class="row">
+          <div class="field"><label for="s-business">Store name</label><input class="input" id="s-business" name="business" required maxlength="80" value="${esc(account.business)}"></div>
+          <div class="field"><label for="s-owner">Your name</label><input class="input" id="s-owner" name="owner" required maxlength="80" value="${esc(account.name)}"></div>
+          <div class="field"><label for="s-email">Account email</label><input class="input" id="s-email" name="email" type="email" required value="${esc(account.email)}"></div>
+          <div class="field"><label for="s-phone">Store phone</label><input class="input" id="s-phone" name="phone" maxlength="30" value="${esc(store.settings.phone)}"></div>
+        </div>
+        <div class="field"><label for="s-address">Store address</label><input class="input" id="s-address" name="address" maxlength="160" value="${esc(store.settings.address)}"></div>
+        <div class="row">
+          <div class="field"><label>Currency</label><input class="input" value="Bangladeshi Taka (৳)" disabled></div>
+          <div class="field"><label>Time zone</label><input class="input" value="Asia/Dhaka (GMT+6)" disabled></div>
+        </div>
+        <div class="s-foot"><button class="btn btn-primary" type="submit">Save</button></div>
+      </form>`,
+    billing: () => {
+      const p = plan(), yearly = account.billing === "yearly";
+      return `<h2>Plan &amp; billing</h2><p class="muted">Your plan and how much of it you're using.</p>
+        <div class="s-card">
+          <div class="s-plan"><div><span class="tag green">${esc(p.name)} plan</span>
+            <div class="stat-value" style="margin-top:8px">${yearly ? taka(p.price * 12) + '<span class="muted" style="font-size:14px;font-weight:500"> /year</span>' : taka(p.price) + '<span class="muted" style="font-size:14px;font-weight:500"> /month</span>'}</div>
+            <p class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${yearly && account.plan !== "starter" ? " · includes a free custom domain" : ""}</p></div>
+            <button class="btn btn-primary" type="button" data-action="change-plan">Change plan</button></div>
+          ${[["Pages", store.pages.length, p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
+            <div class="meter" style="margin-top:14px"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
+            <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
+        </div>
+        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th class="t-actions"></th></tr></thead>
+          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(pl.price)}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td>
+            <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" type="button" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
+        <p class="muted small">Online payment for plans isn't connected yet, so switching plans changes your limits straight away.</p>`;
+    },
+    domain: () => {
+      const st = store.settings, freeDomain = account.billing === "yearly" && account.plan !== "starter";
+      return `<h2>Domain</h2><p class="muted">Where customers find your website.</p>
+        <div class="s-card"><b>Free address</b><p class="muted" style="margin-top:4px">${esc(st.subdomain)}.shopiliar.com</p></div>
+        ${freeDomain ? `<div class="callout green"><span class="ico">${icon("gift")}</span><div><b>Your yearly ${esc(plan().name)} plan includes a free custom domain.</b></div></div>` : ""}
+        <div class="s-card">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div class="field" style="flex:1;margin:0;min-width:200px"><label for="s-domain">Custom domain</label><input class="input" id="s-domain" placeholder="www.yourbusiness.com" value="${esc(st.domain)}"></div>
+            <button type="button" class="btn btn-primary" data-action="connect-domain">${st.domain ? "Update" : "Connect"}</button>
+          </div>
+          ${st.domain ? `<p style="margin-top:10px">${st.domainStatus === "connected" ? '<span class="tag dot green">Connected</span>' : '<span class="tag dot yellow">Waiting for DNS</span>'} <span class="muted small">${esc(st.domain)}</span></p>` : ""}
+        </div>`;
+    },
+    payments: () => `<form data-form="payments">
+        <h2>Payments</h2><p class="muted">Choose how customers can pay you.</p>
+        <div class="s-card" style="padding-top:4px;padding-bottom:4px">${Object.entries(PAYMENT_LABEL).map(([k, l]) => `<div class="set-row"><span>${l}</span><label class="switch"><input type="checkbox" name="pay_${k}" ${store.settings.payments[k] ? "checked" : ""} aria-label="${l}"><i></i></label></div>`).join("")}</div>
+        <div class="s-foot"><button class="btn btn-primary" type="submit">Save</button></div>
+      </form>`,
+    notifications: () => `<form data-form="notifications">
+        <h2>Notifications</h2><p class="muted">What we tell you about, and where.</p>
+        <div class="s-card" style="padding-top:4px;padding-bottom:4px">
+          <div class="set-row"><span>Email me when a new order arrives<small>Sent to ${esc(account.email)}</small></span><label class="switch"><input type="checkbox" name="orderEmails" ${store.settings.orderEmails ? "checked" : ""} aria-label="Order emails"><i></i></label></div>
+          <div class="set-row"><span>Email me when a product is running out<small>When stock drops to 3 or fewer</small></span><label class="switch"><input type="checkbox" name="stockEmails" ${store.settings.stockEmails ? "checked" : ""} aria-label="Low stock emails"><i></i></label></div>
+        </div>
+        <div class="s-foot"><button class="btn btn-primary" type="submit">Save</button></div>
+      </form>`,
+    security: () => `<form data-form="password">
+        <h2>Account &amp; security</h2><p class="muted">Signed in as <b>${esc(account.email)}</b>.</p>
+        <div class="s-card">
+          <b>${account.hasPassword ? "Change password" : "Set a password"}</b>
+          <p class="muted small" style="margin:2px 0 12px">${account.hasPassword ? "You'll stay signed in here. Other devices are signed out." : "You sign in with Google. Add a password to sign in with your email too."}</p>
+          ${account.hasPassword ? `<div class="field"><label for="s-cur">Current password</label><input class="input" id="s-cur" name="current" type="password" required autocomplete="current-password"></div>` : ""}
+          <div class="field"><label for="s-new">New password</label><input class="input" id="s-new" name="password" type="password" minlength="8" required autocomplete="new-password" placeholder="At least 8 characters"></div>
+          <button class="btn btn-primary" type="submit">${account.hasPassword ? "Change password" : "Set password"}</button>
+        </div>
+      </form>
+      <div class="s-card danger">
+        <b>Reset store</b>
+        <p class="muted small" style="margin:2px 0 12px">Deletes all products, orders, customers, pages and website changes. Your account stays.</p>
+        <button class="btn btn-danger" type="button" data-action="reset-all">Reset store</button>
+      </div>`,
+  };
+
+  let settingsEl = null;
+  const openSettings = (tab = "general") => {
+    if (!settingsTab[tab]) tab = "general";
+    toggleMenu(false);
+    if (settingsEl) settingsEl.remove();
+    const prevFocus = document.activeElement;
+    const wrap = document.createElement("div");
+    wrap.className = "overlay settings-overlay";
+    wrap.innerHTML = `<div class="dialog settings" role="dialog" aria-modal="true" aria-label="Settings">
+        <aside class="s-nav"><div class="s-title">Settings</div>${SETTINGS_TABS.map(([id, label, ico]) => `<button type="button" data-tab="${id}">${icon(ico)}${label}</button>`).join("")}</aside>
+        <section class="s-body"><button type="button" class="icon-btn s-close" data-close aria-label="Close settings">${icon("x")}</button><div class="s-content"></div></section>
+      </div>`;
+    const content = wrap.querySelector(".s-content");
+    const show = (name) => {
+      tab = name;
+      wrap.querySelectorAll("[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
+      content.innerHTML = settingsTab[name]();
+    };
+    const close = () => { wrap.remove(); settingsEl = null; document.removeEventListener("keydown", onKey, true); rerender(); if (prevFocus) prevFocus.focus(); };
+    // Capture Escape first so a dialog opened on top (e.g. Change plan) closes on its own
+    const onKey = (e) => { if (e.key === "Escape" && !document.querySelector(".overlay:not(.settings-overlay)")) close(); };
+    document.addEventListener("keydown", onKey, true);
+    wrap.addEventListener("click", async (e) => {
+      if (e.target === wrap || e.target.closest("[data-close]")) return close();
+      const t = e.target.closest("[data-tab]");
+      if (t) return show(t.dataset.tab);
+      const a = e.target.closest("[data-action]");
+      if (a && actions[a.dataset.action]) { e.preventDefault(); await actions[a.dataset.action](a); }
+    });
+    wrap.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = e.target, d = new FormData(f);
+      if (f.dataset.form === "general") {
+        account.business = d.get("business").trim() || account.business;
+        account.name = d.get("owner").trim() || account.name;
+        account.email = d.get("email").trim() || account.email;
+        store.settings.phone = d.get("phone").trim();
+        store.settings.address = d.get("address").trim();
+      } else if (f.dataset.form === "payments") {
+        Object.keys(PAYMENT_LABEL).forEach((k) => { store.settings.payments[k] = f.elements["pay_" + k].checked; });
+      } else if (f.dataset.form === "notifications") {
+        store.settings.orderEmails = f.elements.orderEmails.checked;
+        store.settings.stockEmails = f.elements.stockEmails.checked;
+      } else if (f.dataset.form === "password") {
+        const btn = f.querySelector("[type=submit]");
+        btn.disabled = true;
+        const res = await fetch("/api/password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ current: d.get("current") || "", password: d.get("password") }) });
+        const data = await res.json().catch(() => ({}));
+        btn.disabled = false;
+        if (!res.ok) { toast(data.error || "Couldn't change your password."); return; }
+        account.hasPassword = true;
+        show("security");
+        toast("Password saved");
+        return;
+      }
+      persist();
+      const ok = await saveNow();
+      show(tab);
+      if (ok) toast("Settings saved");
+    });
+    wrap.refresh = () => show(tab);
+    document.body.appendChild(wrap);
+    settingsEl = wrap;
+    show(tab);
+    wrap.querySelector(`[data-tab="${tab}"]`).focus();
+  };
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-settings]");
+    if (!b) return;
+    e.preventDefault();
+    document.querySelector(".app").classList.remove("nav-open");
+    openSettings(b.dataset.settings);
+  });
+  // Old links like #/settings or #/billing open the popup
+  const settingsFromHash = () => {
+    const m = /^#\/(settings|billing)$/.exec(location.hash);
+    if (!m) return false;
+    history.replaceState(null, "", "#/home");
+    openSettings(m[1] === "billing" ? "billing" : "general");
+    return true;
+  };
+  window.addEventListener("hashchange", settingsFromHash);
+
   const view = document.getElementById("view");
   view.addEventListener("click", (e) => {
     const el = e.target.closest("[data-action]");
@@ -844,6 +959,10 @@
   view.addEventListener("change", (e) => {
     const el = e.target;
     if (el.dataset.action === "range") { range = Number(el.value); go(); }
+    if (el.dataset.action === "pixel-on") {
+      const p = pixelById(el.dataset.id);
+      store.marketing.pixels[p.id].on = el.checked; persist(); go(); toast(`${p.name} ${el.checked ? "is active" : "is paused"}`);
+    }
     if (el.dataset.action === "discount-active") {
       const d = store.discounts.find((x) => x.id === el.dataset.id);
       d.active = el.checked; persist(); toast(`${d.code} ${d.active ? "is active" : "is paused"}`);
@@ -879,5 +998,6 @@
 
   hydrateIcons();
   refreshChrome();
-  rerender = router(routes, "home");
+  if (/^#\/(settings|billing)$/.test(location.hash)) { const tab = location.hash.endsWith("billing") ? "billing" : "general"; history.replaceState(null, "", "#/home"); rerender = router(routes, "home"); openSettings(tab); }
+  else rerender = router(routes, "home");
 })();
