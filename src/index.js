@@ -43,7 +43,7 @@ async function api(request, env, url) {
     if (request.headers.get("Origin") !== url.origin) return json({ error: "Bad origin." }, 403);
     if (!(request.headers.get("Content-Type") || "").includes("application/json")) return json({ error: "Expected JSON." }, 415);
   }
-  if ((route === "POST /api/signup" || route === "POST /api/signin") && env.AUTH_LIMITER) {
+  if ((route === "POST /api/signup" || route === "POST /api/signin" || route === "POST /api/password") && env.AUTH_LIMITER) {
     const { success } = await env.AUTH_LIMITER.limit({ key: request.headers.get("CF-Connecting-IP") || "unknown" });
     if (!success) return json({ error: "Too many attempts. Please wait a minute and try again." }, 429);
   }
@@ -57,6 +57,7 @@ async function api(request, env, url) {
     case "GET /api/auth/google": return googleStart(env, url);
     case "GET /api/auth/google/callback": return googleCallback(request, env, url);
     case "PUT /api/store": return saveStore(request, env);
+    case "POST /api/password": return changePassword(request, env);
     default: return json({ error: "Not found." }, 404);
   }
 }
@@ -158,6 +159,27 @@ async function saveStore(request, env) {
       .bind(user.id, JSON.stringify(body.store), now),
   ]);
   return json({ account: publicAccount({ ...user, ...next }), savedAt: now });
+}
+
+async function changePassword(request, env) {
+  const user = await currentUser(request, env);
+  if (!user) return json({ error: "Not signed in." }, 401);
+  const body = await readJson(request);
+  const password = String(body.password || "");
+  if (password.length < 8 || password.length > 200) return json({ error: "Password must be at least 8 characters." }, 400);
+  // Accounts made with Google have no password yet and can set one without the current one
+  if (user.password_hash) {
+    const hash = await hashPassword(String(body.current || "").slice(0, 200), unb64(user.password_salt));
+    if (!safeEqual(hash, user.password_hash)) return json({ error: "Your current password is wrong." }, 400);
+  }
+  const salt = randomBytes(16);
+  const keep = await sha256(getCookie(request, SESSION_COOKIE));
+  await env.DB.batch([
+    env.DB.prepare("UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?").bind(await hashPassword(password, salt), b64(salt), user.id),
+    // Sign out every other device
+    env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token_hash != ?").bind(user.id, keep),
+  ]);
+  return json({ ok: true });
 }
 
 // ---------- Google sign-in (OAuth 2.0 / OpenID Connect) ----------
@@ -264,6 +286,7 @@ async function withSession(env, userId, remember, res) {
 
 const publicAccount = (u) => ({
   name: u.name, business: u.business, email: u.email, plan: u.plan, billing: u.billing, template: u.template, createdAt: u.created_at,
+  hasPassword: !!u.password_hash,
 });
 
 // ---------- Helpers ----------

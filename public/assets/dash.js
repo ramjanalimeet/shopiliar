@@ -53,7 +53,7 @@ const Dash = (() => {
         <div class="dialog-head"><h3>${esc(title)}</h3><button type="button" class="icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
         <div class="dialog-body">${body}</div>
         <div class="dialog-foot">
-          <button type="button" class="btn" data-close>Cancel</button>
+          <button type="button" class="btn" data-close>${submit ? "Cancel" : "Close"}</button>
           ${submit ? `<button type="submit" class="btn ${danger ? "btn-danger" : "btn-primary"}">${esc(submit)}</button>` : ""}
         </div>
       </form>`;
@@ -157,17 +157,14 @@ const Dash = (() => {
     barchart: '<path d="M6 20v-6M12 20V10M18 20V4"/>',
     megaphone: '<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 8a5 5 0 0 1 0 8M18 5a9 9 0 0 1 0 14"/>',
     discount: '<path d="M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9-2.5-1.7 1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z"/><path d="M9 15l6-6M9.5 9.5h.01M14.5 14.5h.01"/>',
-    pos: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M8 6h8v4H8zM8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>',
-    button: '<rect x="2" y="6" width="20" height="12" rx="3"/><path d="M8 12h8"/><path d="M15 18l2 4 1-2.2 2.2-.8-4-1.6"/>',
-    facebook: '<circle cx="12" cy="12" r="10"/><path d="M15 8h-2a2 2 0 0 0-2 2v12M8.5 13.5h6"/>',
-    instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01"/>',
-    google: '<path d="M20.5 12.2c0-.6-.1-1.2-.2-1.7H12v3.3h4.8a4.2 4.2 0 0 1-1.8 2.7"/><path d="M15 16.5A5.5 5.5 0 1 1 15.6 8"/><path d="M12 22a10 10 0 1 1 7-17"/>',
     help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
     chevronRight: '<path d="m9 6 6 6-6 6"/>',
     chevronDown: '<path d="m6 9 6 6 6-6"/>',
     calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
     mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/>',
-    star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
+    code: '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    bellRing: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
     arrowUp: '<path d="M12 19V5M5 12l7-7 7 7"/>',
     arrowDown: '<path d="M12 5v14M19 12l-7 7-7-7"/>',
     store: '<path d="M3 9 4.5 4h15L21 9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v9h14v-9M10 21v-5h4v5"/>',
@@ -197,6 +194,62 @@ const Dash = (() => {
   // null means unlimited
   const limitText = (n) => (n == null ? "Unlimited" : String(n));
   const withinLimit = (limit, count) => limit == null || count < limit;
+
+  // Ad and analytics pixels a store owner can connect from Marketing.
+  // IDs are checked against `pattern`, so they are safe to drop into the snippets below.
+  const PIXELS = [
+    { id: "meta", name: "Meta Pixel", covers: "Facebook, Instagram, Messenger & Threads ads", color: "#0866ff", letter: "f", label: "Pixel ID", placeholder: "123456789012345", pattern: /^\d{10,20}$/, where: "Meta Events Manager → Data sources → your pixel → Settings." },
+    { id: "ga4", name: "Google Analytics 4", covers: "Visitors, traffic sources and sales reports", color: "#e37400", letter: "GA", label: "Measurement ID", placeholder: "G-XXXXXXXXXX", pattern: /^G-[A-Z0-9]{4,12}$/, upper: true, where: "Google Analytics → Admin → Data streams → your website." },
+    { id: "gads", name: "Google Ads", covers: "Search, YouTube, Shopping & Display ads", color: "#1a73e8", letter: "G", label: "Conversion ID", placeholder: "AW-123456789", pattern: /^AW-\d{6,12}$/, upper: true, where: "Google Ads → Goals → Conversions → Tag setup → Google tag." },
+    { id: "gtm", name: "Google Tag Manager", covers: "Manage many tags from one place", color: "#246fdb", letter: "TM", label: "Container ID", placeholder: "GTM-XXXXXXX", pattern: /^GTM-[A-Z0-9]{4,10}$/, upper: true, where: "Tag Manager → your container ID at the top of the workspace." },
+    { id: "tiktok", name: "TikTok Pixel", covers: "TikTok ads", color: "#111111", letter: "T", label: "Pixel ID", placeholder: "C4ABCDEFGHIJK12345", pattern: /^[A-Z0-9]{15,25}$/, upper: true, where: "TikTok Ads Manager → Tools → Events → Web events → your pixel." },
+    { id: "snapchat", name: "Snap Pixel", covers: "Snapchat ads", color: "#f7d000", letter: "S", label: "Pixel ID", placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", pattern: /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/, lower: true, where: "Snapchat Ads Manager → Events Manager → your pixel." },
+    { id: "pinterest", name: "Pinterest Tag", covers: "Pinterest ads", color: "#e60023", letter: "P", label: "Tag ID", placeholder: "2612345678901", pattern: /^\d{10,16}$/, where: "Pinterest Ads → Conversions → Tag manager." },
+    { id: "x", name: "X (Twitter) Pixel", covers: "X ads", color: "#000000", letter: "X", label: "Pixel ID", placeholder: "o1abc", pattern: /^[a-z0-9]{4,12}$/, lower: true, where: "X Ads → Tools → Events manager → your pixel." },
+    { id: "linkedin", name: "LinkedIn Insight Tag", covers: "LinkedIn ads", color: "#0a66c2", letter: "in", label: "Partner ID", placeholder: "1234567", pattern: /^\d{4,10}$/, where: "LinkedIn Campaign Manager → Analyze → Insight Tag." },
+    { id: "microsoft", name: "Microsoft Advertising (UET)", covers: "Bing, Microsoft Start & Outlook ads", color: "#00a4ef", letter: "M", label: "UET tag ID", placeholder: "12345678", pattern: /^\d{5,12}$/, where: "Microsoft Advertising → Tools → UET tag." },
+    { id: "reddit", name: "Reddit Pixel", covers: "Reddit ads", color: "#ff4500", letter: "r", label: "Pixel ID", placeholder: "t2_abc123", pattern: /^(t2_)?[a-z0-9_]{5,20}$/, lower: true, where: "Reddit Ads → Events Manager → your pixel." },
+  ];
+  const normalizePixelId = (p, v) => { v = String(v || "").trim(); return p.upper ? v.toUpperCase() : p.lower ? v.toLowerCase() : v; };
+
+  // The code added to every page of a published store: { head, body }
+  const trackingCode = (marketing = {}) => {
+    const on = {};
+    PIXELS.forEach((p) => {
+      const px = (marketing.pixels || {})[p.id];
+      if (px && px.on && p.pattern.test(px.id)) on[p.id] = px.id;
+    });
+    const head = [];
+    const body = [];
+    if (on.gtm) {
+      head.push(`<!-- Google Tag Manager -->\n<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${on.gtm}');</script>`);
+      body.push(`<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${on.gtm}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>`);
+    }
+    const gtagIds = [on.ga4, on.gads].filter(Boolean);
+    if (gtagIds.length) {
+      head.push(`<!-- Google tag (Analytics / Ads) -->\n<script async src="https://www.googletagmanager.com/gtag/js?id=${gtagIds[0]}"></script>\n<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());${gtagIds.map((id) => `gtag('config','${id}');`).join("")}</script>`);
+    }
+    if (on.meta) {
+      head.push(`<!-- Meta Pixel -->\n<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${on.meta}');fbq('track','PageView');</script>`);
+      body.push(`<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${on.meta}&ev=PageView&noscript=1"></noscript>`);
+    }
+    if (on.tiktok) head.push(`<!-- TikTok Pixel -->\n<script>!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=d.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=d.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};ttq.load('${on.tiktok}');ttq.page();}(window,document,'ttq');</script>`);
+    if (on.snapchat) head.push(`<!-- Snap Pixel -->\n<script>(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};a.queue=[];var s='script',r=t.createElement(s);r.async=!0;r.src=n;var u=t.getElementsByTagName(s)[0];u.parentNode.insertBefore(r,u);})(window,document,'https://sc-static.net/scevent.min.js');snaptr('init','${on.snapchat}');snaptr('track','PAGE_VIEW');</script>`);
+    if (on.pinterest) {
+      head.push(`<!-- Pinterest Tag -->\n<script>!function(e){if(!window.pintrk){window.pintrk=function(){window.pintrk.queue.push(Array.prototype.slice.call(arguments))};var n=window.pintrk;n.queue=[],n.version="3.0";var t=document.createElement("script");t.async=!0,t.src=e;var r=document.getElementsByTagName("script")[0];r.parentNode.insertBefore(t,r)}}("https://s.pinimg.com/ct/core.js");pintrk('load','${on.pinterest}');pintrk('page');</script>`);
+      body.push(`<noscript><img height="1" width="1" style="display:none" alt="" src="https://ct.pinterest.com/v3/?event=init&tid=${on.pinterest}&noscript=1"></noscript>`);
+    }
+    if (on.x) head.push(`<!-- X Pixel -->\n<script>!function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments)},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='https://static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');twq('config','${on.x}');</script>`);
+    if (on.linkedin) {
+      head.push(`<!-- LinkedIn Insight Tag -->\n<script>_linkedin_partner_id="${on.linkedin}";window._linkedin_data_partner_ids=window._linkedin_data_partner_ids||[];window._linkedin_data_partner_ids.push(_linkedin_partner_id);(function(l){if(!l){window.lintrk=function(a,b){window.lintrk.q.push([a,b])};window.lintrk.q=[]}var s=document.getElementsByTagName("script")[0];var b=document.createElement("script");b.type="text/javascript";b.async=true;b.src="https://snap.licdn.com/li.lms-analytics/insight.min.js";s.parentNode.insertBefore(b,s)})(window.lintrk);</script>`);
+      body.push(`<noscript><img height="1" width="1" style="display:none" alt="" src="https://px.ads.linkedin.com/collect/?pid=${on.linkedin}&fmt=gif"></noscript>`);
+    }
+    if (on.microsoft) head.push(`<!-- Microsoft Advertising UET -->\n<script>(function(w,d,t,r,u){var f,n,i;w[u]=w[u]||[],f=function(){var o={ti:"${on.microsoft}",enableAutoSpaTracking:true};o.q=w[u],w[u]=new UET(o),w[u].push("pageLoad")},n=d.createElement(t),n.src=r,n.async=1,n.onload=n.onreadystatechange=function(){var s=this.readyState;s&&s!=="loaded"&&s!=="complete"||(f(),n.onload=n.onreadystatechange=null)},i=d.getElementsByTagName(t)[0],i.parentNode.insertBefore(n,i)})(window,document,"script","//bat.bing.com/bat.js","uetq");</script>`);
+    if (on.reddit) head.push(`<!-- Reddit Pixel -->\n<script>!function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js",t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);rdt('init','${on.reddit}');rdt('track','PageVisit');</script>`);
+    if (marketing.headCode) head.push("<!-- Your custom code -->\n" + marketing.headCode);
+    if (marketing.bodyCode) body.push("<!-- Your custom code -->\n" + marketing.bodyCode);
+    return { head: head.join("\n\n"), body: body.join("\n\n") };
+  };
 
   // Mini website renderer used for live previews.
   // site: { name, bg, text, accent, font, layout, headline, sub, cta, showProducts, showAbout, showContact, about, phone, email, address }
@@ -228,5 +281,5 @@ const Dash = (() => {
     return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 < 128;
   };
 
-  return { esc, taka, uid, day, daysAgo, initials, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, TEMPLATES, CATEGORIES, PLANS, limitText, withinLimit, siteHTML, isDark };
+  return { esc, taka, uid, day, daysAgo, initials, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, TEMPLATES, CATEGORIES, PLANS, PIXELS, normalizePixelId, trackingCode, limitText, withinLimit, siteHTML, isDark };
 })();
