@@ -1,6 +1,6 @@
-# Shopiliar
+# Shopilier
 
-Marketing site for Shopiliar — create your business website online.
+Marketing site for Shopilier — create your business website online.
 
 Static HTML/CSS/JS, no build step. Site files live in `public/`. Open `public/index.html` in a browser or serve the folder:
 

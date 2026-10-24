@@ -1,4 +1,4 @@
-// Shopiliar Worker: serves the static site from public/ and the account API.
+// Shopilier Worker: serves the static site from public/ and the account API.
 // Accounts, sessions and each user's store dashboard live in D1 (see schema.sql).
 const SESSION_COOKIE = "shopiliar_session";
 const REMEMBER_DAYS = 30;

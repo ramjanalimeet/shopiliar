@@ -1,4 +1,4 @@
--- Shopiliar accounts. Apply with:
+-- Shopilier accounts. Apply with:
 --   npx wrangler d1 execute shopiliar-db --remote --file=schema.sql
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
