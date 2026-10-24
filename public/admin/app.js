@@ -818,8 +818,8 @@
             <div class="meter" style="margin-top:14px"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
             <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
         </div>
-        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th class="t-actions"></th></tr></thead>
-          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(pl.price)}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td>
+        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Sales</th><th class="t-actions"></th></tr></thead>
+          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(pl.price)}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td><td>Unlimited</td>
             <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" type="button" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
         <p class="muted small">Online payment for plans isn't connected yet, so switching plans changes your limits straight away.</p>`;
     },
