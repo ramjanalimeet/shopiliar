@@ -191,7 +191,7 @@ button { font: inherit; cursor: pointer; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .picked { display: inline-block; font-size: 13px; font-weight: 600; color: #4b3fb8; background: var(--violet-soft); border-radius: 999px; padding: 4px 12px; margin-bottom: 14px; }
-.picked[hidden] { display: none; }
+.picked[hidden], [data-google][hidden] { display: none; }
 
 /* ---------- Inner pages ---------- */
 .page-head { text-align: center; padding: 40px 0 10px; }

@@ -8,6 +8,7 @@ const MAX_STORE_BYTES = 1_000_000;
 const PLANS = ["starter", "business", "pro"];
 const SLUG = /^[a-z0-9-]{1,60}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GOOGLE_STATE_COOKIE = "shopiliar_google";
 
 export default {
   async fetch(request, env) {
@@ -52,6 +53,9 @@ async function api(request, env, url) {
     case "POST /api/signin": return signin(request, env);
     case "POST /api/signout": return signout(request, env);
     case "GET /api/me": return me(request, env);
+    case "GET /api/config": return json({ google: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) });
+    case "GET /api/auth/google": return googleStart(env, url);
+    case "GET /api/auth/google/callback": return googleCallback(request, env, url);
     case "PUT /api/store": return saveStore(request, env);
     default: return json({ error: "Not found." }, 404);
   }
@@ -100,6 +104,7 @@ async function signin(request, env) {
   // Hash even when the email is unknown so response time doesn't reveal which emails exist
   const salt = row ? unb64(row.password_salt) : new Uint8Array(16);
   const hash = await hashPassword(password, salt);
+  if (row && !row.password_hash) return json({ error: "This account signs in with Google. Use Continue with Google." }, 401);
   if (!row || !safeEqual(hash, row.password_hash)) return json({ error: "Wrong email or password." }, 401);
 
   await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND expires_at < ?").bind(row.id, Date.now()).run();
@@ -155,6 +160,88 @@ async function saveStore(request, env) {
   return json({ account: publicAccount({ ...user, ...next }), savedAt: now });
 }
 
+// ---------- Google sign-in (OAuth 2.0 / OpenID Connect) ----------
+// Needs the GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET secrets, and
+// <site>/api/auth/google/callback listed as a redirect URI in Google Cloud.
+const googleRedirectUri = (url) => url.origin + "/api/auth/google/callback";
+const nextPath = (v) => (/^\/admin(\/|$)/.test(v || "") ? v : "/admin/");
+
+async function googleStart(env, url) {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return redirect(url, "/signin.html?error=google_off");
+  const state = b64(randomBytes(24));
+  // Remember what was picked on the Templates / Pricing pages for a new account
+  const pick = {
+    state,
+    next: nextPath(url.searchParams.get("next")),
+    plan: url.searchParams.get("plan"),
+    billing: url.searchParams.get("billing"),
+    template: url.searchParams.get("template"),
+  };
+  const auth = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  auth.search = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: googleRedirectUri(url),
+    response_type: "code",
+    scope: "openid email profile",
+    state,
+    prompt: "select_account",
+  });
+  const res = redirect(url, auth.href);
+  res.headers.append("Set-Cookie", `${GOOGLE_STATE_COOKIE}=${b64(new TextEncoder().encode(JSON.stringify(pick)))}; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
+  return res;
+}
+
+async function googleCallback(request, env, url) {
+  const fail = (code) => {
+    const res = redirect(url, "/signin.html?error=" + code);
+    res.headers.append("Set-Cookie", `${GOOGLE_STATE_COOKIE}=; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
+    return res;
+  };
+  let pick = null;
+  try { pick = JSON.parse(new TextDecoder().decode(unb64(getCookie(request, GOOGLE_STATE_COOKIE) || ""))); } catch { /* missing or bad cookie */ }
+  const code = url.searchParams.get("code");
+  if (!pick || !code || url.searchParams.get("state") !== pick.state) return fail("google");
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code, client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: googleRedirectUri(url), grant_type: "authorization_code",
+    }),
+  });
+  if (!tokenRes.ok) { console.error("Google token exchange failed", tokenRes.status, await tokenRes.text()); return fail("google"); }
+  const { id_token } = await tokenRes.json();
+  // The ID token came straight from Google over TLS, so its claims can be read without checking the signature
+  let claims;
+  try { claims = JSON.parse(new TextDecoder().decode(unb64(id_token.split(".")[1]))); } catch { return fail("google"); }
+  const issuerOk = claims.iss === "https://accounts.google.com" || claims.iss === "accounts.google.com";
+  if (!issuerOk || claims.aud !== env.GOOGLE_CLIENT_ID || claims.exp * 1000 < Date.now()) return fail("google");
+  if (!claims.email || claims.email_verified !== true) return fail("google_email");
+
+  const email = String(claims.email).toLowerCase();
+  let user = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
+  if (!user) {
+    const name = clean(claims.name, 80) || email.split("@")[0];
+    user = {
+      id: crypto.randomUUID(), email, name, business: name + "'s Store",
+      plan: PLANS.includes(pick.plan) ? pick.plan : "starter",
+      billing: pick.billing === "yearly" ? "yearly" : "monthly",
+      template: SLUG.test(pick.template || "") ? pick.template : "luxe-store",
+      created_at: new Date().toISOString(),
+    };
+    // No password: this account signs in with Google (an empty hash never matches)
+    await env.DB.prepare(
+      "INSERT INTO users (id, email, name, business, password_hash, password_salt, plan, billing, template, created_at) VALUES (?, ?, ?, ?, '', '', ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING"
+    ).bind(user.id, user.email, user.name, user.business, user.plan, user.billing, user.template, user.created_at).run();
+    user = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
+  }
+
+  const res = redirect(url, nextPath(pick.next));
+  res.headers.append("Set-Cookie", `${GOOGLE_STATE_COOKIE}=; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
+  return withSession(env, user.id, true, res);
+}
+
 // ---------- Sessions ----------
 async function currentUser(request, env) {
   const token = getCookie(request, SESSION_COOKIE);
@@ -183,6 +270,8 @@ const publicAccount = (u) => ({
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
 });
+// Response.redirect() has read-only headers, so build it by hand to add cookies
+const redirect = (url, to) => new Response(null, { status: 302, headers: { Location: new URL(to, url).href, "Cache-Control": "no-store" } });
 const readJson = async (request) => { try { return (await request.json()) || {}; } catch { return {}; } };
 const clean = (v, max) => String(v ?? "").trim().slice(0, max);
 

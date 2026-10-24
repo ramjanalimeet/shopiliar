@@ -196,6 +196,20 @@ document.querySelectorAll("form[data-auth]").forEach((form) => {
   const msg = form.querySelector(".form-msg");
   const say = (text) => { msg.style.color = "#e03e3e"; msg.textContent = text; };
 
+  // Google sign-in shows once the Worker has Google keys; it carries the same picks
+  const google = new URLSearchParams({ next });
+  ["plan", "billing", "template"].forEach((k) => { if (params.get(k)) google.set(k, params.get(k)); });
+  form.querySelectorAll("a[data-google]").forEach((a) => { a.href = "/api/auth/google?" + google; });
+  fetch("/api/config").then((r) => r.json()).then((c) => {
+    if (c.google) form.querySelectorAll("[data-google]").forEach((el) => { el.hidden = false; });
+  }).catch(() => {});
+  const GOOGLE_ERRORS = {
+    google: "Google sign-in didn't finish. Please try again.",
+    google_email: "Your Google email isn't verified yet.",
+    google_off: "Google sign-in isn't set up yet. Please use your email and password.",
+  };
+  if (GOOGLE_ERRORS[params.get("error")]) say(GOOGLE_ERRORS[params.get("error")]);
+
   // Already signed in: picking a template from the Templates page applies it in the dashboard
   if (form.dataset.auth === "signup") {
     signedIn.then((yes) => { if (yes) location.href = "/admin/" + (template ? "?template=" + template : ""); });

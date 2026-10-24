@@ -24,6 +24,11 @@ Shared styles live in `public/assets/styles.css`, shared behaviour in `public/as
 - `GET /api/me` — the signed-in account and its store
 - `PUT /api/store` — saves the store dashboard and account details
 
+- `GET /api/auth/google` — "Continue with Google". The button appears once the Worker has Google keys:
+  create an OAuth client (Web application) in Google Cloud with the redirect URI
+  `https://<your site>/api/auth/google/callback`, then run
+  `npx wrangler secret put GOOGLE_CLIENT_ID` and `npx wrangler secret put GOOGLE_CLIENT_SECRET`
+
 `/admin` redirects to sign in when there is no session. Local development:
 
 ```
