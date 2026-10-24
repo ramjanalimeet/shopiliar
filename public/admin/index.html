@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Dashboard · Shopiliar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/dash.css">
+</head>
+<body data-app-name="Shopiliar">
+  <div class="app">
+    <aside class="side" aria-label="Dashboard navigation">
+      <div class="ws">
+        <span class="ws-logo" id="ws-logo">S</span>
+        <div><div class="ws-name" id="ws-name">My Store</div><div class="ws-sub" id="ws-plan">Business plan</div></div>
+      </div>
+      <a class="nav-item" data-route="home" href="#/home"><span class="ico">🏠</span>Home</a>
+      <a class="nav-item" data-route="orders" href="#/orders"><span class="ico">🧾</span>Orders<span class="count" id="count-orders"></span></a>
+      <a class="nav-item" data-route="products" href="#/products"><span class="ico">📦</span>Products<span class="count" id="count-products"></span></a>
+      <a class="nav-item" data-route="customers" href="#/customers"><span class="ico">👥</span>Customers</a>
+      <a class="nav-item" data-route="analytics" href="#/analytics"><span class="ico">📈</span>Analytics</a>
+      <div class="side-group">
+        <div class="side-label">Website</div>
+        <a class="nav-item" data-route="website" href="#/website"><span class="ico">🎨</span>Customize website</a>
+        <a class="nav-item" data-route="pages" href="#/pages"><span class="ico">📄</span>Pages<span class="count" id="count-pages"></span></a>
+      </div>
+      <div class="side-group">
+        <div class="side-label">Account</div>
+        <a class="nav-item" data-route="settings" href="#/settings"><span class="ico">⚙️</span>Settings</a>
+        <a class="nav-item" data-route="billing" href="#/billing"><span class="ico">💳</span>Plan &amp; billing</a>
+      </div>
+      <div class="side-foot">
+        <a class="nav-item" href="../index.html"><span class="ico">↗</span>Shopiliar home</a>
+        <button class="nav-item" type="button" id="logout"><span class="ico">⎋</span>Log out</button>
+      </div>
+    </aside>
+    <div class="main">
+      <div class="topbar">
+        <button class="menu-btn" type="button" aria-label="Open menu">☰</button>
+        <div class="crumbs"><span id="crumb-store">My Store</span><span>/</span><b id="crumb">Home</b></div>
+        <span class="demo-badge" title="Data is saved in this browser until the backend is connected">Saved in this browser</span>
+        <a class="btn btn-sm" href="#/website">🎨 Customize</a>
+      </div>
+      <div class="scroll"><div id="view"></div></div>
+    </div>
+  </div>
+  <script src="../assets/dash.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

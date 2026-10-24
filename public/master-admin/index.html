@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Master admin · Shopiliar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/dash.css">
+</head>
+<body data-app-name="Shopiliar Master">
+  <div class="app">
+    <aside class="side" aria-label="Master admin navigation">
+      <div class="ws">
+        <span class="ws-logo">S</span>
+        <div><div class="ws-name">Shopiliar HQ</div><div class="ws-sub">Master admin</div></div>
+      </div>
+      <a class="nav-item" data-route="overview" href="#/overview"><span class="ico">📊</span>Overview</a>
+      <a class="nav-item" data-route="users" href="#/users"><span class="ico">👥</span>Users<span class="count" id="count-users"></span></a>
+      <a class="nav-item" data-route="templates" href="#/templates"><span class="ico">🧩</span>Templates<span class="count" id="count-templates"></span></a>
+      <a class="nav-item" data-route="payments" href="#/payments"><span class="ico">💰</span>Payments<span class="count" id="count-due"></span></a>
+      <a class="nav-item" data-route="plans" href="#/plans"><span class="ico">🏷️</span>Plans &amp; pricing</a>
+      <div class="side-group">
+        <div class="side-label">Platform</div>
+        <a class="nav-item" data-route="activity" href="#/activity"><span class="ico">🕒</span>Activity</a>
+        <a class="nav-item" data-route="settings" href="#/settings"><span class="ico">⚙️</span>Settings</a>
+      </div>
+      <div class="side-foot">
+        <a class="nav-item" href="../index.html"><span class="ico">↗</span>View website</a>
+        <a class="nav-item" href="../admin/"><span class="ico">🏪</span>Open user dashboard</a>
+      </div>
+    </aside>
+    <div class="main">
+      <div class="topbar">
+        <button class="menu-btn" type="button" aria-label="Open menu">☰</button>
+        <div class="crumbs"><span>Shopiliar HQ</span><span>/</span><b id="crumb">Overview</b></div>
+        <span class="demo-badge" title="Data is saved in this browser until the backend is connected">Saved in this browser</span>
+      </div>
+      <div class="scroll"><div id="view"></div></div>
+    </div>
+  </div>
+  <script src="../assets/dash.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

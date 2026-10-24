@@ -169,13 +169,39 @@ if (billing) {
   });
 }
 
-// Auth forms (front-end only until a backend is connected)
+// Auth forms. Until a backend is connected the account is kept in this browser
+// (the password is never stored) and the user lands on their dashboard at /admin.
 document.querySelectorAll("form[data-auth]").forEach((form) => {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const msg = form.querySelector(".form-msg");
-    if (msg) msg.textContent = form.dataset.auth === "signup"
-      ? "Account form submitted — connect a backend to create real accounts."
-      : "Sign-in form submitted — connect a backend to authenticate.";
+    const email = form.querySelector("#email").value.trim().toLowerCase();
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem("shopiliar.account") || "null"); } catch (err) { /* ignore */ }
+
+    if (form.dataset.auth === "signup") {
+      const params = new URLSearchParams(location.search);
+      const plan = /^(starter|business|pro)$/.test(params.get("plan") || "") ? params.get("plan") : "starter";
+      const template = /^[a-z0-9-]+$/.test(params.get("template") || "") ? params.get("template") : "luxe-store";
+      const account = {
+        name: form.querySelector("#name").value.trim(),
+        business: form.querySelector("#business").value.trim() || form.querySelector("#name").value.trim() + "'s Store",
+        email, plan, billing: params.get("billing") === "yearly" ? "yearly" : "monthly", template,
+        createdAt: new Date().toISOString(),
+      };
+      try {
+        localStorage.setItem("shopiliar.account", JSON.stringify(account));
+        localStorage.removeItem("shopiliar.store");
+      } catch (err) { /* storage unavailable */ }
+      location.href = "admin/";
+      return;
+    }
+
+    if (saved && !saved.demo && saved.email === email) {
+      location.href = "admin/";
+    } else if (msg) {
+      msg.style.color = "#e03e3e";
+      msg.textContent = "No account with that email on this device yet — please sign up first.";
+    }
   });
 });
