@@ -184,6 +184,8 @@
   .modal { padding: 20px; }
   .device-stage { height: calc(125vh - 160px); }
 }
+@media (min-width: 1600px) { .device-stage { height: calc(111.2vh - 160px); } }
+@media (min-width: 1900px) { .device-stage { height: calc(100vh - 160px); } }
 
 /* ---------- Live (responsive) template preview ----------
    Inside the device frame the preview becomes a real page: px sizes and

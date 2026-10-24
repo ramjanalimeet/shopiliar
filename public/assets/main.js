@@ -1,10 +1,18 @@
 // Mobile menu
-document.querySelectorAll(".menu-toggle").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const header = btn.closest(".site-header");
-    const open = header.classList.toggle("open");
+document.querySelectorAll(".site-header").forEach((header) => {
+  const btn = header.querySelector(".menu-toggle");
+  if (!btn) return;
+  const setOpen = (open) => {
+    header.classList.toggle("open", open);
     btn.setAttribute("aria-expanded", String(open));
+    btn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  };
+  btn.addEventListener("click", () => setOpen(!header.classList.contains("open")));
+  header.addEventListener("click", (e) => { if (e.target.closest(".main-nav a, .auth a")) setOpen(false); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && header.classList.contains("open")) { setOpen(false); btn.focus(); }
   });
+  matchMedia("(min-width: 761px)").addEventListener("change", (e) => { if (e.matches) setOpen(false); });
 });
 
 // Templates: search, category, sort and preview
