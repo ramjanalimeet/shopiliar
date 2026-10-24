@@ -21,7 +21,7 @@
 /* Sidebar */
 .store-admin .side { width: 264px; padding: 18px 14px; border-right: 0; }
 .store-admin .brand { font-size: 22px; padding: 4px 10px 22px; }
-.store-admin .brand-mark { width: 34px; height: 34px; border-radius: 9px; font-size: 20px; }
+.store-admin .brand-mark { width: 34px; height: 34px; }
 .store-admin .nav-item { height: 42px; font-size: 15px; color: var(--ink); font-weight: 500; gap: 14px; padding: 0 14px; border-radius: 10px; }
 .store-admin .nav-item .i { width: 21px; height: 21px; color: #3d3d3d; }
 .store-admin .nav-item:hover { background: var(--hover); }
