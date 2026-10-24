@@ -10,7 +10,7 @@ python3 -m http.server 8000 -d public
 
 ## Pages
 - `index.html` — Home
-- `templates.html` — Templates (with category filters)
+- `templates.html` — Templates (search, sort, category filters and live preview)
 - `pricing.html` — Pricing (monthly / yearly toggle, FAQ)
 - `signin.html` — Sign in
 - `signup.html` — Sign up

@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Templates — Shopiliar</title>
-  <meta name="description" content="Beautiful website templates for every business.">
+  <meta name="description" content="Browse free, professionally designed website templates for stores, businesses, portfolios, restaurants and more.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/templates.css">
 </head>
 <body>
   <header class="site-header">
@@ -27,46 +28,216 @@
     </div>
   </header>
 
-  <main class="container">
-    <section class="page-head">
-      <span class="pill">Templates</span>
-      <h1>Beautiful templates<br><span class="gradient-text">for every business</span></h1>
-      <p>Pick a professionally designed starting point, add your content, and launch in minutes.</p>
-    </section>
-    <div class="filters" data-filters>
-      <button class="on" data-cat="all">All</button>
-      <button data-cat="store">Online Store</button>
-      <button data-cat="business">Business</button>
-      <button data-cat="portfolio">Portfolio</button>
-      <button data-cat="food">Food &amp; Drink</button>
+  <main class="container tpl-page">
+    <h1 class="tpl-title">Get all templates for <span class="gradient-text">free</span></h1>
+
+    <div class="tpl-tools">
+      <label class="search">
+        <span class="sr-only">Search templates</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="tpl-search" placeholder="Search templates (e.g. restaurant, portfolio, store...)" autocomplete="off">
+      </label>
+      <label class="sort">
+        <span class="sr-only">Sort templates</span>
+        <select id="tpl-sort">
+          <option value="pop">Popular</option>
+          <option value="new">Newest</option>
+          <option value="az">A–Z</option>
+        </select>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </label>
     </div>
-    <section class="tpl-grid">
-      <article class="tpl-card" data-cat="store">
-        <div class="thumb thumb-store"></div>
-        <div class="tpl-meta"><div><h3>Modern Store</h3><p>Furniture & home goods</p></div><a href="signup.html">Use template →</a></div>
+
+    <div class="chips" id="tpl-chips" role="group" aria-label="Template categories">
+      <button type="button" data-cat="all" class="on" aria-pressed="true">All</button>
+      <button type="button" data-cat="store" aria-pressed="false">Online Store</button>
+      <button type="button" data-cat="business" aria-pressed="false">Business</button>
+      <button type="button" data-cat="portfolio" aria-pressed="false">Portfolio</button>
+      <button type="button" data-cat="food" aria-pressed="false">Food &amp; Drink</button>
+      <button type="button" data-cat="services" aria-pressed="false">Services</button>
+      <button type="button" data-cat="blog" aria-pressed="false">Blog</button>
+      <button type="button" data-cat="agency" aria-pressed="false">Agency</button>
+      <button type="button" data-cat="landing" aria-pressed="false">Landing Page</button>
+      <button type="button" data-cat="personal" aria-pressed="false">Personal</button>
+    </div>
+
+    <section class="tpl-list" id="tpl-list">
+      <article class="tcard" data-cat="store" data-name="Luxe Store" data-pop="0" data-new="4" data-search="luxe store a modern and elegant online store template for fashion, beauty and lifestyle brands. fashion beauty lifestyle shop ecommerce clothing">
+        <div class="shot t-luxe"><div class="s-nav"><b>LUXE</b><nav><span>Home</span><span>Shop</span><span>Collections</span><span>About</span></nav><div class=s-ico><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg></div></div><div class="s-copy"><h4>Modern<br>Fashion<br>For Everyone</h4><p>Premium quality. Timeless style.</p><div class="s-btns"><span class="s-btn">Shop Now</span></div></div><div class="s-art"><svg viewBox="0 0 200 220" preserveAspectRatio="xMidYMid slice"><defs>
+<linearGradient id="lx-coat" x1="0" x2="1"><stop offset="0" stop-color="#e3c6a5"/><stop offset=".55" stop-color="#d4b08a"/><stop offset="1" stop-color="#b98f68"/></linearGradient>
+<linearGradient id="lx-hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b4630"/><stop offset="1" stop-color="#3d2617"/></linearGradient></defs>
+<ellipse cx="106" cy="58" rx="27" ry="31" fill="url(#lx-hair)"/>
+<path d="M84 60c-2 26 4 40 22 44s26-8 24-40z" fill="url(#lx-hair)"/>
+<path d="M96 86h20v16H96z" fill="#e9c4a6"/>
+<path d="M60 112c6-14 26-20 46-20s40 6 48 20l14 108H46z" fill="url(#lx-coat)"/>
+<path d="M106 96c-8 6-14 16-16 30l16 94h4l-2-94c0-12 2-22-2-30z" fill="#c69d75" opacity=".55"/>
+<path d="M140 102c4 30 8 56 10 74" stroke="#1e1a17" stroke-width="3.5" fill="none"/>
+<path d="M136 170h34l4 44h-42z" fill="#1e1a17"/>
+<path d="M140 176h26" stroke="#3a332e" stroke-width="1.5"/></svg></div></div>
+        <div class="tcard-foot">
+          <div><h3>Luxe Store</h3><p>A modern and elegant online store template for fashion, beauty and lifestyle brands.</p></div>
+          <a class="btn btn-dark" href="signup.html?template=luxe-store">Use this template</a>
+          <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
+        </div>
       </article>
-      <article class="tpl-card" data-cat="business">
-        <div class="thumb thumb-agency"></div>
-        <div class="tpl-meta"><div><h3>Business Agency</h3><p>Consulting & services</p></div><a href="signup.html">Use template →</a></div>
+      <article class="tcard" data-cat="landing" data-name="SaaS Landing" data-pop="1" data-new="2" data-search="saas landing a clean and modern template for saas, startup and tech businesses. saas startup tech software app product">
+        <div class="shot t-saas"><div class="s-nav"><b>SaaSly</b><nav><span>Home</span><span>Features</span><span>Pricing</span><span>Blog</span></nav><span class=s-cta>Get Started</span></div><div class="s-copy"><h4>Build Better<br>Products Faster</h4><p>All the tools you need to launch, grow and manage your business.</p></div><div class="s-art"><svg viewBox="0 0 300 66" preserveAspectRatio="xMidYMax meet">
+<rect x="0" y="0" width="300" height="80" rx="5" fill="#fff" stroke="#e3e1f3"/>
+<rect x="0" y="0" width="22" height="80" rx="5" fill="#1b1f3b"/>
+<g fill="#5a6390"><circle cx="11" cy="14" r="2.3"/><circle cx="11" cy="25" r="2.3"/><circle cx="11" cy="36" r="2.3"/><circle cx="11" cy="47" r="2.3"/></g>
+<text x="30" y="12" font-size="6" font-weight="700" fill="#111">Dashboard</text>
+<text x="84" y="12" font-size="4.5" fill="#999">Home</text>
+<rect x="262" y="6" width="30" height="8" rx="3" fill="#4b5cf0"/><text x="267" y="11.6" font-size="3.6" fill="#fff">Get Started</text>
+<g font-size="4" fill="#666"><text x="34" y="26">Products</text><text x="34" y="36">Orders</text><text x="34" y="46">Customers</text><text x="34" y="56">Analytics</text></g>
+<rect x="30" y="20" width="44" height="9" rx="2" fill="#eef0fb" opacity=".6"/>
+<g font-size="3.8" fill="#999"><text x="84" y="28">Total Revenue</text><text x="150" y="28">Orders</text><text x="216" y="28">Customers</text></g>
+<g font-size="6.4" font-weight="700" fill="#111"><text x="84" y="37">$12,480</text><text x="150" y="37">320</text><text x="216" y="37">1,245</text></g>
+<path d="M84 60l14-6 10 3 14-9 12 5 16-10 12 6 16-10 14 4 18-9 14 3 18-7" stroke="#6b7cf6" stroke-width="1.4" fill="none"/>
+<g font-size="3.6" fill="#999"><text x="84" y="48">Orders</text><text x="216" y="48">Orders</text></g></svg></div></div>
+        <div class="tcard-foot">
+          <div><h3>SaaS Landing</h3><p>A clean and modern template for SaaS, startup and tech businesses.</p></div>
+          <a class="btn btn-dark" href="signup.html?template=saas-landing">Use this template</a>
+          <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
+        </div>
       </article>
-      <article class="tpl-card" data-cat="portfolio">
-        <div class="thumb thumb-portfolio"></div>
-        <div class="tpl-meta"><div><h3>Portfolio</h3><p>Creatives & freelancers</p></div><a href="signup.html">Use template →</a></div>
+      <article class="tcard" data-cat="food" data-name="Bistro Restaurant" data-pop="2" data-new="5" data-search="bistro restaurant a stylish template for restaurants, cafes and food businesses. restaurant cafe food menu dining bar">
+        <div class="shot t-bistro"><div class="s-art"><svg viewBox="0 0 270 220" preserveAspectRatio="xMaxYMid slice"><defs>
+<radialGradient id="bi-glow" cx=".62" cy=".55" r=".7"><stop offset="0" stop-color="#5a3a1c"/><stop offset=".5" stop-color="#24170d"/><stop offset="1" stop-color="#0f0c0a"/></radialGradient>
+<linearGradient id="bi-fade" x1="0" x2="1"><stop offset="0" stop-color="#0f0c0a"/><stop offset=".35" stop-color="#0f0c0a" stop-opacity="0"/></linearGradient>
+<linearGradient id="bi-salmon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f08a4b"/><stop offset=".6" stop-color="#d4582a"/><stop offset="1" stop-color="#8f2f14"/></linearGradient>
+<radialGradient id="bi-plate" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#3a3632"/><stop offset="1" stop-color="#151311"/></radialGradient></defs>
+<rect width="270" height="220" fill="url(#bi-glow)"/>
+<g fill="#ffb35c" opacity=".25"><circle cx="236" cy="78" r="5"/><circle cx="252" cy="96" r="3"/><circle cx="214" cy="70" r="2.5"/></g>
+<ellipse cx="170" cy="160" rx="100" ry="48" fill="url(#bi-plate)"/>
+<ellipse cx="170" cy="156" rx="78" ry="34" fill="#2a2622"/>
+<g transform="rotate(-12 165 140)"><rect x="112" y="118" width="104" height="44" rx="14" fill="url(#bi-salmon)"/>
+<g stroke="#ffd0b0" stroke-width="2" opacity=".75"><path d="M130 120c-4 14-4 28 0 40"/><path d="M148 119c-4 14-4 28 0 42"/><path d="M166 119c-4 14-4 28 0 42"/><path d="M184 119c-4 14-4 28 0 42"/><path d="M200 120c-4 14-4 28 0 40"/></g>
+<rect x="112" y="118" width="104" height="10" rx="6" fill="#5b2a14" opacity=".55"/></g>
+<g fill="#4f8a2b"><circle cx="160" cy="104" r="9"/><circle cx="174" cy="96" r="10"/><circle cx="190" cy="104" r="9"/><circle cx="168" cy="110" r="8"/><circle cx="182" cy="112" r="8"/></g>
+<g fill="#7cbf3b"><circle cx="166" cy="98" r="5"/><circle cx="184" cy="100" r="5"/><circle cx="176" cy="88" r="5"/></g>
+<g fill="#f2e7c9"><circle cx="128" cy="168" r="2"/><circle cx="214" cy="170" r="2"/><circle cx="222" cy="150" r="1.6"/></g>
+<rect width="270" height="220" fill="url(#bi-fade)"/></svg></div><div class="s-nav"><b>Bistro</b><nav><span>Home</span><span>Menu</span><span>About</span><span>Contact</span></nav><span class=s-cta>Book a Table</span></div><div class="s-copy"><h4>Good Food<br>Brings People<br>Together</h4><p>Fresh ingredients. Amazing taste.<br>Unforgettable experience.</p><div class="s-btns"><span class="s-btn">View Menu</span><span class="s-btn ghost">Book a Table</span></div></div></div>
+        <div class="tcard-foot">
+          <div><h3>Bistro Restaurant</h3><p>A stylish template for restaurants, cafes and food businesses.</p></div>
+          <a class="btn btn-dark" href="signup.html?template=bistro-restaurant">Use this template</a>
+          <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
+        </div>
       </article>
-      <article class="tpl-card" data-cat="food">
-        <div class="thumb thumb-cafe"></div>
-        <div class="tpl-meta"><div><h3>Café & Bakery</h3><p>Restaurants & food</p></div><a href="signup.html">Use template →</a></div>
+      <article class="tcard" data-cat="portfolio" data-name="Nova Portfolio" data-pop="3" data-new="3" data-search="nova portfolio a minimalist portfolio template for creatives, designers and professionals. designer creative freelancer resume work">
+        <div class="shot t-nova"><div class="s-nav"><b>Nova</b><nav><span>Home</span><span>Work</span><span>About</span><span>Contact</span></nav></div><div class="s-copy"><small>Hi, I’m Alex.</small><h4>Product Designer<br>&amp; Creative Thinker</h4><p>I design digital experiences that<br>make a difference.</p><div class="s-btns"><span class="s-btn">View My Work</span></div></div><div class="s-art"><svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><defs>
+<linearGradient id="nv-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eeeef0"/><stop offset="1" stop-color="#c9cacd"/></linearGradient>
+<linearGradient id="nv-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ececee"/></linearGradient>
+<linearGradient id="nv-left" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7f7f8"/><stop offset="1" stop-color="#d7d8db"/></linearGradient>
+<linearGradient id="nv-right" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dedfe2"/><stop offset="1" stop-color="#b6b8bc"/></linearGradient>
+<filter id="nv-blur"><feGaussianBlur stdDeviation="6"/></filter></defs>
+<rect width="200" height="200" fill="url(#nv-bg)"/>
+<ellipse cx="112" cy="168" rx="70" ry="14" fill="#8e9094" opacity=".45" filter="url(#nv-blur)"/>
+<path d="M60 74l52-26 46 22-50 28z" fill="url(#nv-top)"/>
+<path d="M60 74l48 24-2 68-46-26z" fill="url(#nv-left)"/>
+<path d="M108 98l50-28-2 66-50 30z" fill="url(#nv-right)"/></svg></div></div>
+        <div class="tcard-foot">
+          <div><h3>Nova Portfolio</h3><p>A minimalist portfolio template for creatives, designers and professionals.</p></div>
+          <a class="btn btn-dark" href="signup.html?template=nova-portfolio">Use this template</a>
+          <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
+        </div>
       </article>
-      <article class="tpl-card" data-cat="business">
-        <div class="thumb thumb-fitness"></div>
-        <div class="tpl-meta"><div><h3>Fitness Studio</h3><p>Gyms & wellness</p></div><a href="signup.html">Use template →</a></div>
+      <article class="tcard" data-cat="agency" data-name="Growify Agency" data-pop="4" data-new="6" data-search="growify agency a modern template for agencies, consultancies and service-based businesses. agency consultancy marketing business services">
+        <div class="shot t-growify"><div class="s-nav"><b>Growify</b><nav><span>Home</span><span>Services</span><span>Work</span><span>About</span></nav><span class=s-cta>Get a Quote</span></div><div class="s-copy"><small>Digital Agency</small><h4>We Help Brands<br>Grow Online</h4><p>Strategy, design, and development<br>to take your business further.</p><div class="s-btns"><span class="s-btn">Get Started</span></div></div><div class="s-art"><svg viewBox="0 0 200 180" preserveAspectRatio="xMidYMid slice"><defs>
+<linearGradient id="gr-wall" x1="0" x2="1"><stop offset="0" stop-color="#fbfaf7"/><stop offset="1" stop-color="#ece8e1"/></linearGradient>
+<linearGradient id="gr-floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cdb79a"/><stop offset="1" stop-color="#a88c6b"/></linearGradient></defs>
+<rect width="200" height="180" fill="url(#gr-wall)"/>
+<rect x="12" y="10" width="78" height="112" fill="#f4f8fb" stroke="#d9d6cf" stroke-width="3"/>
+<path d="M51 10v112M12 50h78M12 88h78" stroke="#d9d6cf" stroke-width="2.4"/>
+<rect x="15" y="13" width="34" height="35" fill="#e7f0f6"/><rect x="53" y="52" width="34" height="34" fill="#eaf2f7"/>
+<rect y="132" width="200" height="48" fill="url(#gr-floor)"/>
+<g stroke="#2f6b2a" stroke-width="2.4" stroke-linecap="round"><path d="M178 132V70"/><path d="M178 92c-14-8-20-20-18-30M178 84c12-8 18-20 16-30M178 108c-16-4-24-14-24-24M178 104c14-4 20-14 20-24"/></g>
+<g fill="#3f8a34"><ellipse cx="160" cy="62" rx="9" ry="5" transform="rotate(-40 160 62)"/><ellipse cx="194" cy="54" rx="9" ry="5" transform="rotate(40 194 54)"/><ellipse cx="154" cy="84" rx="9" ry="5" transform="rotate(-30 154 84)"/><ellipse cx="198" cy="80" rx="9" ry="5" transform="rotate(30 198 80)"/><ellipse cx="178" cy="66" rx="5" ry="10"/></g>
+<path d="M168 132h20l-3 18h-14z" fill="#e8e2d8"/>
+<g fill="#2e7d32"><ellipse cx="8" cy="100" rx="10" ry="5" transform="rotate(-30 8 100)"/><ellipse cx="18" cy="108" rx="10" ry="5" transform="rotate(30 18 108)"/><ellipse cx="10" cy="118" rx="10" ry="5"/></g>
+<rect x="6" y="122" width="14" height="22" fill="#eae4da"/>
+<ellipse cx="104" cy="122" rx="56" ry="9" fill="#6b4a2f"/><rect x="48" y="118" width="112" height="6" fill="#5a3d25"/>
+<path d="M70 124l-4 34M138 124l4 34" stroke="#3b2a1c" stroke-width="3"/>
+<g fill="#1d1d1f"><path d="M58 112h18l-2 26H60z"/><path d="M130 112h18l-2 26h-14z"/><path d="M94 108h20l-2 22H96z"/></g>
+<g stroke="#1d1d1f" stroke-width="2.2"><path d="M60 138l-2 24M74 138l2 24M132 138l-2 24M146 138l2 24"/></g></svg></div></div>
+        <div class="tcard-foot">
+          <div><h3>Growify Agency</h3><p>A modern template for agencies, consultancies and service-based businesses.</p></div>
+          <a class="btn btn-dark" href="signup.html?template=growify-agency">Use this template</a>
+          <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
+        </div>
       </article>
-      <article class="tpl-card" data-cat="store">
-        <div class="thumb thumb-beauty"></div>
-        <div class="tpl-meta"><div><h3>Beauty Shop</h3><p>Skincare & cosmetics</p></div><a href="signup.html">Use template →</a></div>
+      <article class="tcard" data-cat="blog" data-name="Writely Blog" data-pop="5" data-new="1" data-search="writely blog a clean blog template for writers, creators and thought leaders. blog writer articles magazine news journal">
+        <div class="shot t-writely"><div class="s-nav"><b>Writely</b><nav><span>Home</span><span>Blog</span><span>About</span></nav><div class=s-ico><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg></div></div><div class="s-copy"><h4>Stories, Ideas<br>and Insights</h4><p>A blog about design, business,<br>productivity and life.</p><div class="s-btns"><span class="s-btn">Read the Latest</span></div></div><div class="s-art"><svg viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice"><defs>
+<linearGradient id="wr-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fb5dc"/><stop offset="1" stop-color="#e3edf6"/></linearGradient>
+<linearGradient id="wr-lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b7ea1"/><stop offset="1" stop-color="#1f3b57"/></linearGradient>
+<linearGradient id="wr-mtn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7b8a9c"/><stop offset="1" stop-color="#3d4a5a"/></linearGradient></defs>
+<rect width="240" height="180" fill="url(#wr-sky)"/>
+<path d="M0 108l40-34 26 18 30-42 30 30 22-48 30 40 22-16 40 52z" fill="#9fb0c4"/>
+<path d="M30 112l50-46 22 18 34-48 40 52 20-14 44 38z" fill="url(#wr-mtn)"/>
+<path d="M136 36l-14 20 8-4 6 8 6-8 8 6z M80 66l-10 12 8-2 4 6 6-6z" fill="#fff"/>
+<path d="M136 36l-12 18 6-2 6 6z" fill="#f2f6fa"/>
+<rect y="110" width="240" height="70" fill="url(#wr-lake)"/>
+<path d="M30 112l50 30 22-10 34 30 40-34 20 8 44-24z" fill="#4c6680" opacity=".45"/>
+<g fill="#1a3324"><path d="M0 120l8-30 8 30zM10 124l10-40 10 40zM24 120l7-26 7 26z"/><path d="M196 120l9-34 9 34zM210 124l10-42 10 42zM226 120l7-28 7 28z"/></g>
+<rect y="118" width="240" height="2" fill="#dfe8f0" opacity=".5"/></svg></div></div>
+        <div class="tcard-foot">
+          <div><h3>Writely Blog</h3><p>A clean blog template for writers, creators and thought leaders.</p></div>
+          <a class="btn btn-dark" href="signup.html?template=writely-blog">Use this template</a>
+          <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
+        </div>
+      </article>
+      <article class="tcard" data-cat="services" data-name="Fixly Services" data-pop="6" data-new="7" data-search="fixly services a trustworthy template for repair, cleaning and local service businesses. services repair plumber cleaning home local booking">
+        <div class="shot t-fixly"><div class="s-nav"><b>Fixly</b><nav><span>Home</span><span>Services</span><span>Pricing</span><span>Contact</span></nav><span class=s-cta>Book Now</span></div><div class="s-copy"><small>Home Repair Experts</small><h4>Fast, Reliable<br>Home Services</h4><p>Book trusted local pros in<br>under 60 seconds.</p><div class="s-btns"><span class="s-btn">Book a Service</span></div></div><div class="s-art"><svg viewBox="0 0 200 170" preserveAspectRatio="xMidYMax meet">
+<rect x="34" y="70" width="132" height="100" rx="4" fill="#fff" stroke="#c7d6f5" stroke-width="2"/>
+<path d="M20 78l80-60 80 60" fill="none" stroke="#1d4ed8" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="86" y="112" width="30" height="58" rx="3" fill="#1d4ed8"/><circle cx="110" cy="142" r="2.4" fill="#fff"/>
+<rect x="48" y="92" width="26" height="24" rx="3" fill="#dbe7ff"/><rect x="128" y="92" width="26" height="24" rx="3" fill="#dbe7ff"/>
+<circle cx="160" cy="44" r="22" fill="#ffb020"/>
+<path d="M150 54l14-14m-4-6a7 7 0 109 9l-5-1-2-5z" stroke="#7a4b00" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg></div></div>
+        <div class="tcard-foot">
+          <div><h3>Fixly Services</h3><p>A trustworthy template for repair, cleaning and local service businesses.</p></div>
+          <a class="btn btn-dark" href="signup.html?template=fixly-services">Use this template</a>
+          <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
+        </div>
+      </article>
+      <article class="tcard" data-cat="landing" data-name="Launchly" data-pop="7" data-new="8" data-search="launchly a bold one-page template to launch a product and collect sign-ups. landing page launch product waitlist app">
+        <div class="shot t-launch"><div class="s-art"><svg viewBox="0 0 450 248" preserveAspectRatio="xMidYMid slice"><defs>
+<radialGradient id="la-a" cx=".2" cy=".9" r=".6"><stop offset="0" stop-color="#ff3d8b" stop-opacity=".55"/><stop offset="1" stop-color="#ff3d8b" stop-opacity="0"/></radialGradient>
+<radialGradient id="la-b" cx=".85" cy=".2" r=".55"><stop offset="0" stop-color="#5b5cf0" stop-opacity=".6"/><stop offset="1" stop-color="#5b5cf0" stop-opacity="0"/></radialGradient></defs>
+<rect width="450" height="248" fill="url(#la-a)"/><rect width="450" height="248" fill="url(#la-b)"/>
+<g fill="#fff" opacity=".6"><circle cx="60" cy="70" r="1.2"/><circle cx="390" cy="160" r="1.4"/><circle cx="330" cy="210" r="1"/><circle cx="120" cy="190" r="1"/><circle cx="420" cy="90" r="1"/></g></svg></div><div class="s-nav"><b>Launchly</b><nav><span>Features</span><span>Pricing</span><span>FAQ</span></nav><span class=s-cta>Join Waitlist</span></div><div class="s-copy"><h4>Launch Your Idea<br>This Weekend</h4><p>Everything you need to go from idea to paying customers.</p><div class="s-btns"><span class="s-btn">Get Early Access</span></div></div></div>
+        <div class="tcard-foot">
+          <div><h3>Launchly</h3><p>A bold one-page template to launch a product and collect sign-ups.</p></div>
+          <a class="btn btn-dark" href="signup.html?template=launchly-landing">Use this template</a>
+          <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
+        </div>
+      </article>
+      <article class="tcard" data-cat="personal" data-name="Mia Personal" data-pop="8" data-new="9" data-search="mia personal a warm personal site for your bio, links and contact details. personal profile bio link resume about me">
+        <div class="shot t-mia"><div class="s-nav"><b>Mia Chen</b><nav><span>About</span><span>Links</span><span>Contact</span></nav></div><div class="s-art"><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#f2c9a8"/>
+<path d="M22 48c0-24 14-36 30-36s28 14 28 36c0 14-4 26-4 40H26c0-14-4-24-4-40z" fill="#5a3322"/>
+<ellipse cx="51" cy="50" rx="17" ry="20" fill="#f6d2b8"/>
+<path d="M33 46c4-14 14-20 26-18 6 6 10 12 10 20-8-8-20-10-36-2z" fill="#5a3322"/>
+<path d="M18 100c4-20 18-28 33-28s29 8 33 28z" fill="#e0794f"/></svg></div><div class="s-copy"><h4>Hi, I’m Mia</h4><p>Writer, speaker &amp; coffee lover.</p></div></div>
+        <div class="tcard-foot">
+          <div><h3>Mia Personal</h3><p>A warm personal site for your bio, links and contact details.</p></div>
+          <a class="btn btn-dark" href="signup.html?template=mia-personal">Use this template</a>
+          <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
+        </div>
       </article>
     </section>
+    <p class="empty" id="tpl-empty" hidden>No templates match your search. Try another word or category.</p>
   </main>
+
+  <div class="modal" id="tpl-modal" hidden role="dialog" aria-modal="true" aria-labelledby="tpl-modal-title">
+    <div class="modal-box">
+      <div class="modal-bar">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <strong id="tpl-modal-title"></strong>
+        <a class="btn btn-dark" id="tpl-modal-use" href="signup.html">Use this template</a>
+        <button class="modal-close" type="button" aria-label="Close preview">×</button>
+      </div>
+      <div id="tpl-modal-shot"></div>
+    </div>
+  </div>
 
   <footer class="site-footer">
     <div class="container">
