@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Templates — Shopiliar</title>
+  <meta name="description" content="Beautiful website templates for every business.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html"><span class="brand-mark">S</span>Shopiliar</a>
+      <nav class="main-nav" aria-label="Main">
+        <a href="index.html">Home</a>
+        <a href="templates.html" class="active" aria-current="page">Templates</a>
+        <a href="pricing.html">Pricing</a>
+      </nav>
+      <div class="auth">
+        <a class="btn btn-outline" href="signin.html">Sign in</a>
+        <a class="btn btn-dark" href="signup.html">Sign up</a>
+      </div>
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="page-head">
+      <span class="pill">Templates</span>
+      <h1>Beautiful templates<br><span class="gradient-text">for every business</span></h1>
+      <p>Pick a professionally designed starting point, add your content, and launch in minutes.</p>
+    </section>
+    <div class="filters" data-filters>
+      <button class="on" data-cat="all">All</button>
+      <button data-cat="store">Online Store</button>
+      <button data-cat="business">Business</button>
+      <button data-cat="portfolio">Portfolio</button>
+      <button data-cat="food">Food &amp; Drink</button>
+    </div>
+    <section class="tpl-grid">
+      <article class="tpl-card" data-cat="store">
+        <div class="thumb thumb-store"></div>
+        <div class="tpl-meta"><div><h3>Modern Store</h3><p>Furniture & home goods</p></div><a href="signup.html">Use template →</a></div>
+      </article>
+      <article class="tpl-card" data-cat="business">
+        <div class="thumb thumb-agency"></div>
+        <div class="tpl-meta"><div><h3>Business Agency</h3><p>Consulting & services</p></div><a href="signup.html">Use template →</a></div>
+      </article>
+      <article class="tpl-card" data-cat="portfolio">
+        <div class="thumb thumb-portfolio"></div>
+        <div class="tpl-meta"><div><h3>Portfolio</h3><p>Creatives & freelancers</p></div><a href="signup.html">Use template →</a></div>
+      </article>
+      <article class="tpl-card" data-cat="food">
+        <div class="thumb thumb-cafe"></div>
+        <div class="tpl-meta"><div><h3>Café & Bakery</h3><p>Restaurants & food</p></div><a href="signup.html">Use template →</a></div>
+      </article>
+      <article class="tpl-card" data-cat="business">
+        <div class="thumb thumb-fitness"></div>
+        <div class="tpl-meta"><div><h3>Fitness Studio</h3><p>Gyms & wellness</p></div><a href="signup.html">Use template →</a></div>
+      </article>
+      <article class="tpl-card" data-cat="store">
+        <div class="thumb thumb-beauty"></div>
+        <div class="tpl-meta"><div><h3>Beauty Shop</h3><p>Skincare & cosmetics</p></div><a href="signup.html">Use template →</a></div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 Shopiliar. All rights reserved.</span>
+      <nav><a href="index.html">Home</a><a href="templates.html">Templates</a><a href="pricing.html">Pricing</a></nav>
+    </div>
+  </footer>
+  <script src="assets/main.js"></script>
+</body>
+</html>
