@@ -169,39 +169,74 @@ if (billing) {
   });
 }
 
-// Auth forms. Until a backend is connected the account is kept in this browser
-// (the password is never stored) and the user lands on their dashboard at /admin.
+// Accounts are kept by the Worker (src/index.js); the session is an HttpOnly cookie.
+const api = async (path, body) => {
+  const res = await fetch(path, body === undefined ? {} : {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
+  return data;
+};
+const signedIn = fetch("/api/me").then((r) => r.ok).catch(() => false);
+
+// Signed-in visitors get a Dashboard button instead of Sign in / Sign up
+signedIn.then((yes) => {
+  if (!yes) return;
+  document.querySelectorAll(".site-header .auth").forEach((el) => {
+    el.innerHTML = '<a class="btn btn-dark" href="/admin/">Dashboard</a>';
+  });
+});
+
 document.querySelectorAll("form[data-auth]").forEach((form) => {
-  form.addEventListener("submit", (e) => {
+  const params = new URLSearchParams(location.search);
+  const template = /^[a-z0-9-]+$/.test(params.get("template") || "") ? params.get("template") : "";
+  // Only send people back to pages inside their dashboard
+  const next = /^\/admin(\/|$)/.test(params.get("next") || "") ? params.get("next") : "/admin/";
+  const msg = form.querySelector(".form-msg");
+  const say = (text) => { msg.style.color = "#e03e3e"; msg.textContent = text; };
+
+  // Google sign-in shows once the Worker has Google keys; it carries the same picks
+  const google = new URLSearchParams({ next });
+  ["plan", "billing", "template"].forEach((k) => { if (params.get(k)) google.set(k, params.get(k)); });
+  form.querySelectorAll("a[data-google]").forEach((a) => { a.href = "/api/auth/google?" + google; });
+  fetch("/api/config").then((r) => r.json()).then((c) => {
+    if (c.google) form.querySelectorAll("[data-google]").forEach((el) => { el.hidden = false; });
+  }).catch(() => {});
+  const GOOGLE_ERRORS = {
+    google: "Google sign-in didn't finish. Please try again.",
+    google_email: "Your Google email isn't verified yet.",
+    google_off: "Google sign-in isn't set up yet. Please use your email and password.",
+  };
+  if (GOOGLE_ERRORS[params.get("error")]) say(GOOGLE_ERRORS[params.get("error")]);
+
+  // Already signed in: picking a template from the Templates page applies it in the dashboard
+  if (form.dataset.auth === "signup") {
+    signedIn.then((yes) => { if (yes) location.href = "/admin/" + (template ? "?template=" + template : ""); });
+  }
+
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const msg = form.querySelector(".form-msg");
-    const email = form.querySelector("#email").value.trim().toLowerCase();
-    let saved = null;
-    try { saved = JSON.parse(localStorage.getItem("shopiliar.account") || "null"); } catch (err) { /* ignore */ }
-
-    if (form.dataset.auth === "signup") {
-      const params = new URLSearchParams(location.search);
-      const plan = /^(starter|business|pro)$/.test(params.get("plan") || "") ? params.get("plan") : "starter";
-      const template = /^[a-z0-9-]+$/.test(params.get("template") || "") ? params.get("template") : "luxe-store";
-      const account = {
-        name: form.querySelector("#name").value.trim(),
-        business: form.querySelector("#business").value.trim() || form.querySelector("#name").value.trim() + "'s Store",
-        email, plan, billing: params.get("billing") === "yearly" ? "yearly" : "monthly", template,
-        createdAt: new Date().toISOString(),
-      };
-      try {
-        localStorage.setItem("shopiliar.account", JSON.stringify(account));
-        localStorage.removeItem("shopiliar.store");
-      } catch (err) { /* storage unavailable */ }
-      location.href = "admin/";
-      return;
-    }
-
-    if (saved && !saved.demo && saved.email === email) {
-      location.href = "admin/";
-    } else if (msg) {
-      msg.style.color = "#e03e3e";
-      msg.textContent = "No account with that email on this device yet — please sign up first.";
+    const button = form.querySelector("[type=submit]");
+    const val = (id) => (form.querySelector("#" + id)?.value || "").trim();
+    msg.textContent = "";
+    button.disabled = true;
+    try {
+      if (form.dataset.auth === "signup") {
+        await api("/api/signup", {
+          name: val("name"), business: val("business"), email: val("email"), password: form.querySelector("#password").value,
+          plan: params.get("plan"), billing: params.get("billing"), template,
+        });
+        location.href = "/admin/";
+      } else {
+        await api("/api/signin", {
+          email: val("email"), password: form.querySelector("#password").value, remember: form.querySelector("#remember")?.checked,
+        });
+        location.href = next;
+      }
+    } catch (err) {
+      say(err.message);
+      button.disabled = false;
     }
   });
 });
