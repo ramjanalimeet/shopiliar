@@ -53,7 +53,6 @@ async function api(request, env, url) {
     case "POST /api/signin": return signin(request, env);
     case "POST /api/signout": return signout(request, env);
     case "GET /api/me": return me(request, env);
-    case "GET /api/config": return json({ google: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) });
     case "GET /api/auth/google": return googleStart(env, url);
     case "GET /api/auth/google/callback": return googleCallback(request, env, url);
     case "PUT /api/store": return saveStore(request, env);

@@ -204,13 +204,10 @@ document.querySelectorAll("form[data-auth]").forEach((form) => {
   const msg = form.querySelector(".form-msg");
   const say = (text) => { msg.style.color = "#e03e3e"; msg.textContent = text; };
 
-  // Google sign-in shows once the Worker has Google keys; it carries the same picks
+  // Google sign-in carries the same template / plan picks
   const google = new URLSearchParams({ next });
   ["plan", "billing", "template"].forEach((k) => { if (params.get(k)) google.set(k, params.get(k)); });
   form.querySelectorAll("a[data-google]").forEach((a) => { a.href = "/api/auth/google?" + google; });
-  fetch("/api/config").then((r) => r.json()).then((c) => {
-    if (c.google) form.querySelectorAll("[data-google]").forEach((el) => { el.hidden = false; });
-  }).catch(() => {});
   const GOOGLE_ERRORS = {
     google: "Google sign-in didn't finish. Please try again.",
     google_email: "Your Google email isn't verified yet.",
