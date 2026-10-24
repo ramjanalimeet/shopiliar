@@ -13,7 +13,7 @@
   padding: 0 18px 0 50px; font: inherit; font-size: 15px; color: var(--ink);
 }
 .search input::placeholder { color: #8a909c; }
-.search input:focus, .sort select:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 4px rgba(123, 63, 228, .12); }
+.search input:focus, .sort select:focus { outline: none; border-color: var(--brand-text); box-shadow: 0 0 0 4px var(--brand-ring); }
 .sort { position: relative; }
 .sort select {
   appearance: none; -webkit-appearance: none; height: 48px; min-width: 130px; border: 1px solid #dfe2e8; border-radius: 10px;
