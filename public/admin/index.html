@@ -7,43 +7,47 @@
   <title>Dashboard · Shopiliar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/dash.css">
 </head>
 <body data-app-name="Shopiliar">
   <div class="app">
     <aside class="side" aria-label="Dashboard navigation">
+      <a class="brand" href="../index.html"><span class="brand-mark">S</span>Shopiliar</a>
       <div class="ws">
         <span class="ws-logo" id="ws-logo">S</span>
         <div><div class="ws-name" id="ws-name">My Store</div><div class="ws-sub" id="ws-plan">Business plan</div></div>
       </div>
-      <a class="nav-item" data-route="home" href="#/home"><span class="ico">🏠</span>Home</a>
-      <a class="nav-item" data-route="orders" href="#/orders"><span class="ico">🧾</span>Orders<span class="count" id="count-orders"></span></a>
-      <a class="nav-item" data-route="products" href="#/products"><span class="ico">📦</span>Products<span class="count" id="count-products"></span></a>
-      <a class="nav-item" data-route="customers" href="#/customers"><span class="ico">👥</span>Customers</a>
-      <a class="nav-item" data-route="analytics" href="#/analytics"><span class="ico">📈</span>Analytics</a>
+      <a class="nav-item" data-route="home" href="#/home"><span data-icon="home"></span>Dashboard</a>
+      <a class="nav-item" data-route="orders" href="#/orders"><span data-icon="orders"></span>Orders<span class="count" id="count-orders"></span></a>
+      <a class="nav-item" data-route="products" href="#/products"><span data-icon="products"></span>Products<span class="count" id="count-products"></span></a>
+      <a class="nav-item" data-route="customers" href="#/customers"><span data-icon="customers"></span>Customers</a>
+      <a class="nav-item" data-route="analytics" href="#/analytics"><span data-icon="analytics"></span>Analytics</a>
       <div class="side-group">
         <div class="side-label">Website</div>
-        <a class="nav-item" data-route="website" href="#/website"><span class="ico">🎨</span>Customize website</a>
-        <a class="nav-item" data-route="pages" href="#/pages"><span class="ico">📄</span>Pages<span class="count" id="count-pages"></span></a>
+        <a class="nav-item" data-route="website" href="#/website"><span data-icon="brush"></span>Customize website</a>
+        <a class="nav-item" data-route="pages" href="#/pages"><span data-icon="pages"></span>Pages<span class="count" id="count-pages"></span></a>
       </div>
       <div class="side-group">
         <div class="side-label">Account</div>
-        <a class="nav-item" data-route="settings" href="#/settings"><span class="ico">⚙️</span>Settings</a>
-        <a class="nav-item" data-route="billing" href="#/billing"><span class="ico">💳</span>Plan &amp; billing</a>
+        <a class="nav-item" data-route="settings" href="#/settings"><span data-icon="settings"></span>Settings</a>
+        <a class="nav-item" data-route="billing" href="#/billing"><span data-icon="billing"></span>Plan &amp; billing</a>
       </div>
       <div class="side-foot">
-        <a class="nav-item" href="../index.html"><span class="ico">↗</span>Shopiliar home</a>
-        <button class="nav-item" type="button" id="logout"><span class="ico">⎋</span>Log out</button>
+        <div class="me"><span id="me-avatar"></span><div><b id="me-name">Owner</b><span id="me-email"></span></div>
+          <button class="icon-btn" type="button" id="logout" aria-label="Log out" title="Log out"><span data-icon="logout"></span></button></div>
       </div>
     </aside>
     <div class="main">
-      <div class="topbar">
-        <button class="menu-btn" type="button" aria-label="Open menu">☰</button>
-        <div class="crumbs"><span id="crumb-store">My Store</span><span>/</span><b id="crumb">Home</b></div>
+      <header class="topbar">
+        <button class="top-icon menu-btn" type="button" aria-label="Open menu"><span data-icon="menu"></span></button>
+        <div class="crumbs"><span id="crumb-store">My Store</span><span class="sep">/</span><b id="crumb">Dashboard</b></div>
+        <label class="top-search"><span data-icon="search"></span><input id="top-search" type="search" placeholder="Search orders & products…" aria-label="Search orders and products"></label>
         <span class="demo-badge" title="Data is saved in this browser until the backend is connected">Saved in this browser</span>
-        <a class="btn btn-sm" href="#/website">🎨 Customize</a>
-      </div>
+        <a class="top-icon" href="#/orders" id="bell" aria-label="Pending orders" title="Pending orders"><span data-icon="bell"></span></a>
+        <a class="btn" href="#/website" id="view-site"><span data-icon="external"></span>My website</a>
+      </header>
       <div class="scroll"><div id="view"></div></div>
     </div>
   </div>

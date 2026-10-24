@@ -1,6 +1,6 @@
 // Shopiliar master dashboard (/master-admin): users, templates, payments and plans.
 (() => {
-  const { esc, taka, uid, day, daysAgo, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, siteHTML, limitText, CATEGORIES } = Dash;
+  const { esc, taka, uid, day, daysAgo, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, CATEGORIES } = Dash;
   const KEY = "shopiliar.master";
 
   // ---------- Data ----------
@@ -70,6 +70,9 @@
     document.getElementById("count-templates").textContent = db.templates.length;
     const due = db.payments.filter((p) => p.status !== "Paid").length;
     document.getElementById("count-due").textContent = due || "";
+    const bell = document.getElementById("bell");
+    bell.querySelector(".dot")?.remove();
+    if (due) bell.insertAdjacentHTML("beforeend", '<span class="dot"></span>');
   };
 
   // ---------- Helpers ----------
@@ -79,8 +82,14 @@
   const monthly = (u) => u.status === "active" ? (db.plans[u.plan]?.price || 0) : 0;
   const mrr = () => db.users.reduce((s, u) => s + monthly(u), 0);
   const userById = (id) => db.users.find((u) => u.id === id);
-  const pageHead = (icon, title, desc, cover) => `${cover ? '<div class="cover" style="background:linear-gradient(120deg,#e8deee,#d3e5ef 50%,#dbeddb)"></div>' : ""}<div class="page wide"><div class="page-icon">${icon}</div><h1 class="page-title">${esc(title)}</h1><p class="page-desc">${desc}</p>`;
-  const tplCover = (t, h = 132) => `<div class="g-cover" style="height:${h}px;background:linear-gradient(135deg,${esc(t.bg)} 0%,${esc(t.bg)} 55%,${esc(t.accent)} 160%);color:${esc(t.text)}"><span class="g-name">${esc(t.name)}</span></div>`;
+  const head = (title, desc, actions = "") => `<div class="page"><div class="page-head"><div><h1>${title}</h1><p>${desc}</p></div><div class="page-actions">${actions}</div></div>`;
+  const planTag = (id) => tag(planName(id), PLAN_COLOR[id] || "gray");
+  const searchBox = (action, value, label) => `<label class="box-search">${icon("search")}<input data-action="${action}" value="${esc(value)}" placeholder="${label}" aria-label="${label}"></label>`;
+  const tplCover = (t) => `<div class="g-cover" style="background:linear-gradient(135deg,${esc(t.bg)} 0%,${esc(t.bg)} 55%,${esc(t.accent)} 160%);color:${esc(t.text)}"><span class="g-name">${esc(t.name)}</span>${t.status === "published" ? '<span class="tag dot green">Published</span>' : '<span class="tag dot gray">Draft</span>'}</div>`;
+  const ago = (d) => {
+    const m = Math.round((Date.now() - new Date(d)) / 6e4);
+    return m < 60 ? `${Math.max(1, m)}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
+  };
 
   let userTab = "All", userSearch = "", tplTab = "All", payTab = "All";
 
@@ -99,30 +108,30 @@
         const byPlan = Object.keys(db.plans).map((id) => [id, db.users.filter((u) => u.plan === id).length]);
         const topTpl = [...db.templates].sort((a, b) => b.uses - a.uses).slice(0, 5);
         const due = db.payments.filter((p) => p.status !== "Paid");
-        return `${pageHead("📊", "Overview", "Your whole business at a glance.", true)}
+        return `${head("Overview", "Your whole business at a glance.", `<a class="btn" href="#/templates">${icon("layout")}Templates</a><button class="btn btn-primary" data-action="add-user">${icon("plus")}Add user</button>`)}
+          ${due.length ? `<div class="callout yellow"><span class="ico">${icon("alert")}</span><div><b>${due.length} invoice${due.length > 1 ? "s" : ""} need attention</b> · ${taka(due.reduce((s, p) => s + p.amount, 0))} unpaid</div><a class="btn btn-sm" href="#/payments">Review</a></div>` : ""}
           <div class="stats">
-            <div class="stat"><div class="stat-label">💰 Monthly revenue (MRR)</div><div class="stat-value">${taka(mrr())}</div><div class="stat-delta">${taka(mrr() * 12)} per year</div></div>
-            <div class="stat"><div class="stat-label">👥 Users</div><div class="stat-value">${db.users.length}</div><div class="stat-delta">+${newThisMonth} this month</div></div>
-            <div class="stat"><div class="stat-label">🌐 Live websites</div><div class="stat-value">${db.users.filter((u) => u.published && u.status === "active").length}</div><div class="stat-delta" style="color:var(--muted)">${active.length} active accounts</div></div>
-            <div class="stat"><div class="stat-label">⏳ Unpaid invoices</div><div class="stat-value">${due.length}</div><div class="stat-delta ${due.length ? "down" : ""}">${taka(due.reduce((s, p) => s + p.amount, 0))}</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Monthly revenue</span><span class="stat-ico c1">${icon("money")}</span></div><div class="stat-value">${taka(mrr())}</div><div class="stat-delta up">${taka(mrr() * 12)} per year</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Total users</span><span class="stat-ico c2">${icon("customers")}</span></div><div class="stat-value">${db.users.length}</div><div class="stat-delta up">+${newThisMonth} this month</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Live websites</span><span class="stat-ico c3">${icon("globe")}</span></div><div class="stat-value">${db.users.filter((u) => u.published && u.status === "active").length}</div><div class="stat-delta">${active.length} active accounts</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Templates</span><span class="stat-ico c4">${icon("layout")}</span></div><div class="stat-value">${db.templates.length}</div><div class="stat-delta">${db.templates.filter((t) => t.status === "published").length} published</div></div>
           </div>
-          ${due.length ? `<div class="callout yellow"><span class="ico">⏳</span><div style="flex:1"><b>${due.length} invoice${due.length > 1 ? "s" : ""} need attention.</b> Check failed and due payments.</div><a class="btn btn-sm" href="#/payments">Open payments</a></div>` : ""}
-          <div class="cols">
-            ${bars("Revenue collected · last 6 months", taka(months.reduce((s, m) => s + m.v, 0)), months)}
-            <div class="chart"><div class="chart-head"><b>Users by plan</b><span class="muted">${db.users.length} total</span></div>
-              ${byPlan.map(([id, n]) => `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><span>${tag(planName(id), PLAN_COLOR[id])}</span><span class="muted">${n} · ${taka(n * (db.plans[id].price))}/mo</span></div><div class="progress"><i style="width:${(n / Math.max(1, db.users.length)) * 100}%;background:var(--accent)"></i></div></div>`).join("")}
-            </div>
+          <div class="grid-3-1" style="margin-top:18px">
+            <div class="card"><div class="card-head"><span class="card-title">Revenue collected<small>last 6 months</small></span><span class="muted">${taka(months.reduce((s, m) => s + m.v, 0))}</span></div><div class="card-body">${bars(months)}</div></div>
+            <div class="card"><div class="card-head"><span class="card-title">Users by plan</span></div><div class="card-body">
+              ${byPlan.map(([id, n]) => `<div class="meter"><div class="meter-top"><span>${planTag(id)}</span><span class="muted">${n} users · ${taka(n * db.plans[id].price)}/mo</span></div><div class="progress"><i style="width:${(n / Math.max(1, db.users.length)) * 100}%"></i></div></div>`).join("")}
+            </div></div>
           </div>
-          <div class="cols">
-            <div><h2 class="h2">🆕 Newest users <span class="spacer"></span><a class="btn btn-sm btn-ghost" href="#/users">All users</a></h2>
-              <div class="table-wrap"><table class="table" style="min-width:0"><tbody>${[...db.users].sort((a, b) => new Date(b.joined) - new Date(a.joined)).slice(0, 6).map((u) => `
-                <tr><td><span class="t-title">${avatar(u.name)}${esc(u.business)}</span></td><td>${tag(planName(u.plan), PLAN_COLOR[u.plan])}</td><td class="muted t-right">${day(u.joined)}</td></tr>`).join("")}</tbody></table></div></div>
-            <div><h2 class="h2">🧩 Most used templates <span class="spacer"></span><a class="btn btn-sm btn-ghost" href="#/templates">All templates</a></h2>
-              <div class="table-wrap"><table class="table" style="min-width:0"><tbody>${topTpl.map((t) => `
-                <tr><td><span class="t-title"><span style="width:18px;height:18px;border-radius:4px;background:linear-gradient(135deg,${esc(t.bg)} 50%,${esc(t.accent)} 50%);border:1px solid var(--border)"></span>${esc(t.name)}</span></td><td>${tag(t.category, "brown")}</td><td class="t-right">${t.uses} sites</td></tr>`).join("")}</tbody></table></div></div>
+          <div class="grid-3-1" style="margin-top:18px">
+            <div class="card"><div class="card-head"><span class="card-title">Newest users</span><a class="btn btn-sm" href="#/users">View all</a></div>
+              <div class="table-wrap"><table class="table" style="min-width:520px"><thead><tr><th>Business</th><th>Plan</th><th>Status</th><th class="t-right">Joined</th></tr></thead><tbody>${[...db.users].sort((a, b) => new Date(b.joined) - new Date(a.joined)).slice(0, 6).map((u) => `
+                <tr><td><button class="t-title" data-action="open-user" data-id="${u.id}">${avatar(u.business, "sm")}${esc(u.business)}</button></td><td>${planTag(u.plan)}</td><td>${u.status === "active" ? '<span class="tag dot green">Active</span>' : '<span class="tag dot red">Suspended</span>'}</td><td class="muted t-right">${day(u.joined)}</td></tr>`).join("")}</tbody></table></div></div>
+            <div class="card"><div class="card-head"><span class="card-title">Recent activity</span><a class="btn btn-sm" href="#/activity">All</a></div><div class="card-body" style="padding-top:4px;padding-bottom:4px">
+              <ul class="feed">${db.activity.slice(0, 6).map((a) => `<li><span class="fdot"></span><span>${esc(a.text)}</span><time>${ago(a.date)}</time></li>`).join("")}</ul></div></div>
           </div>
-          <h2 class="h2">🕒 Recent activity <span class="spacer"></span><a class="btn btn-sm btn-ghost" href="#/activity">See all</a></h2>
-          <ul class="todo">${db.activity.slice(0, 6).map((a) => `<li><span class="muted small" style="width:96px;flex:none">${day(a.date)}</span><span>${esc(a.text)}</span></li>`).join("")}</ul>
+          <div class="card" style="margin-top:18px"><div class="card-head"><span class="card-title">Most used templates</span><a class="btn btn-sm" href="#/templates">Manage</a></div>
+            <div class="table-wrap"><table class="table"><thead><tr><th>Template</th><th>Category</th><th>Status</th><th class="t-right">Websites</th></tr></thead><tbody>${topTpl.map((t) => `
+              <tr><td><span class="t-title"><span class="thumb" style="background:linear-gradient(135deg,${esc(t.bg)} 50%,${esc(t.accent)} 50%)"></span>${esc(t.name)}</span></td><td>${tag(t.category, "brown")}</td><td>${t.status === "published" ? '<span class="tag dot green">Published</span>' : '<span class="tag dot gray">Draft</span>'}</td><td class="t-right">${t.uses}</td></tr>`).join("")}</tbody></table></div></div>
         </div>`;
       },
     },
@@ -137,27 +146,24 @@
         const list = db.users
           .filter((u) => userTab === "All" || (userTab === "suspended" ? u.status === "suspended" : u.plan === userTab))
           .filter((u) => !q || (u.name + u.business + u.email + u.site).toLowerCase().includes(q));
-        return `${pageHead("👥", "Users", "Everyone who uses Shopiliar. Click a business to see details, change their plan or suspend them.")}
-          <div class="db-bar">
-            <div class="db-tabs">${tabs.map((t) => `<button class="db-tab ${t === userTab ? "on" : ""}" data-action="user-tab" data-tab="${t}">${label(t)} <span class="muted small">${count(t)}</span></button>`).join("")}</div>
-            <input class="db-search" data-action="user-search" placeholder="🔍 Search users" value="${esc(userSearch)}" aria-label="Search users">
-            <button class="btn btn-sm btn-primary" data-action="add-user">New user</button>
+        return `${head("Users", "Everyone who uses Shopiliar. Open a user to change their plan, template or status.", `<button class="btn btn-primary" data-action="add-user">${icon("plus")}Add user</button>`)}
+          <div class="card">
+            <div class="card-head"><div class="seg" style="margin-right:auto">${tabs.map((t) => `<button class="${t === userTab ? "on" : ""}" data-action="user-tab" data-tab="${t}">${label(t)}<span>${count(t)}</span></button>`).join("")}</div>
+              ${searchBox("user-search", userSearch, "Search users")}</div>
+            <div class="table-wrap"><table class="table" style="min-width:960px">
+              <thead><tr><th>Business</th><th>Plan</th><th>Website</th><th>Status</th><th>Joined</th><th class="t-right">Pays / month</th><th class="t-actions"></th></tr></thead>
+              <tbody>${list.length ? list.map((u) => `
+                <tr>
+                  <td><button class="t-title" data-action="open-user" data-id="${u.id}">${avatar(u.business)}<span>${esc(u.business)}<span class="sub">${esc(u.name)} · ${esc(u.email)}</span></span></button></td>
+                  <td>${planTag(u.plan)} <span class="muted small">${u.billing === "yearly" ? "Yearly" : "Monthly"}</span></td>
+                  <td><span class="small">${esc(u.site)}</span><span class="sub">${u.published ? "Live" : "Not published"}</span></td>
+                  <td>${u.status === "active" ? '<span class="tag dot green">Active</span>' : '<span class="tag dot red">Suspended</span>'}</td>
+                  <td class="muted">${day(u.joined)}</td>
+                  <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(monthly(u))}</td>
+                  <td class="t-actions"><button class="btn btn-sm" data-action="toggle-user" data-id="${u.id}">${u.status === "active" ? "Suspend" : "Activate"}</button><button class="icon-btn" data-action="open-user" data-id="${u.id}" aria-label="Edit ${esc(u.business)}">${icon("edit")}</button><button class="icon-btn danger" data-action="delete-user" data-id="${u.id}" aria-label="Delete ${esc(u.business)}">${icon("trash")}</button></td>
+                </tr>`).join("") : `<tr><td colspan="7" class="table-empty">No users match.</td></tr>`}</tbody>
+            </table></div>
           </div>
-          <div class="table-wrap"><table class="table" style="min-width:900px">
-            <thead><tr><th>Business</th><th>Owner</th><th>Plan</th><th>Website</th><th>Status</th><th>Joined</th><th class="t-right">Pays / month</th><th class="t-actions"></th></tr></thead>
-            <tbody>${list.length ? list.map((u) => `
-              <tr>
-                <td><button class="t-title" data-action="open-user" data-id="${u.id}">${avatar(u.business)}${esc(u.business)}</button></td>
-                <td><div>${esc(u.name)}</div><div class="muted small">${esc(u.email)}</div></td>
-                <td>${tag(planName(u.plan), PLAN_COLOR[u.plan])} <span class="muted small">${u.billing === "yearly" ? "Yearly" : "Monthly"}</span></td>
-                <td><div class="small">${esc(u.site)}</div>${u.published ? tag("Live", "green") : tag("Draft", "gray")}</td>
-                <td>${u.status === "active" ? tag("Active", "green") : tag("Suspended", "red")}</td>
-                <td class="muted">${day(u.joined)}</td>
-                <td class="t-right">${taka(monthly(u))}</td>
-                <td class="t-actions"><button class="btn btn-sm" data-action="toggle-user" data-id="${u.id}">${u.status === "active" ? "Suspend" : "Activate"}</button> <button class="icon-btn" data-action="delete-user" data-id="${u.id}" aria-label="Delete ${esc(u.business)}">🗑</button></td>
-              </tr>`).join("") : `<tr><td colspan="8" class="table-empty">No users match.</td></tr>`}</tbody>
-          </table></div>
-          <button class="add-row" data-action="add-user">＋ New user</button>
         </div>`;
       },
     },
@@ -168,27 +174,24 @@
         const tabs = ["All", "published", "draft"];
         const label = { All: "All", published: "Published", draft: "Drafts" };
         const list = db.templates.filter((t) => tplTab === "All" || t.status === tplTab);
-        return `${pageHead("🧩", "Templates", "Add, customize, publish and delete templates. Only <b>published</b> templates can be chosen by users.")}
-          <div class="db-bar">
-            <div class="db-tabs">${tabs.map((t) => `<button class="db-tab ${t === tplTab ? "on" : ""}" data-action="tpl-tab" data-tab="${t}">${label[t]} <span class="muted small">${t === "All" ? db.templates.length : db.templates.filter((x) => x.status === t).length}</span></button>`).join("")}</div>
-            <button class="btn btn-sm btn-primary" data-action="new-template">New template</button>
-          </div>
+        return `${head("Templates", "Add, customize, publish and delete templates. Only published templates can be chosen by users.", `<button class="btn btn-primary" data-action="new-template">${icon("plus")}New template</button>`)}
+          <div style="margin-bottom:16px"><div class="seg">${tabs.map((t) => `<button class="${t === tplTab ? "on" : ""}" data-action="tpl-tab" data-tab="${t}">${label[t]}<span>${t === "All" ? db.templates.length : db.templates.filter((x) => x.status === t).length}</span></button>`).join("")}</div></div>
           <div class="gallery">${list.map((t) => `
             <div class="g-card">
               ${tplCover(t)}
               <div class="g-body">
-                <div class="g-title">${esc(t.name)}</div>
-                <div class="g-meta">${tag(t.category, "brown")}${t.status === "published" ? tag("Published", "green") : tag("Draft", "gray")}<span class="muted small">${t.uses} sites</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="g-title">${esc(t.name)}</span><span class="muted small">${t.uses} sites</span></div>
+                <div class="g-meta">${tag(t.category, "brown")}${tag(t.layout === "center" ? "Centered" : t.layout === "bleed" ? "Full-width" : "Side by side", "gray")}</div>
                 <div class="muted small">${esc(t.desc)}</div>
                 <div class="g-actions">
-                  <button class="btn btn-sm" data-action="edit-template" data-id="${t.id}">Customize</button>
+                  <button class="btn btn-sm" data-action="edit-template" data-id="${t.id}">${icon("edit")}Customize</button>
                   <button class="btn btn-sm" data-action="toggle-template" data-id="${t.id}">${t.status === "published" ? "Unpublish" : "Publish"}</button>
-                  <button class="icon-btn" data-action="duplicate-template" data-id="${t.id}" aria-label="Duplicate ${esc(t.name)}" title="Duplicate">⧉</button>
-                  <button class="icon-btn" data-action="delete-template" data-id="${t.id}" aria-label="Delete ${esc(t.name)}" title="Delete">🗑</button>
+                  <button class="icon-btn" data-action="duplicate-template" data-id="${t.id}" aria-label="Duplicate ${esc(t.name)}" title="Duplicate">${icon("copy")}</button>
+                  <button class="icon-btn danger" data-action="delete-template" data-id="${t.id}" aria-label="Delete ${esc(t.name)}" title="Delete">${icon("trash")}</button>
                 </div>
               </div>
             </div>`).join("")}
-            <button class="g-card" data-action="new-template" style="display:grid;place-items:center;min-height:260px;color:var(--faint);border-style:dashed">＋ New template</button>
+            <button class="g-new" data-action="new-template"><span>${icon("plus")}</span>New template</button>
           </div>
         </div>`;
       },
@@ -199,43 +202,44 @@
       render: () => {
         const tabs = ["All", "Paid", "Due", "Failed"];
         const list = db.payments.filter((p) => payTab === "All" || p.status === payTab).sort((a, b) => new Date(b.date) - new Date(a.date));
-        const collected = db.payments.filter((p) => p.status === "Paid").reduce((s, p) => s + p.amount, 0);
-        return `${pageHead("💰", "Payments", "Subscription invoices from your users.")}
+        const sum = (st) => db.payments.filter((p) => p.status === st).reduce((s, p) => s + p.amount, 0);
+        return `${head("Payments", "Subscription invoices from your users.")}
           <div class="stats" style="grid-template-columns:repeat(3,1fr)">
-            <div class="stat"><div class="stat-label">✅ Collected</div><div class="stat-value">${taka(collected)}</div></div>
-            <div class="stat"><div class="stat-label">⏳ Due</div><div class="stat-value">${taka(db.payments.filter((p) => p.status === "Due").reduce((s, p) => s + p.amount, 0))}</div></div>
-            <div class="stat"><div class="stat-label">⚠️ Failed</div><div class="stat-value">${taka(db.payments.filter((p) => p.status === "Failed").reduce((s, p) => s + p.amount, 0))}</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Collected</span><span class="stat-ico c2">${icon("check")}</span></div><div class="stat-value">${taka(sum("Paid"))}</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Due</span><span class="stat-ico c3">${icon("clock")}</span></div><div class="stat-value">${taka(sum("Due"))}</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Failed</span><span class="stat-ico c4">${icon("alert")}</span></div><div class="stat-value">${taka(sum("Failed"))}</div></div>
           </div>
-          <div class="db-bar" style="margin-top:18px"><div class="db-tabs">${tabs.map((t) => `<button class="db-tab ${t === payTab ? "on" : ""}" data-action="pay-tab" data-tab="${t}">${t} <span class="muted small">${t === "All" ? db.payments.length : db.payments.filter((p) => p.status === t).length}</span></button>`).join("")}</div></div>
-          <div class="table-wrap"><table class="table">
-            <thead><tr><th>Invoice</th><th>Business</th><th>Plan</th><th>Method</th><th>Date</th><th class="t-right">Amount</th><th>Status</th><th class="t-actions"></th></tr></thead>
-            <tbody>${list.map((p) => { const u = userById(p.user); return `
-              <tr><td class="t-title">🧾 ${esc(p.invoice)}</td><td>${esc(u ? u.business : "Deleted user")}</td><td>${tag(planName(p.plan), PLAN_COLOR[p.plan])} <span class="muted small">${p.billing === "yearly" ? "Yearly" : "Monthly"}</span></td>
-              <td>${esc(p.method)}</td><td class="muted">${day(p.date)}</td><td class="t-right">${taka(p.amount)}</td><td>${tag(p.status, PAY_COLOR[p.status])}</td>
-              <td class="t-actions">${p.status === "Paid" ? "" : `<button class="btn btn-sm" data-action="mark-paid" data-id="${p.id}">Mark paid</button>`}</td></tr>`; }).join("") || `<tr><td colspan="8" class="table-empty">No invoices.</td></tr>`}</tbody>
-          </table></div>
-          <p class="muted small" style="margin-top:12px">Invoices are sample data until bKash, Nagad or card payments are connected.</p>
+          <div class="card" style="margin-top:18px">
+            <div class="card-head"><div class="seg" style="margin-right:auto">${tabs.map((t) => `<button class="${t === payTab ? "on" : ""}" data-action="pay-tab" data-tab="${t}">${t}<span>${t === "All" ? db.payments.length : db.payments.filter((p) => p.status === t).length}</span></button>`).join("")}</div></div>
+            <div class="table-wrap"><table class="table">
+              <thead><tr><th>Invoice</th><th>Business</th><th>Plan</th><th>Method</th><th>Date</th><th class="t-right">Amount</th><th>Status</th><th class="t-actions"></th></tr></thead>
+              <tbody>${list.map((p) => { const u = userById(p.user); return `
+                <tr><td class="t-title">${esc(p.invoice)}</td><td>${esc(u ? u.business : "Deleted user")}</td><td>${planTag(p.plan)} <span class="muted small">${p.billing === "yearly" ? "Yearly" : "Monthly"}</span></td>
+                <td>${esc(p.method)}</td><td class="muted">${day(p.date)}</td><td class="t-right" style="font-weight:600;color:var(--ink)">${taka(p.amount)}</td><td><span class="tag dot ${PAY_COLOR[p.status]}">${esc(p.status)}</span></td>
+                <td class="t-actions">${p.status === "Paid" ? "" : `<button class="btn btn-sm" data-action="mark-paid" data-id="${p.id}">Mark paid</button>`}</td></tr>`; }).join("") || `<tr><td colspan="8" class="table-empty">No invoices.</td></tr>`}</tbody>
+            </table></div>
+            <div class="card-foot muted small">Invoices are sample data until bKash, Nagad or card payments are connected.</div>
+          </div>
         </div>`;
       },
     },
 
     plans: {
       title: "Plans & pricing",
-      render: () => `${pageHead("🏷️", "Plans & pricing", "Change plan prices and limits. Leave a limit empty for <b>Unlimited</b>. User dashboards on this browser pick up changes straight away.")}
+      render: () => `${head("Plans & pricing", "Change plan prices and limits. Leave a limit empty for Unlimited.")}
         <form id="plans-form">
-          <div class="table-wrap"><table class="table">
-            <thead><tr><th>Plan</th><th>Price per month (৳)</th><th>Pages</th><th>Products</th><th class="t-right">Users</th></tr></thead>
-            <tbody>${Object.entries(db.plans).map(([id, p]) => `
-              <tr><td class="t-title">${tag(p.name, PLAN_COLOR[id])}</td>
-              <td><input class="input" name="${id}_price" type="number" min="0" value="${p.price}" style="width:130px" aria-label="${esc(p.name)} price"></td>
-              <td><input class="input" name="${id}_pages" type="number" min="1" value="${p.pages ?? ""}" placeholder="Unlimited" style="width:120px" aria-label="${esc(p.name)} pages"></td>
-              <td><input class="input" name="${id}_products" type="number" min="1" value="${p.products ?? ""}" placeholder="Unlimited" style="width:120px" aria-label="${esc(p.name)} products"></td>
-              <td class="t-right">${db.users.filter((u) => u.plan === id).length}</td></tr>`).join("")}</tbody>
-          </table></div>
-          <div class="callout"><span class="ico">🎁</span><div>Every plan includes a free website, free CMS access and free support. Yearly Business and Pro plans include a free custom domain.</div></div>
-          <button class="btn btn-primary" type="submit">Save prices &amp; limits</button>
+          <div class="gallery" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">${Object.entries(db.plans).map(([id, p]) => `
+            <div class="card"><div class="card-head"><span class="card-title">${esc(p.name)}</span>${planTag(id)}</div><div class="card-body">
+              <div class="field"><label>Price per month (৳)</label><input class="input" name="${id}_price" type="number" min="0" value="${p.price}"></div>
+              <div class="row">
+                <div class="field"><label>Pages</label><input class="input" name="${id}_pages" type="number" min="1" value="${p.pages ?? ""}" placeholder="Unlimited"></div>
+                <div class="field"><label>Products</label><input class="input" name="${id}_products" type="number" min="1" value="${p.products ?? ""}" placeholder="Unlimited"></div>
+              </div>
+              <p class="muted small">${db.users.filter((u) => u.plan === id).length} users on this plan</p>
+            </div></div>`).join("")}</div>
+          <div class="callout" style="margin-top:18px"><span class="ico">${icon("gift")}</span><div>Every plan includes a free website, free CMS access and free support. Yearly Business and Pro plans include a free custom domain.</div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><span class="muted small">The public Pricing page is part of the website code, so update it too when you change prices.</span><button class="btn btn-primary" type="submit">Save prices &amp; limits</button></div>
         </form>
-        <p class="muted small" style="margin-top:12px">The public Pricing page is part of the website code, so update it too when you change prices.</p>
       </div>`,
       mount: (view) => view.querySelector("#plans-form").addEventListener("submit", (e) => {
         e.preventDefault();
@@ -253,8 +257,8 @@
 
     activity: {
       title: "Activity",
-      render: () => `${pageHead("🕒", "Activity", "Everything that happened across Shopiliar, newest first.")}
-        <ul class="todo">${db.activity.map((a) => `<li><span class="muted small" style="width:110px;flex:none">${day(a.date)}</span><span>${esc(a.text)}</span></li>`).join("") || '<li class="muted">Nothing yet.</li>'}</ul>
+      render: () => `${head("Activity", "Everything that happened across Shopiliar, newest first.")}
+        <div class="card"><div class="card-body" style="padding-top:4px;padding-bottom:4px"><ul class="feed">${db.activity.map((a) => `<li><span class="fdot"></span><span>${esc(a.text)}</span><time>${day(a.date)}</time></li>`).join("") || '<li class="muted">Nothing yet.</li>'}</ul></div></div>
       </div>`,
     },
 
@@ -262,22 +266,26 @@
       title: "Settings",
       render: () => {
         const s = db.settings;
-        return `${pageHead("⚙️", "Settings", "Company details and platform switches.")}
-          <div class="callout red"><span class="ico">🔒</span><div><b>Protect this page before real data goes in.</b> Anyone who knows the address can open /master-admin. In Cloudflare, open your <b>shopiliar</b> Worker → <b>Access</b> (Cloudflare Zero Trust) and add an application for <b>/master-admin*</b> that only allows your email. It's free.</div></div>
+        return `${head("Settings", "Company details and platform switches.")}
+          <div class="callout red"><span class="ico">${icon("shield")}</span><div><b>Protect this page before real data goes in.</b> Anyone who knows the address can open /master-admin. In Cloudflare, open your <b>shopiliar</b> project → <b>Access</b> and allow only your email for <b>/master-admin*</b>. It's free.</div></div>
           <form id="settings-form">
-            <h2 class="h2">🏢 Company</h2>
-            <div class="row">
-              <div class="field"><label for="c-name">Company name</label><input class="input" id="c-name" name="company" value="${esc(s.company)}"></div>
-              <div class="field"><label for="c-email">Support email</label><input class="input" id="c-email" name="supportEmail" type="email" value="${esc(s.supportEmail)}"></div>
-              <div class="field"><label for="c-phone">Support phone</label><input class="input" id="c-phone" name="supportPhone" value="${esc(s.supportPhone)}" placeholder="01XXX-XXXXXX"></div>
+            <div class="grid-2">
+              <div class="card"><div class="card-head"><span class="card-title">Company</span></div><div class="card-body">
+                <div class="field"><label for="c-name">Company name</label><input class="input" id="c-name" name="company" value="${esc(s.company)}"></div>
+                <div class="row">
+                  <div class="field"><label for="c-email">Support email</label><input class="input" id="c-email" name="supportEmail" type="email" value="${esc(s.supportEmail)}"></div>
+                  <div class="field"><label for="c-phone">Support phone</label><input class="input" id="c-phone" name="supportPhone" value="${esc(s.supportPhone)}" placeholder="01XXX-XXXXXX"></div>
+                </div>
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Platform</span></div><div class="card-body" style="padding-top:6px;padding-bottom:6px">
+                <div class="set-row"><span>Allow new sign-ups<small>Turn off to pause new accounts.</small></span><label class="switch"><input type="checkbox" name="signups" ${s.signups ? "checked" : ""} aria-label="Allow new sign-ups"><i></i></label></div>
+                <div class="set-row"><span>Maintenance mode<small>Show a “back soon” message to users.</small></span><label class="switch"><input type="checkbox" name="maintenance" ${s.maintenance ? "checked" : ""} aria-label="Maintenance mode"><i></i></label></div>
+              </div></div>
             </div>
-            <h2 class="h2">🎛 Platform</h2>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div>Allow new sign-ups</div><div class="muted small">Turn off to pause new accounts.</div></div><label class="switch"><input type="checkbox" name="signups" ${s.signups ? "checked" : ""} aria-label="Allow new sign-ups"><i></i></label></div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div>Maintenance mode</div><div class="muted small">Show a “back soon” message to users.</div></div><label class="switch"><input type="checkbox" name="maintenance" ${s.maintenance ? "checked" : ""} aria-label="Maintenance mode"><i></i></label></div>
-            <div style="margin-top:20px"><button class="btn btn-primary" type="submit">Save settings</button></div>
+            <div style="margin-top:18px;display:flex;justify-content:flex-end"><button class="btn btn-primary" type="submit">Save settings</button></div>
           </form>
-          <h2 class="h2" style="color:var(--danger)">Danger zone</h2>
-          <div class="callout red"><span class="ico">🧹</span><div style="flex:1">Reset all master data in this browser (users, templates, payments, plans) back to the sample data.</div><button class="btn btn-sm btn-danger" data-action="reset-all">Reset data</button></div>
+          <div class="card" style="margin-top:18px;border-color:#fecaca"><div class="card-head"><span class="card-title" style="color:var(--danger)">Danger zone</span></div>
+            <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="flex:1">Reset all master data in this browser (users, templates, payments, plans) back to the sample data.</span><button class="btn btn-danger" data-action="reset-all">Reset data</button></div></div>
         </div>`;
       },
       mount: (view) => view.querySelector("#settings-form").addEventListener("submit", (e) => {
@@ -440,6 +448,13 @@
     again.focus(); again.setSelectionRange(pos, pos);
   });
 
+  document.getElementById("top-search").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    userSearch = e.target.value.trim(); userTab = "All";
+    if (location.hash === "#/users") go(); else location.hash = "#/users";
+  });
+
+  hydrateIcons();
   save(KEY, db);
   chrome();
   rerender = router(routes, "overview");

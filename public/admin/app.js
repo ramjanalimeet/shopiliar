@@ -1,6 +1,6 @@
 // Shopiliar store owner dashboard (/admin)
 (() => {
-  const { esc, taka, uid, day, daysAgo, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, siteHTML, limitText, withinLimit } = Dash;
+  const { esc, taka, uid, day, daysAgo, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
   // Plan prices and limits are managed from /master-admin when available
   const PLANS = (load("shopiliar.master", null) || {}).plans || Dash.PLANS();
   const ACCOUNT_KEY = "shopiliar.account";
@@ -81,6 +81,12 @@
     document.getElementById("count-orders").textContent = store.orders.filter((o) => o.status === "Pending").length || "";
     document.getElementById("count-products").textContent = store.products.length;
     document.getElementById("count-pages").textContent = store.pages.length;
+    document.getElementById("me-avatar").innerHTML = avatar(account.name);
+    document.getElementById("me-name").textContent = account.name;
+    document.getElementById("me-email").textContent = account.email;
+    const bell = document.getElementById("bell");
+    bell.querySelector(".dot")?.remove();
+    if (store.orders.some((o) => o.status === "Pending")) bell.insertAdjacentHTML("beforeend", '<span class="dot"></span>');
   };
   document.getElementById("logout").addEventListener("click", async () => {
     const ok = await confirm("Log out?", "You'll go back to the sign-in page. Your store data stays saved in this browser.", "Log out");
@@ -92,15 +98,18 @@
   // ---------- Helpers ----------
   const ORDER_STATUS = { Pending: "yellow", Paid: "blue", Shipped: "purple", Delivered: "green", Cancelled: "red" };
   const PAYMENT_LABEL = { cod: "Cash on delivery", bkash: "bKash", nagad: "Nagad", card: "Card" };
+  const PAY_COLOR = { "Cash on delivery": "gray", bKash: "pink", Nagad: "orange", Card: "blue" };
   const sales = (orders) => orders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
   const greeting = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
   const siteUrl = () => store.settings.domain && store.settings.domainStatus === "connected" ? store.settings.domain : store.settings.subdomain + ".shopiliar.com";
   const orderNo = (o) => "#" + o.number;
-  const pageHead = (icon, title, desc, cover = false) =>
-    `${cover ? '<div class="cover"></div>' : ""}<div class="page${cover ? "" : ""}"><div class="page-icon">${icon}</div><h1 class="page-title">${esc(title)}</h1><p class="page-desc">${desc}</p>`;
+  const head = (title, desc, actions = "") => `<div class="page"><div class="page-head"><div><h1>${title}</h1><p>${desc}</p></div><div class="page-actions">${actions}</div></div>`;
+  const statusTag = (s) => `<span class="tag dot ${ORDER_STATUS[s]}">${esc(s)}</span>`;
+  const searchBox = (action, value, label) => `<label class="box-search">${icon("search")}<input data-action="${action}" value="${esc(value)}" placeholder="${label}" aria-label="${label}"></label>`;
   const limitCallout = (kind, used, limit) => limit == null ? "" : used >= limit
-    ? `<div class="callout yellow"><span class="ico">⚠️</span><div><b>You've used all ${limit} ${kind} on the ${plan().name} plan.</b> <a href="#/billing" style="text-decoration:underline">Upgrade your plan</a> to add more.</div></div>`
-    : `<p class="muted small" style="margin:-10px 0 14px">${used} of ${limit} ${kind} used on the ${plan().name} plan.</p>`;
+    ? `<div class="callout yellow"><span class="ico">${icon("alert")}</span><div><b>You've used all ${limit} ${kind} on the ${plan().name} plan.</b> <a class="u" href="#/billing">Upgrade your plan</a> to add more.</div></div>`
+    : "";
+  const usage = (kind, used, limit) => limit == null ? `<span class="muted small">Unlimited ${kind}</span>` : `<span class="muted small">${used} / ${limit} ${kind}</span>`;
 
   const checklist = () => [
     { done: store.products.length > 0, text: "Add your first product", href: "#/products" },
@@ -110,61 +119,63 @@
     { done: store.published, text: "Publish your website", href: "#/website" },
   ];
 
-  const orderTable = (orders, compact = false) => `
-    <div class="table-wrap"><table class="table">
-      <thead><tr><th>Order</th><th>Customer</th>${compact ? "" : "<th>Date</th><th>Payment</th>"}<th class="t-right">Total</th><th>Status</th>${compact ? "" : '<th class="t-actions"></th>'}</tr></thead>
-      <tbody>${orders.length ? orders.map((o) => `
-        <tr>
-          <td><button class="t-title" data-action="view-order" data-id="${o.id}">🧾 ${orderNo(o)}</button></td>
-          <td><span class="t-title" style="font-weight:400">${avatar(o.customer)}${esc(o.customer)}</span></td>
-          ${compact ? "" : `<td class="muted">${day(o.date)}</td><td>${tag(o.payment, o.payment === "Cash on delivery" ? "gray" : o.payment === "bKash" ? "pink" : o.payment === "Nagad" ? "orange" : "blue")}</td>`}
-          <td class="t-right">${taka(o.total)}</td>
-          <td>${compact ? tag(o.status, ORDER_STATUS[o.status]) : `<select class="select" style="height:26px;width:auto" data-action="order-status" data-id="${o.id}" aria-label="Order status">${Object.keys(ORDER_STATUS).map((s) => `<option${s === o.status ? " selected" : ""}>${s}</option>`).join("")}</select>`}</td>
-          ${compact ? "" : `<td class="t-actions"><button class="icon-btn" data-action="delete-order" data-id="${o.id}" aria-label="Delete order">🗑</button></td>`}
-        </tr>`).join("") : `<tr><td colspan="7" class="table-empty">No orders here yet.</td></tr>`}</tbody>
-    </table></div>`;
+  const orderRows = (orders, compact = false) => orders.length ? orders.map((o) => `
+    <tr>
+      <td><button class="t-title" data-action="view-order" data-id="${o.id}">${orderNo(o)}</button>${compact ? "" : `<span class="sub">${o.items.map((it) => esc(it.name) + " × " + it.qty).join(", ")}</span>`}</td>
+      <td><span class="t-title" style="font-weight:500">${avatar(o.customer, "sm")}${esc(o.customer)}</span></td>
+      <td class="muted">${day(o.date)}</td>
+      ${compact ? "" : `<td>${tag(o.payment, PAY_COLOR[o.payment] || "gray")}</td>`}
+      <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(o.total)}</td>
+      <td>${compact ? statusTag(o.status) : `<select class="select" style="height:32px;width:auto;font-size:13px" data-action="order-status" data-id="${o.id}" aria-label="Order status">${Object.keys(ORDER_STATUS).map((s) => `<option${s === o.status ? " selected" : ""}>${s}</option>`).join("")}</select>`}</td>
+      ${compact ? "" : `<td class="t-actions"><button class="icon-btn" data-action="view-order" data-id="${o.id}" aria-label="View order">${icon("eye")}</button><button class="icon-btn danger" data-action="delete-order" data-id="${o.id}" aria-label="Delete order">${icon("trash")}</button></td>`}
+    </tr>`).join("") : `<tr><td colspan="7" class="table-empty">No orders yet. They'll appear here as soon as customers buy.</td></tr>`;
+  const orderTable = (orders, compact = false) => `<div class="table-wrap"><table class="table">
+      <thead><tr><th>Order</th><th>Customer</th><th>Date</th>${compact ? "" : "<th>Payment</th>"}<th class="t-right">Total</th><th>Status</th>${compact ? "" : '<th class="t-actions"></th>'}</tr></thead>
+      <tbody>${orderRows(orders, compact)}</tbody></table></div>`;
 
   // ---------- Views ----------
   let orderFilter = "All", orderSearch = "", productView = "table", productSearch = "", previewMode = "desktop";
 
   const routes = {
     home: {
-      title: "Home",
+      title: "Dashboard",
       render: () => {
         const list = checklist();
         const done = list.filter((c) => c.done).length;
         const month = store.orders.filter((o) => Date.now() - new Date(o.date) < 30 * 864e5);
         const visitors = store.visitors.reduce((a, b) => a + b, 0);
-        return `${pageHead("👋", `${greeting()}, ${account.name.split(" ")[0]}`, `Here's what's happening with <b>${esc(store.site.name)}</b> today.`, true)}
-          ${account.demo ? `<div class="callout blue"><span class="ico">💡</span><div>You're looking at a <b>demo store</b>. <a href="../signup.html" style="text-decoration:underline">Sign up</a> to start your own — your details and chosen plan will appear here.</div></div>` : ""}
+        const days = Array.from({ length: 14 }, (_, i) => {
+          const d = new Date(Date.now() - (13 - i) * 864e5);
+          const v = sales(store.orders.filter((o) => new Date(o.date).toDateString() === d.toDateString()));
+          return { label: String(d.getDate()), v, text: taka(v) };
+        });
+        return `${head(`${greeting()}, ${esc(account.name.split(" ")[0])} 👋`, `Here's what's happening with <b>${esc(store.site.name)}</b> today.`,
+          `<button class="btn" data-action="add-order">${icon("plus")}New order</button><button class="btn btn-primary" data-action="add-product">${icon("plus")}Add product</button>`)}
+          ${account.demo ? `<div class="callout blue"><span class="ico">${icon("info")}</span><div>You're viewing a <b>demo store</b>. <a class="u" href="../signup.html">Sign up</a> to start your own — your details and chosen plan will appear here.</div></div>` : ""}
           ${store.published
-            ? `<div class="callout green"><span class="ico">🟢</span><div><b>Your website is live</b> at <span style="text-decoration:underline">${esc(siteUrl())}</span></div></div>`
-            : `<div class="callout yellow"><span class="ico">🚀</span><div style="flex:1"><b>Your website isn't live yet.</b> Customize it, then publish when you're ready.</div><a class="btn btn-sm btn-dark" href="#/website">Customize &amp; publish</a></div>`}
+            ? `<div class="callout green"><span class="ico">${icon("globe")}</span><div><b>Your website is live</b> at ${esc(siteUrl())}</div></div>`
+            : `<div class="callout yellow"><span class="ico">${icon("rocket")}</span><div><b>Your website isn't live yet.</b> Customize it, then publish when you're ready.</div><a class="btn btn-sm btn-dark" href="#/website">Customize &amp; publish</a></div>`}
           <div class="stats">
-            <div class="stat"><div class="stat-label">💰 Sales (30 days)</div><div class="stat-value">${taka(sales(month))}</div><div class="stat-delta" style="color:var(--muted)">${month.filter((o) => o.status !== "Cancelled").length} paid or open orders</div></div>
-            <div class="stat"><div class="stat-label">🧾 Orders</div><div class="stat-value">${month.length}</div><div class="stat-delta">${store.orders.filter((o) => o.status === "Pending").length} pending</div></div>
-            <div class="stat"><div class="stat-label">👀 Visitors (14 days)</div><div class="stat-value">${visitors.toLocaleString("en-IN")}</div><div class="stat-delta" style="color:var(--muted)">${account.demo ? "Sample data" : "Counting starts when you publish"}</div></div>
-            <div class="stat"><div class="stat-label">📦 Products</div><div class="stat-value">${store.products.length}</div><div class="stat-delta" style="color:var(--muted)">of ${limitText(plan().products)} on ${plan().name}</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Total sales · 30 days</span><span class="stat-ico c1">${icon("money")}</span></div><div class="stat-value">${taka(sales(month))}</div><div class="stat-delta">${month.filter((o) => o.status !== "Cancelled").length} paid or open orders</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Orders · 30 days</span><span class="stat-ico c2">${icon("orders")}</span></div><div class="stat-value">${month.length}</div><div class="stat-delta ${store.orders.some((o) => o.status === "Pending") ? "down" : ""}">${store.orders.filter((o) => o.status === "Pending").length} waiting for you</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Visitors · 14 days</span><span class="stat-ico c3">${icon("eye")}</span></div><div class="stat-value">${visitors.toLocaleString("en-IN")}</div><div class="stat-delta">${account.demo ? "Sample data" : "Counting starts when you publish"}</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Products</span><span class="stat-ico c4">${icon("products")}</span></div><div class="stat-value">${store.products.length}</div><div class="stat-delta">of ${limitText(plan().products)} on ${plan().name}</div></div>
           </div>
-          <div class="cols">
-            <div>
-              <h2 class="h2">✅ Set up your store</h2>
-              <div class="muted small">${done} of ${list.length} done</div>
-              <div class="progress"><i style="width:${(done / list.length) * 100}%"></i></div>
-              <ul class="todo">${list.map((c) => `<li class="${c.done ? "done" : ""}"><input type="checkbox" ${c.done ? "checked" : ""} disabled aria-label="${esc(c.text)}"><span>${esc(c.text)}</span><a href="${c.href}">Open →</a></li>`).join("")}</ul>
-            </div>
-            <div>
-              <h2 class="h2">⚡ Quick actions</h2>
-              <ul class="todo">
-                <li><span>📦</span><button data-action="add-product" style="text-align:left">Add a product</button></li>
-                <li><span>🧾</span><button data-action="add-order" style="text-align:left">Record an order</button></li>
-                <li><span>🎨</span><a href="#/website" style="margin:0;color:inherit;font-size:14px">Change website colors &amp; text</a></li>
-                <li><span>📄</span><a href="#/pages" style="margin:0;color:inherit;font-size:14px">Add a page</a></li>
-              </ul>
-            </div>
+          <div class="grid-3-1" style="margin-top:18px">
+            <div class="card"><div class="card-head"><span class="card-title">Sales overview<small>last 14 days</small></span><span class="muted">${taka(days.reduce((a, b) => a + b.v, 0))}</span></div><div class="card-body">${bars(days)}</div></div>
+            <div class="card"><div class="card-head"><span class="card-title">Store setup</span><span class="muted small">${done}/${list.length}</span></div>
+              <div class="card-body"><div class="progress" style="margin-bottom:6px"><i style="width:${(done / list.length) * 100}%"></i></div>
+              <ul class="todo">${list.map((c) => `<li class="${c.done ? "done" : ""}"><span class="tick">${c.done ? icon("check") : ""}</span><span class="t">${esc(c.text)}</span>${c.done ? "" : `<a href="${c.href}">Start</a>`}</li>`).join("")}</ul></div></div>
           </div>
-          <h2 class="h2">🧾 Recent orders <span class="spacer"></span><a class="btn btn-sm btn-ghost" href="#/orders">View all</a></h2>
-          ${orderTable(store.orders.slice(0, 5), true)}
+          <div class="grid-3-1" style="margin-top:18px">
+            <div class="card"><div class="card-head"><span class="card-title">Recent orders</span><a class="btn btn-sm" href="#/orders">View all</a></div>${orderTable(store.orders.slice(0, 5), true)}</div>
+            <div class="card"><div class="card-head"><span class="card-title">Quick actions</span></div><div class="card-body"><div class="quick" style="grid-template-columns:1fr">
+              <button data-action="add-product"><span class="qi">${icon("products")}</span>Add a product</button>
+              <button data-action="add-order"><span class="qi">${icon("orders")}</span>Record an order</button>
+              <a href="#/website"><span class="qi">${icon("brush")}</span>Change colors &amp; text</a>
+              <a href="#/pages"><span class="qi">${icon("pages")}</span>Add a page</a>
+            </div></div></div>
+          </div>
         </div>`;
       },
     },
@@ -176,15 +187,13 @@
         const q = orderSearch.toLowerCase();
         const list = store.orders
           .filter((o) => orderFilter === "All" || o.status === orderFilter)
-          .filter((o) => !q || (o.customer + " " + o.number + " " + o.phone).toLowerCase().includes(q));
-        return `${pageHead("🧾", "Orders", "Track every order from pending to delivered. Change a status right in the table.")}
-          <div class="db-bar">
-            <div class="db-tabs">${tabs.map((t) => `<button class="db-tab ${t === orderFilter ? "on" : ""}" data-action="order-tab" data-tab="${t}">${t}<span class="muted small">${t === "All" ? store.orders.length : store.orders.filter((o) => o.status === t).length}</span></button>`).join("")}</div>
-            <input class="db-search" placeholder="🔍 Search orders" value="${esc(orderSearch)}" data-action="order-search" aria-label="Search orders">
-            <button class="btn btn-sm btn-primary" data-action="add-order">New order</button>
+          .filter((o) => !q || (o.customer + " " + o.number + " " + o.phone + " " + o.items.map((i) => i.name).join(" ")).toLowerCase().includes(q));
+        return `${head("Orders", "Track every order from pending to delivered. Change a status right in the table.", `<button class="btn btn-primary" data-action="add-order">${icon("plus")}New order</button>`)}
+          <div class="card">
+            <div class="card-head"><div class="seg" style="margin-right:auto">${tabs.map((t) => `<button class="${t === orderFilter ? "on" : ""}" data-action="order-tab" data-tab="${t}">${t}<span>${t === "All" ? store.orders.length : store.orders.filter((o) => o.status === t).length}</span></button>`).join("")}</div>
+            ${searchBox("order-search", orderSearch, "Search orders")}</div>
+            ${orderTable(list)}
           </div>
-          ${orderTable(list)}
-          <button class="add-row" data-action="add-order">＋ New order</button>
         </div>`;
       },
     },
@@ -195,36 +204,36 @@
         const q = productSearch.toLowerCase();
         const list = store.products.filter((p) => !q || (p.name + " " + p.category).toLowerCase().includes(q));
         const canAdd = withinLimit(plan().products, store.products.length);
-        return `${pageHead("📦", "Products", "Everything you sell. Click a product name to edit it.")}
+        return `${head("Products", "Everything you sell. Click a product to edit it.", `${usage("products", store.products.length, plan().products)}<button class="btn btn-primary" data-action="add-product" ${canAdd ? "" : "disabled"}>${icon("plus")}Add product</button>`)}
           ${limitCallout("products", store.products.length, plan().products)}
-          <div class="db-bar">
-            <div class="db-tabs">
-              <button class="db-tab ${productView === "table" ? "on" : ""}" data-action="product-view" data-view="table">☰ Table</button>
-              <button class="db-tab ${productView === "gallery" ? "on" : ""}" data-action="product-view" data-view="gallery">▦ Gallery</button>
+          <div class="card">
+            <div class="card-head">
+              <div class="seg" style="margin-right:auto">
+                <button class="${productView === "table" ? "on" : ""}" data-action="product-view" data-view="table">${icon("list")}List</button>
+                <button class="${productView === "gallery" ? "on" : ""}" data-action="product-view" data-view="gallery">${icon("grid")}Grid</button>
+              </div>
+              ${searchBox("product-search", productSearch, "Search products")}
             </div>
-            <input class="db-search" placeholder="🔍 Search products" value="${esc(productSearch)}" data-action="product-search" aria-label="Search products">
-            <button class="btn btn-sm btn-primary" data-action="add-product" ${canAdd ? "" : "disabled style=opacity:.5"}>New product</button>
+            ${productView === "table" ? `
+            <div class="table-wrap"><table class="table">
+              <thead><tr><th>Product</th><th>Category</th><th class="t-right">Price</th><th class="t-right">Stock</th><th>Status</th><th class="t-actions"></th></tr></thead>
+              <tbody>${list.length ? list.map((p) => `
+                <tr>
+                  <td><button class="t-title" data-action="edit-product" data-id="${p.id}"><span class="thumb" style="background:${esc(p.color)}"></span>${esc(p.name)}</button></td>
+                  <td>${tag(p.category || "General", "brown")}</td>
+                  <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(p.price)}</td>
+                  <td class="t-right">${p.stock > 0 ? p.stock : '<span class="tag red">Out of stock</span>'}</td>
+                  <td>${p.status === "draft" ? '<span class="tag dot gray">Draft</span>' : '<span class="tag dot green">Active</span>'}</td>
+                  <td class="t-actions"><button class="icon-btn" data-action="edit-product" data-id="${p.id}" aria-label="Edit ${esc(p.name)}">${icon("edit")}</button><button class="icon-btn danger" data-action="delete-product" data-id="${p.id}" aria-label="Delete ${esc(p.name)}">${icon("trash")}</button></td>
+                </tr>`).join("") : `<tr><td colspan="6" class="table-empty">No products yet — add your first one.</td></tr>`}</tbody>
+            </table></div>` : `
+            <div class="card-body"><div class="gallery">${list.map((p) => `
+              <div class="g-card">
+                <div class="g-cover" style="background:${esc(p.color)}">${p.status === "draft" ? '<span class="tag gray">Draft</span>' : ""}</div>
+                <div class="g-body"><div class="g-title">${esc(p.name)}</div><div class="g-meta"><b style="color:var(--ink)">${taka(p.price)}</b>${tag(p.category || "General", "brown")}<span class="muted small">${p.stock} in stock</span></div>
+                <div class="g-actions"><button class="btn btn-sm" data-action="edit-product" data-id="${p.id}">${icon("edit")}Edit</button><button class="icon-btn danger" data-action="delete-product" data-id="${p.id}" aria-label="Delete ${esc(p.name)}">${icon("trash")}</button></div></div>
+              </div>`).join("") || '<p class="muted">No products yet.</p>'}</div></div>`}
           </div>
-          ${productView === "table" ? `
-          <div class="table-wrap"><table class="table">
-            <thead><tr><th>Name</th><th>Category</th><th class="t-right">Price</th><th class="t-right">Stock</th><th>Status</th><th class="t-actions"></th></tr></thead>
-            <tbody>${list.length ? list.map((p) => `
-              <tr>
-                <td><button class="t-title" data-action="edit-product" data-id="${p.id}"><span style="width:18px;height:18px;border-radius:4px;background:${esc(p.color)};flex:none;border:1px solid var(--border)"></span>${esc(p.name)}</button></td>
-                <td>${tag(p.category || "General", "brown")}</td>
-                <td class="t-right">${taka(p.price)}</td>
-                <td class="t-right">${p.stock > 0 ? p.stock : '<span style="color:var(--danger)">Out of stock</span>'}</td>
-                <td>${p.status === "draft" ? tag("Draft", "gray") : tag("Active", "green")}</td>
-                <td class="t-actions"><button class="icon-btn" data-action="delete-product" data-id="${p.id}" aria-label="Delete ${esc(p.name)}">🗑</button></td>
-              </tr>`).join("") : `<tr><td colspan="6" class="table-empty">No products yet.</td></tr>`}</tbody>
-          </table></div>
-          ${canAdd ? '<button class="add-row" data-action="add-product">＋ New product</button>' : ""}` : `
-          <div class="gallery">${list.map((p) => `
-            <div class="g-card">
-              <div class="g-cover" style="background:${esc(p.color)}"></div>
-              <div class="g-body"><div class="g-title">${esc(p.name)}</div><div class="g-meta">${tag(taka(p.price), "green")}${tag(p.category || "General", "brown")}${p.status === "draft" ? tag("Draft") : ""}</div>
-              <div class="g-actions"><button class="btn btn-sm" data-action="edit-product" data-id="${p.id}">Edit</button><button class="btn btn-sm btn-danger" data-action="delete-product" data-id="${p.id}">Delete</button></div></div>
-            </div>`).join("")}</div>`}
         </div>`;
       },
     },
@@ -233,16 +242,15 @@
       title: "Customers",
       render: () => {
         const stats = (c) => { const os = store.orders.filter((o) => o.customer === c.name); return { count: os.length, spent: sales(os) }; };
-        return `${pageHead("👥", "Customers", "People who bought from you. Totals update automatically from your orders.")}
-          <div class="db-bar"><div class="db-tabs"><span class="db-tab on">All customers <span class="muted small">${store.customers.length}</span></span></div><button class="btn btn-sm btn-primary" data-action="add-customer">New customer</button></div>
+        return `${head("Customers", "People who bought from you. Totals update automatically from your orders.", `<button class="btn btn-primary" data-action="add-customer">${icon("plus")}Add customer</button>`)}
+          <div class="card"><div class="card-head"><span class="card-title">All customers<small>${store.customers.length}</small></span></div>
           <div class="table-wrap"><table class="table">
-            <thead><tr><th>Name</th><th>Phone</th><th>City</th><th class="t-right">Orders</th><th class="t-right">Total spent</th><th>Customer since</th><th class="t-actions"></th></tr></thead>
-            <tbody>${store.customers.map((c) => { const s = stats(c); return `
-              <tr><td><span class="t-title">${avatar(c.name)}${esc(c.name)}</span></td><td class="muted">${esc(c.phone)}</td><td>${tag(c.city || "—", "blue")}</td>
-              <td class="t-right">${s.count}</td><td class="t-right">${taka(s.spent)}</td><td class="muted">${day(c.joined)}</td>
-              <td class="t-actions"><button class="icon-btn" data-action="delete-customer" data-id="${c.id}" aria-label="Delete ${esc(c.name)}">🗑</button></td></tr>`; }).join("")}</tbody>
-          </table></div>
-          <button class="add-row" data-action="add-customer">＋ New customer</button>
+            <thead><tr><th>Customer</th><th>Phone</th><th>City</th><th class="t-right">Orders</th><th class="t-right">Total spent</th><th>Since</th><th class="t-actions"></th></tr></thead>
+            <tbody>${store.customers.length ? store.customers.map((c) => { const s = stats(c); return `
+              <tr><td><span class="t-title">${avatar(c.name)}<span>${esc(c.name)}<span class="sub">${esc(c.email || "")}</span></span></span></td><td class="muted">${esc(c.phone)}</td><td>${c.city ? tag(c.city, "blue") : '<span class="muted">—</span>'}</td>
+              <td class="t-right">${s.count}</td><td class="t-right" style="font-weight:600;color:var(--ink)">${taka(s.spent)}</td><td class="muted">${day(c.joined)}</td>
+              <td class="t-actions"><button class="icon-btn danger" data-action="delete-customer" data-id="${c.id}" aria-label="Delete ${esc(c.name)}">${icon("trash")}</button></td></tr>`; }).join("") : '<tr><td colspan="7" class="table-empty">No customers yet.</td></tr>'}</tbody>
+          </table></div></div>
         </div>`;
       },
     },
@@ -260,13 +268,22 @@
         store.orders.filter((o) => o.status !== "Cancelled").forEach((o) => o.items.forEach((it) => { top[it.name] = (top[it.name] || 0) + it.qty * it.price; }));
         const topList = Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 5);
         const sources = [["Facebook", 46], ["Google", 24], ["Direct", 18], ["Instagram", 12]];
-        return `${pageHead("📈", "Analytics", "How your website and sales are doing.")}
-          <div class="cols">${bars("Sales · last 7 days", taka(days.reduce((a, b) => a + b.v, 0)), days)}${bars("Visitors · last 14 days", store.visitors.reduce((a, b) => a + b, 0).toLocaleString("en-IN"), vis)}</div>
-          <div class="cols">
-            <div><h2 class="h2">🏆 Top products</h2><div class="table-wrap"><table class="table" style="min-width:0"><thead><tr><th>Product</th><th class="t-right">Sales</th></tr></thead><tbody>${topList.map(([n, v]) => `<tr><td class="t-title">${esc(n)}</td><td class="t-right">${taka(v)}</td></tr>`).join("") || '<tr><td colspan="2" class="table-empty">No sales yet</td></tr>'}</tbody></table></div></div>
-            <div><h2 class="h2">🌐 Where visitors come from</h2>${sources.map(([n, p]) => `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between"><span>${n}</span><span class="muted">${p}%</span></div><div class="progress"><i style="width:${p}%;background:var(--accent)"></i></div></div>`).join("")}</div>
+        const done = store.orders.filter((o) => o.status !== "Cancelled");
+        return `${head("Analytics", "How your website and sales are doing.")}
+          <div class="stats">
+            <div class="stat"><div class="stat-top"><span class="stat-label">Revenue</span><span class="stat-ico c1">${icon("money")}</span></div><div class="stat-value">${taka(sales(store.orders))}</div><div class="stat-delta">All time</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Average order</span><span class="stat-ico c2">${icon("orders")}</span></div><div class="stat-value">${taka(done.length ? sales(done) / done.length : 0)}</div><div class="stat-delta">${done.length} orders</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Visitors · 14 days</span><span class="stat-ico c3">${icon("eye")}</span></div><div class="stat-value">${store.visitors.reduce((a, b) => a + b, 0).toLocaleString("en-IN")}</div><div class="stat-delta">Sample data</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Customers</span><span class="stat-ico c4">${icon("customers")}</span></div><div class="stat-value">${store.customers.length}</div><div class="stat-delta">All time</div></div>
           </div>
-          <p class="muted small">Visitor numbers are sample data until your live website is connected.</p>
+          <div class="grid-2" style="margin-top:18px">
+            <div class="card"><div class="card-head"><span class="card-title">Sales<small>last 7 days</small></span><span class="muted">${taka(days.reduce((a, b) => a + b.v, 0))}</span></div><div class="card-body">${bars(days)}</div></div>
+            <div class="card"><div class="card-head"><span class="card-title">Visitors<small>last 14 days</small></span></div><div class="card-body">${bars(vis)}</div></div>
+          </div>
+          <div class="grid-2" style="margin-top:18px">
+            <div class="card"><div class="card-head"><span class="card-title">Top products</span></div><div class="table-wrap"><table class="table" style="min-width:0"><thead><tr><th>Product</th><th class="t-right">Sales</th></tr></thead><tbody>${topList.map(([n, v]) => `<tr><td class="t-title">${esc(n)}</td><td class="t-right">${taka(v)}</td></tr>`).join("") || '<tr><td colspan="2" class="table-empty">No sales yet</td></tr>'}</tbody></table></div></div>
+            <div class="card"><div class="card-head"><span class="card-title">Traffic sources</span><span class="muted small">Sample data</span></div><div class="card-body">${sources.map(([n, p]) => `<div class="meter"><div class="meter-top"><span>${n}</span><span class="muted">${p}%</span></div><div class="progress"><i style="width:${p}%"></i></div></div>`).join("")}</div></div>
+          </div>
         </div>`;
       },
     },
@@ -280,48 +297,44 @@
           ["Forest", "#f3f7f1", "#1c3326", "#2f6b2a"], ["Berry", "#fdf3f6", "#3d1527", "#ad1a72"], ["Night", "#14141c", "#ffffff", "#ff7a59"],
         ];
         const published = catalog.filter((t) => t.status === "published");
-        return `<div class="page wide"><div class="page-icon">🎨</div><h1 class="page-title">Customize website</h1>
-          <p class="page-desc">Pick a template, choose colors and edit your text. The preview updates as you type. Nothing goes live until you press <b>Publish</b>.</p>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px">
-            ${store.published ? tag("● Live", "green") : tag("● Draft — not published", "yellow")}
-            <span class="muted small">${esc(siteUrl())}</span><span style="flex:1"></span>
-            <button class="btn" data-action="reset-site">Reset to template</button>
-            <button class="btn btn-dark" data-action="publish">${store.published ? "Publish changes" : "🚀 Publish website"}</button>
-          </div>
-          <div style="display:grid;grid-template-columns:340px 1fr;gap:28px;align-items:start" class="customizer">
+        return `${head("Customize website", "Pick a template, choose colors and edit your text. The preview updates as you type.",
+          `${store.published ? '<span class="tag dot green">Live</span>' : '<span class="tag dot yellow">Draft</span>'}<button class="btn" data-action="reset-site">Reset</button><button class="btn btn-primary" data-action="publish">${icon("rocket")}${store.published ? "Publish changes" : "Publish website"}</button>`)}
+          <div style="display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start" class="customizer">
             <form id="site-form" autocomplete="off">
-              <h2 class="h2" style="margin-top:0">1. Template</h2>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${published.map((t) => `
-                <button type="button" data-action="pick-template" data-id="${t.id}" style="text-align:left;border:1px solid ${t.id === s.template ? "var(--accent)" : "var(--border)"};box-shadow:${t.id === s.template ? "0 0 0 2px var(--accent-soft)" : "none"};border-radius:6px;overflow:hidden">
-                  <span style="display:block;height:42px;background:linear-gradient(135deg,${esc(t.bg)} 55%,${esc(t.accent)})"></span>
-                  <span style="display:block;padding:5px 7px;font-size:12px;font-weight:500">${esc(t.name)}</span></button>`).join("")}</div>
-              <h2 class="h2">2. Brand</h2>
-              <div class="field"><label for="f-name">Website name</label><input class="input" id="f-name" name="name" value="${esc(s.name)}" maxlength="40"></div>
-              <div class="field"><label>Color theme</label><div style="display:flex;flex-wrap:wrap;gap:6px">${palettes.map(([n, bg, tx, ac]) => `
-                <button type="button" class="btn btn-sm" data-action="palette" data-bg="${bg}" data-text="${tx}" data-accent="${ac}" title="${n}"><span style="width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,${bg} 50%,${ac} 50%);border:1px solid var(--border-strong)"></span>${n}</button>`).join("")}</div></div>
-              <div class="row">
-                <div class="field"><label for="f-accent">Button color</label><input class="input" type="color" id="f-accent" name="accent" value="${esc(s.accent)}" style="padding:2px"></div>
-                <div class="field"><label for="f-bg">Background</label><input class="input" type="color" id="f-bg" name="bg" value="${esc(s.bg)}" style="padding:2px"></div>
-              </div>
-              <div class="field"><label>Font style</label><div style="display:flex;gap:6px">${[["modern", "Modern"], ["classic", "Classic"], ["friendly", "Friendly"]].map(([v, l]) => `
-                <label class="btn btn-sm" style="${s.font === v ? "border-color:var(--accent);color:var(--accent)" : ""}"><input type="radio" name="font" value="${v}" ${s.font === v ? "checked" : ""} hidden>${l}</label>`).join("")}</div></div>
-              <h2 class="h2">3. Homepage text</h2>
-              <div class="field"><label for="f-headline">Headline</label><input class="input" id="f-headline" name="headline" value="${esc(s.headline)}" maxlength="80"></div>
-              <div class="field"><label for="f-sub">Short description</label><textarea class="textarea" id="f-sub" name="sub" maxlength="200">${esc(s.sub)}</textarea></div>
-              <div class="field"><label for="f-cta">Button text</label><input class="input" id="f-cta" name="cta" value="${esc(s.cta)}" maxlength="30"></div>
-              <h2 class="h2">4. Sections</h2>
-              ${[["showProducts", "Products"], ["showAbout", "About us"], ["showContact", "Contact details"]].map(([k, l]) => `
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0"><span>${l}</span><label class="switch"><input type="checkbox" name="${k}" ${s[k] ? "checked" : ""} aria-label="Show ${l}"><i></i></label></div>`).join("")}
-              <div class="field" style="margin-top:8px"><label for="f-about">About us text</label><textarea class="textarea" id="f-about" name="about" maxlength="400">${esc(s.about)}</textarea></div>
-              <div class="row"><div class="field"><label for="f-phone">Phone</label><input class="input" id="f-phone" name="phone" value="${esc(s.phone)}"></div><div class="field"><label for="f-email">Email</label><input class="input" id="f-email" name="email" value="${esc(s.email)}"></div></div>
-              <div class="field"><label for="f-address">Address</label><input class="input" id="f-address" name="address" value="${esc(s.address)}"></div>
+              <div class="card"><div class="card-head"><span class="card-title">Template</span></div><div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${published.map((t) => `
+                  <button type="button" data-action="pick-template" data-id="${t.id}" style="text-align:left;border:1px solid ${t.id === s.template ? "var(--accent)" : "var(--border)"};box-shadow:${t.id === s.template ? "0 0 0 3px var(--accent-soft)" : "none"};border-radius:9px;overflow:hidden">
+                    <span style="display:block;height:48px;background:linear-gradient(135deg,${esc(t.bg)} 55%,${esc(t.accent)})"></span>
+                    <span style="display:block;padding:7px 9px;font-size:12px;font-weight:600;color:var(--ink)">${esc(t.name)}</span></button>`).join("")}</div>
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Brand</span></div><div class="card-body">
+                <div class="field"><label for="f-name">Website name</label><input class="input" id="f-name" name="name" value="${esc(s.name)}" maxlength="40"></div>
+                <div class="field"><label>Color theme</label><div style="display:flex;flex-wrap:wrap;gap:6px">${palettes.map(([n, bg, tx, ac]) => `
+                  <button type="button" class="btn btn-sm" data-action="palette" data-bg="${bg}" data-text="${tx}" data-accent="${ac}"><span style="width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,${bg} 50%,${ac} 50%);border:1px solid var(--border-strong)"></span>${n}</button>`).join("")}</div></div>
+                <div class="row">
+                  <div class="field"><label for="f-accent">Button color</label><input class="input" type="color" id="f-accent" name="accent" value="${esc(s.accent)}"></div>
+                  <div class="field"><label for="f-bg">Background</label><input class="input" type="color" id="f-bg" name="bg" value="${esc(s.bg)}"></div>
+                </div>
+                <div class="field" style="margin:0"><label>Font style</label><div class="seg" id="font-seg">${[["modern", "Modern"], ["classic", "Classic"], ["friendly", "Friendly"]].map(([v, l]) => `
+                  <label style="cursor:pointer"><input type="radio" name="font" value="${v}" ${s.font === v ? "checked" : ""} hidden><button type="button" tabindex="-1" class="${s.font === v ? "on" : ""}" style="pointer-events:none">${l}</button></label>`).join("")}</div></div>
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Homepage text</span></div><div class="card-body">
+                <div class="field"><label for="f-headline">Headline</label><input class="input" id="f-headline" name="headline" value="${esc(s.headline)}" maxlength="80"></div>
+                <div class="field"><label for="f-sub">Short description</label><textarea class="textarea" id="f-sub" name="sub" maxlength="200">${esc(s.sub)}</textarea></div>
+                <div class="field" style="margin:0"><label for="f-cta">Button text</label><input class="input" id="f-cta" name="cta" value="${esc(s.cta)}" maxlength="30"></div>
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Sections &amp; contact</span></div><div class="card-body">
+                ${[["showProducts", "Products"], ["showAbout", "About us"], ["showContact", "Contact details"]].map(([k, l]) => `
+                  <div class="set-row"><span>Show ${l}</span><label class="switch"><input type="checkbox" name="${k}" ${s[k] ? "checked" : ""} aria-label="Show ${l}"><i></i></label></div>`).join("")}
+                <div class="field" style="margin-top:12px"><label for="f-about">About us text</label><textarea class="textarea" id="f-about" name="about" maxlength="400">${esc(s.about)}</textarea></div>
+                <div class="row"><div class="field"><label for="f-phone">Phone</label><input class="input" id="f-phone" name="phone" value="${esc(s.phone)}"></div><div class="field"><label for="f-email">Email</label><input class="input" id="f-email" name="email" value="${esc(s.email)}"></div></div>
+                <div class="field" style="margin:0"><label for="f-address">Address</label><input class="input" id="f-address" name="address" value="${esc(s.address)}"></div>
+              </div></div>
             </form>
-            <div style="position:sticky;top:12px">
-              <div class="db-bar" style="border:0;margin-bottom:8px"><div class="db-tabs">
-                <button class="db-tab ${previewMode === "desktop" ? "on" : ""}" data-action="preview-mode" data-mode="desktop">🖥 Desktop</button>
-                <button class="db-tab ${previewMode === "mobile" ? "on" : ""}" data-action="preview-mode" data-mode="mobile">📱 Mobile</button></div>
-                <span class="muted small">Live preview</span></div>
-              <div class="sp-frame ${previewMode === "mobile" ? "mobile" : ""}" id="site-preview">${siteHTML(s, store.products, store.pages)}</div>
+            <div class="card" style="position:sticky;top:0">
+              <div class="card-head"><span class="card-title">Live preview<small>${esc(siteUrl())}</small></span>
+                <div class="seg"><button class="${previewMode === "desktop" ? "on" : ""}" data-action="preview-mode" data-mode="desktop">${icon("monitor")}Desktop</button><button class="${previewMode === "mobile" ? "on" : ""}" data-action="preview-mode" data-mode="mobile">${icon("phone")}Mobile</button></div></div>
+              <div class="card-body" style="background:var(--bg);border-radius:0 0 12px 12px"><div class="sp-frame ${previewMode === "mobile" ? "mobile" : ""}" id="site-preview">${siteHTML(s, store.products, store.pages)}</div></div>
             </div>
           </div>
         </div>`;
@@ -333,14 +346,15 @@
           ["name", "accent", "bg", "font", "headline", "sub", "cta", "about", "phone", "email", "address"].forEach((k) => { if (d.has(k)) store.site[k] = d.get(k); });
           ["showProducts", "showAbout", "showContact"].forEach((k) => { store.site[k] = form.elements[k].checked; });
           store.site.text = Dash.isDark(store.site.bg) ? "#ffffff" : (Dash.isDark(store.site.text) ? store.site.text : "#111111");
-          form.querySelectorAll("input[name=font]").forEach((r) => { r.parentElement.style.cssText = r.checked ? "border-color:var(--accent);color:var(--accent)" : ""; });
+          form.querySelectorAll("input[name=font]").forEach((r) => r.nextElementSibling.classList.toggle("on", r.checked));
           view.querySelector("#site-preview").innerHTML = siteHTML(store.site, store.products, store.pages);
           store.customized = true;
           persist();
         };
         form.addEventListener("input", update);
         form.addEventListener("change", update);
-        if (window.innerWidth < 900) view.querySelector(".customizer").style.gridTemplateColumns = "1fr";
+        form.querySelectorAll(".card + .card").forEach((c) => { c.style.marginTop = "18px"; });
+        if (window.innerWidth < 1000) view.querySelector(".customizer").style.gridTemplateColumns = "1fr";
       },
     },
 
@@ -348,19 +362,16 @@
       title: "Pages",
       render: () => {
         const canAdd = withinLimit(plan().pages, store.pages.length);
-        return `${pageHead("📄", "Pages", "The pages of your website. Turn on “In menu” to show a page in your website's top menu.")}
+        return `${head("Pages", "The pages of your website. Turn on “In menu” to show a page in your top menu.", `${usage("pages", store.pages.length, plan().pages)}<button class="btn btn-primary" data-action="add-page" ${canAdd ? "" : "disabled"}>${icon("plus")}Add page</button>`)}
           ${limitCallout("pages", store.pages.length, plan().pages)}
-          <div class="db-bar"><div class="db-tabs"><span class="db-tab on">All pages <span class="muted small">${store.pages.length}</span></span></div>
-          <button class="btn btn-sm btn-primary" data-action="add-page" ${canAdd ? "" : "disabled style=opacity:.5"}>New page</button></div>
-          <div class="table-wrap"><table class="table">
+          <div class="card"><div class="table-wrap"><table class="table">
             <thead><tr><th>Page</th><th>Address</th><th>In menu</th><th class="t-actions"></th></tr></thead>
             <tbody>${store.pages.map((p) => `
-              <tr><td><button class="t-title" data-action="edit-page" data-id="${p.id}">📄 ${esc(p.title)}</button></td>
-              <td class="muted">/${esc(p.slug)}</td>
+              <tr><td><button class="t-title" data-action="edit-page" data-id="${p.id}"><span class="stat-ico c1" style="width:32px;height:32px">${icon("pages")}</span>${esc(p.title)}</button></td>
+              <td class="muted">${esc(siteUrl())}/${esc(p.slug)}</td>
               <td><label class="switch"><input type="checkbox" data-action="page-nav" data-id="${p.id}" ${p.inNav ? "checked" : ""} aria-label="Show ${esc(p.title)} in menu"><i></i></label></td>
-              <td class="t-actions">${p.locked ? '<span class="muted small">Home page</span>' : `<button class="icon-btn" data-action="delete-page" data-id="${p.id}" aria-label="Delete ${esc(p.title)}">🗑</button>`}</td></tr>`).join("")}</tbody>
-          </table></div>
-          ${canAdd ? '<button class="add-row" data-action="add-page">＋ New page</button>' : ""}
+              <td class="t-actions"><button class="icon-btn" data-action="edit-page" data-id="${p.id}" aria-label="Rename ${esc(p.title)}">${icon("edit")}</button>${p.locked ? '<span class="icon-btn" title="The home page can\'t be deleted"></span>' : `<button class="icon-btn danger" data-action="delete-page" data-id="${p.id}" aria-label="Delete ${esc(p.title)}">${icon("trash")}</button>`}</td></tr>`).join("")}</tbody>
+          </table></div></div>
         </div>`;
       },
     },
@@ -370,32 +381,40 @@
       render: () => {
         const st = store.settings;
         const freeDomain = account.billing === "yearly" && account.plan !== "starter";
-        return `${pageHead("⚙️", "Settings", "Your store details, domain and payment options.")}
+        return `${head("Settings", "Your store details, domain and payment options.")}
           <form id="settings-form">
-            <h2 class="h2">🏪 Store details</h2>
-            <div class="row">
-              <div class="field"><label for="s-business">Business name</label><input class="input" id="s-business" name="business" value="${esc(account.business)}"></div>
-              <div class="field"><label for="s-owner">Your name</label><input class="input" id="s-owner" name="owner" value="${esc(account.name)}"></div>
-              <div class="field"><label for="s-email">Email</label><input class="input" id="s-email" name="email" type="email" value="${esc(account.email)}"></div>
-              <div class="field"><label for="s-phone">Phone</label><input class="input" id="s-phone" name="phone" value="${esc(st.phone)}"></div>
+            <div class="grid-2">
+              <div class="card"><div class="card-head"><span class="card-title">Store details</span></div><div class="card-body">
+                <div class="row">
+                  <div class="field"><label for="s-business">Business name</label><input class="input" id="s-business" name="business" value="${esc(account.business)}"></div>
+                  <div class="field"><label for="s-owner">Your name</label><input class="input" id="s-owner" name="owner" value="${esc(account.name)}"></div>
+                  <div class="field"><label for="s-email">Email</label><input class="input" id="s-email" name="email" type="email" value="${esc(account.email)}"></div>
+                  <div class="field"><label for="s-phone">Phone</label><input class="input" id="s-phone" name="phone" value="${esc(st.phone)}"></div>
+                </div>
+                <div class="field" style="margin:0"><label for="s-address">Address</label><input class="input" id="s-address" name="address" value="${esc(st.address)}"></div>
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Domain</span></div><div class="card-body">
+                <p class="muted" style="margin-bottom:12px">Free address: <b style="color:var(--ink)">${esc(st.subdomain)}.shopiliar.com</b></p>
+                ${freeDomain ? `<div class="callout green" style="margin-bottom:12px"><span class="ico">${icon("gift")}</span><div><b>Your yearly ${plan().name} plan includes a free custom domain.</b></div></div>` : ""}
+                <div style="display:flex;gap:8px;align-items:flex-end">
+                  <div class="field" style="flex:1;margin:0"><label for="s-domain">Custom domain</label><input class="input" id="s-domain" name="domain" placeholder="www.yourbusiness.com" value="${esc(st.domain)}"></div>
+                  <button type="button" class="btn" data-action="connect-domain">${st.domain ? "Update" : "Connect"}</button>
+                </div>
+                ${st.domain ? `<p style="margin-top:10px">${st.domainStatus === "connected" ? '<span class="tag dot green">Connected</span>' : '<span class="tag dot yellow">Waiting for DNS</span>'} <span class="muted small">${esc(st.domain)}</span></p>` : ""}
+              </div></div>
             </div>
-            <div class="field"><label for="s-address">Address</label><input class="input" id="s-address" name="address" value="${esc(st.address)}"></div>
-            <h2 class="h2">🌐 Domain</h2>
-            <p class="muted" style="margin-bottom:10px">Free address: <b style="color:var(--text)">${esc(st.subdomain)}.shopiliar.com</b></p>
-            ${freeDomain ? `<div class="callout green"><span class="ico">🎁</span><div><b>Your yearly ${plan().name} plan includes a free custom domain.</b> Type the domain you want below.</div></div>` : ""}
-            <div style="display:flex;gap:8px;align-items:flex-end">
-              <div class="field" style="flex:1;margin:0"><label for="s-domain">Custom domain</label><input class="input" id="s-domain" name="domain" placeholder="www.yourbusiness.com" value="${esc(st.domain)}"></div>
-              <button type="button" class="btn" data-action="connect-domain">${st.domain ? "Update" : "Connect"}</button>
+            <div class="grid-2" style="margin-top:18px">
+              <div class="card"><div class="card-head"><span class="card-title">How customers pay</span></div><div class="card-body" style="padding-top:6px;padding-bottom:6px">
+                ${Object.entries(PAYMENT_LABEL).map(([k, l]) => `<div class="set-row"><span>${l}</span><label class="switch"><input type="checkbox" name="pay_${k}" ${st.payments[k] ? "checked" : ""} aria-label="${l}"><i></i></label></div>`).join("")}
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Notifications</span></div><div class="card-body" style="padding-top:6px;padding-bottom:6px">
+                <div class="set-row"><span>Email me when a new order arrives<small>Sent to ${esc(account.email)}</small></span><label class="switch"><input type="checkbox" name="orderEmails" ${st.orderEmails ? "checked" : ""} aria-label="Order emails"><i></i></label></div>
+              </div></div>
             </div>
-            ${st.domain ? `<p style="margin-top:8px">${tag(st.domainStatus === "connected" ? "Connected" : "Waiting for DNS", st.domainStatus === "connected" ? "green" : "yellow")} <span class="muted small">${esc(st.domain)}</span></p>` : ""}
-            <h2 class="h2">💳 How customers pay</h2>
-            ${Object.entries(PAYMENT_LABEL).map(([k, l]) => `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)"><span>${l}</span><label class="switch"><input type="checkbox" name="pay_${k}" ${st.payments[k] ? "checked" : ""} aria-label="${l}"><i></i></label></div>`).join("")}
-            <h2 class="h2">🔔 Notifications</h2>
-            <label class="check"><input type="checkbox" name="orderEmails" ${st.orderEmails ? "checked" : ""}> Email me when a new order arrives</label>
-            <div style="margin-top:22px"><button class="btn btn-primary" type="submit">Save settings</button></div>
+            <div style="margin-top:18px;display:flex;justify-content:flex-end"><button class="btn btn-primary" type="submit">Save settings</button></div>
           </form>
-          <h2 class="h2" style="color:var(--danger)">Danger zone</h2>
-          <div class="callout red"><span class="ico">🧹</span><div style="flex:1">Reset this demo store: deletes its products, orders and website changes in this browser.</div><button class="btn btn-sm btn-danger" data-action="reset-all">Reset store</button></div>
+          <div class="card" style="margin-top:18px;border-color:#fecaca"><div class="card-head"><span class="card-title" style="color:var(--danger)">Danger zone</span></div>
+            <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="flex:1">Reset this store: deletes its products, orders and website changes in this browser.</span><button class="btn btn-danger" data-action="reset-all">Reset store</button></div></div>
         </div>`;
       },
       mount: (view) => {
@@ -420,19 +439,26 @@
       render: () => {
         const p = plan();
         const yearly = account.billing === "yearly";
-        return `${pageHead("💳", "Plan & billing", "Your plan, what it includes and how much of it you're using.")}
-          <div class="callout"><span class="ico">⭐</span><div style="flex:1"><b>${p.name} plan</b> · ${yearly ? `${taka(p.price * 12)}/year` : `${taka(p.price)}/month`}<div class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${yearly && account.plan !== "starter" ? " · includes a free custom domain" : ""}</div></div><button class="btn btn-sm btn-dark" data-action="change-plan">Change plan</button></div>
-          <h2 class="h2">Usage</h2>
-          ${[["Pages", store.pages.length, p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
-            <div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
-            <div class="progress"><i style="width:${lim == null ? 6 : Math.min(100, (used / lim) * 100)}%;background:${lim != null && used >= lim ? "var(--danger)" : "var(--accent)"}"></i></div></div>`).join("")}
-          <h2 class="h2">Included in every plan</h2>
-          <ul class="todo"><li class="">✅ <span>Free website</span></li><li>✅ <span>Free CMS access</span></li><li>✅ <span>Free support</span></li></ul>
-          <h2 class="h2">Compare plans</h2>
-          <div class="table-wrap"><table class="table"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Free domain (yearly)</th><th></th></tr></thead>
-          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td class="t-title">${pl.name} ${id === account.plan ? tag("Current", "blue") : ""}</td><td class="t-right">${taka(pl.price)}</td><td>${limitText(pl.pages)}</td><td>${pl.products == null ? "Unlimited" : id === "business" ? "150+" : pl.products}</td><td>${id === "starter" ? "—" : "✅"}</td>
-            <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
-          <p class="muted small" style="margin-top:12px">Online payment for plans isn't connected yet — switching plans here updates your limits in this demo.</p>
+        return `${head("Plan & billing", "Your plan, what it includes and how much of it you're using.", `<button class="btn btn-primary" data-action="change-plan">Change plan</button>`)}
+          <div class="grid-2">
+            <div class="card"><div class="card-head"><span class="card-title">Current plan</span><span class="tag purple">${esc(p.name)}</span></div><div class="card-body">
+              <div class="stat-value" style="margin:0">${yearly ? `${taka(p.price * 12)}<span class="muted" style="font-size:14px;font-weight:500"> /year</span>` : `${taka(p.price)}<span class="muted" style="font-size:14px;font-weight:500"> /month</span>`}</div>
+              <p class="muted" style="margin-top:4px">${yearly ? "Billed yearly" : "Billed monthly"}${yearly && account.plan !== "starter" ? " · includes a free custom domain" : ""}</p>
+              <div class="divider"></div>
+              <ul class="todo">${["Free website", "Free CMS access", "Free support"].map((t) => `<li class="done"><span class="tick">${icon("check")}</span><span>${t}</span></li>`).join("")}</ul>
+            </div></div>
+            <div class="card"><div class="card-head"><span class="card-title">Usage</span></div><div class="card-body">
+              ${[["Pages", store.pages.length, p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
+                <div class="meter"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
+                <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
+            </div></div>
+          </div>
+          <div class="card" style="margin-top:18px"><div class="card-head"><span class="card-title">Compare plans</span></div>
+            <div class="table-wrap"><table class="table"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Free domain (yearly)</th><th class="t-actions"></th></tr></thead>
+            <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</td><td class="t-right">${taka(pl.price)}</td><td>${limitText(pl.pages)}</td><td>${pl.products == null ? "Unlimited" : id === "business" ? "150+" : pl.products}</td><td>${id === "starter" ? '<span class="muted">—</span>' : '<span class="tag green">Included</span>'}</td>
+              <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
+            <div class="card-foot muted small">Online payment for plans isn't connected yet — switching plans here updates your limits in this demo.</div>
+          </div>
         </div>`;
       },
     },
@@ -611,6 +637,16 @@
     }
   });
 
+  // Top bar search: products when it matches one, otherwise orders
+  document.getElementById("top-search").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const q = e.target.value.trim();
+    const isProduct = q && store.products.some((p) => p.name.toLowerCase().includes(q.toLowerCase()));
+    if (isProduct) { productSearch = q; location.hash = "#/products"; } else { orderSearch = q; orderFilter = "All"; location.hash = "#/orders"; }
+    if (location.hash === (isProduct ? "#/products" : "#/orders")) go();
+  });
+
+  hydrateIcons();
   refreshChrome();
   rerender = router(routes, "home");
 })();
