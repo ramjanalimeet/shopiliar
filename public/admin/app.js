@@ -1,4 +1,4 @@
-// Shopiliar store owner dashboard (/admin)
+// Shopilier store owner dashboard (/admin)
 (async () => {
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
   // Plan prices and limits are managed from /master-admin when available
@@ -148,7 +148,7 @@
   const PAYMENT_LABEL = { cod: "Cash on delivery", bkash: "bKash", nagad: "Nagad", card: "Card" };
   const PAY_COLOR = { "Cash on delivery": "gray", bKash: "pink", Nagad: "orange", Card: "blue" };
   const sales = (orders) => orders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
-  const siteUrl = () => store.settings.domain && store.settings.domainStatus === "connected" ? store.settings.domain : store.settings.subdomain + ".shopiliar.com";
+  const siteUrl = () => store.settings.domain && store.settings.domainStatus === "connected" ? store.settings.domain : store.settings.subdomain + ".shopilier.com";
   const orderNo = (o) => "#" + o.number;
   const head = (title, desc, actions = "") => `<div class="page"><div class="page-head"><div><h1>${title}</h1><p>${desc}</p></div><div class="page-actions">${actions}</div></div>`;
   const statusTag = (s) => `<span class="tag dot ${ORDER_STATUS[s]}">${esc(s)}</span>`;
@@ -373,7 +373,7 @@
           ${[
             ["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."],
             ["How do I change how my website looks?", "Open Online Store. Pick a template, change colors and text, and watch the live preview."],
-            ["How do I publish my website?", "In Online Store, click Publish. Your site goes live at your free shopiliar.com address."],
+            ["How do I publish my website?", "In Online Store, click Publish. Your site goes live at your free shopilier.com address."],
             ["Can I use my own domain?", "Yes. Go to Settings and add your domain. Yearly Business and Pro plans include a free domain."],
             ["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."],
             ["How do I change my plan?", "Open Billing and choose Switch next to the plan you want."],
@@ -826,7 +826,7 @@
     domain: () => {
       const st = store.settings, freeDomain = account.billing === "yearly" && account.plan !== "starter";
       return `<h2>Domain</h2><p class="muted">Where customers find your website.</p>
-        <div class="s-card"><b>Free address</b><p class="muted" style="margin-top:4px">${esc(st.subdomain)}.shopiliar.com</p></div>
+        <div class="s-card"><b>Free address</b><p class="muted" style="margin-top:4px">${esc(st.subdomain)}.shopilier.com</p></div>
         ${freeDomain ? `<div class="callout green"><span class="ico">${icon("gift")}</span><div><b>Your yearly ${esc(plan().name)} plan includes a free custom domain.</b></div></div>` : ""}
         <div class="s-card">
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">

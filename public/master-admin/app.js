@@ -1,4 +1,4 @@
-// Shopiliar master dashboard (/master-admin): users, templates, payments and plans.
+// Shopilier master dashboard (/master-admin): users, templates, payments and plans.
 (() => {
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, CATEGORIES } = Dash;
   const KEY = "shopiliar.master";
@@ -19,7 +19,7 @@
     const users = people.map(([name, business, plan, billing, status, ago], i) => ({
       id: uid("u"), name, business, email: name.toLowerCase().split(" ")[0] + "@" + business.toLowerCase().replace(/[^a-z]+/g, "") + ".com",
       phone: "01" + (700000000 + i * 1234567).toString().slice(0, 9), plan, billing, status, joined: daysAgo(ago),
-      template: tpl[i % tpl.length].id, site: business.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopiliar.com",
+      template: tpl[i % tpl.length].id, site: business.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopilier.com",
       products: plan === "starter" ? 3 : plan === "business" ? 40 + i * 7 : 320 + i * 11, published: i % 5 !== 4,
     }));
     const methods = ["bKash", "Nagad", "Card", "bKash", "Bank transfer"];
@@ -41,7 +41,7 @@
     }));
     return {
       plans, templates: tpl, users, payments, activity,
-      settings: { company: "Shopiliar", supportEmail: "support@shopiliar.com", supportPhone: "", signups: true, maintenance: false },
+      settings: { company: "Shopilier", supportEmail: "support@shopilier.com", supportPhone: "", signups: true, maintenance: false },
     };
   };
   const db = load(KEY, seed);
@@ -52,7 +52,7 @@
     db.users.unshift({
       id: uid("u"), name: account.name, business: account.business || account.name, email: account.email, phone: "", plan: account.plan || "starter",
       billing: account.billing || "monthly", status: "active", joined: account.createdAt || new Date().toISOString(), template: account.template || "luxe-store",
-      site: (account.business || "store").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopiliar.com", products: 0, published: false,
+      site: (account.business || "store").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopilier.com", products: 0, published: false,
     });
     db.activity.unshift({ id: uid("a"), date: new Date().toISOString(), text: `${account.name} signed up on the ${(db.plans[account.plan] || db.plans.starter).name} plan` });
   }
@@ -146,7 +146,7 @@
         const list = db.users
           .filter((u) => userTab === "All" || (userTab === "suspended" ? u.status === "suspended" : u.plan === userTab))
           .filter((u) => !q || (u.name + u.business + u.email + u.site).toLowerCase().includes(q));
-        return `${head("Users", "Everyone who uses Shopiliar. Open a user to change their plan, template or status.", `<button class="btn btn-primary" data-action="add-user">${icon("plus")}Add user</button>`)}
+        return `${head("Users", "Everyone who uses Shopilier. Open a user to change their plan, template or status.", `<button class="btn btn-primary" data-action="add-user">${icon("plus")}Add user</button>`)}
           <div class="card">
             <div class="card-head"><div class="seg" style="margin-right:auto">${tabs.map((t) => `<button class="${t === userTab ? "on" : ""}" data-action="user-tab" data-tab="${t}">${label(t)}<span>${count(t)}</span></button>`).join("")}</div>
               ${searchBox("user-search", userSearch, "Search users")}</div>
@@ -257,7 +257,7 @@
 
     activity: {
       title: "Activity",
-      render: () => `${head("Activity", "Everything that happened across Shopiliar, newest first.")}
+      render: () => `${head("Activity", "Everything that happened across Shopilier, newest first.")}
         <div class="card"><div class="card-body" style="padding-top:4px;padding-bottom:4px"><ul class="feed">${db.activity.map((a) => `<li><span class="fdot"></span><span>${esc(a.text)}</span><time>${day(a.date)}</time></li>`).join("") || '<li class="muted">Nothing yet.</li>'}</ul></div></div>
       </div>`,
     },
@@ -318,7 +318,7 @@
         if (u.plan !== v.plan) log(`${u.business} moved from ${planName(u.plan)} to ${planName(v.plan)}`);
         Object.assign(u, v);
       } else {
-        const site = v.business.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopiliar.com";
+        const site = v.business.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopilier.com";
         db.users.unshift({ id: uid("u"), ...v, joined: new Date().toISOString(), site, products: 0, published: false });
         log(`${v.name} was added on the ${planName(v.plan)} plan`);
       }
