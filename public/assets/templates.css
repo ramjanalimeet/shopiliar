@@ -163,19 +163,21 @@
 }
 .device-switch button svg { width: 16px; height: 16px; }
 .device-switch button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
-.device-size { font-size: 12px; color: var(--faint); min-width: 112px; }
+.device-size { font-size: 12px; color: var(--faint); min-width: 170px; }
 
 .device-stage {
-  height: calc(100vh - 140px); display: flex; justify-content: center; align-items: flex-start;
+  height: calc(100vh - 140px); display: flex; justify-content: center; align-items: center;
   background: #eceef3; padding: 20px; overflow: hidden;
 }
+/* The device is laid out at its real screen size, then scaled down evenly to fit
+   the stage, so the template renders exactly as it would on that screen. */
+.device-fit { position: relative; flex: none; }
 .device {
-  width: 100%; height: 100%; background: #fff; border-radius: 8px; overflow: hidden; display: flex;
-  box-shadow: 0 10px 30px rgba(16, 24, 40, .12); transition: width .35s ease, border-radius .35s ease;
+  position: absolute; top: 0; left: 0; transform-origin: 0 0; background: #fff; overflow: hidden; display: flex;
+  box-shadow: 0 0 0 1px rgba(16, 24, 40, .08), 0 12px 32px rgba(16, 24, 40, .14);
 }
-.device[data-device="tablet"] { width: 792px; max-height: 1048px; max-width: 100%; border: 12px solid #15171c; border-radius: 30px; }
-.device[data-device="mobile"] { width: 410px; max-height: 864px; max-width: 100%; border: 10px solid #15171c; border-radius: 42px; }
-.device-screen { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; container-type: inline-size; scrollbar-width: thin; }
+.device-screen { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; container-type: inline-size; scrollbar-width: none; }
+.device-screen::-webkit-scrollbar { display: none; }
 
 /* The desktop 80% scale shrinks vh units, so give the stage back its height. */
 @media (min-width: 1024px) {

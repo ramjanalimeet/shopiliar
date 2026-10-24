@@ -56,12 +56,31 @@ if (tplList) {
   const device = document.getElementById("tpl-device");
   const deviceSwitch = document.getElementById("tpl-devices");
   const deviceSize = document.getElementById("tpl-device-size");
-  const deviceLabels = { desktop: "Desktop · full width", tablet: "Tablet · 768px", mobile: "Mobile · 390px" };
+  const deviceFit = document.getElementById("tpl-device-fit");
+  const stage = deviceFit.parentElement;
+  // Real screen sizes (CSS pixels) for each preview mode
+  const devices = { desktop: [1440, 900], tablet: [768, 1024], mobile: [390, 844] };
+  let current = "desktop";
   let lastFocus = null;
 
+  const fitDevice = () => {
+    const [w, h] = devices[current];
+    const pad = parseFloat(getComputedStyle(stage).paddingLeft) * 2;
+    const scale = Math.min(1, (stage.clientWidth - pad) / w, (stage.clientHeight - pad) / h);
+    device.style.width = w + "px";
+    device.style.height = h + "px";
+    device.style.transform = "scale(" + scale + ")";
+    deviceFit.style.width = w * scale + "px";
+    deviceFit.style.height = h * scale + "px";
+    const label = current[0].toUpperCase() + current.slice(1);
+    deviceSize.textContent = label + " · " + w + " × " + h + (scale < 1 ? " · " + Math.round(scale * 100) + "%" : "");
+  };
+  new ResizeObserver(() => { if (!modal.hidden) fitDevice(); }).observe(stage);
+
   const setDevice = (name) => {
+    current = name;
     device.dataset.device = name;
-    deviceSize.textContent = deviceLabels[name];
+    fitDevice();
     deviceSwitch.querySelectorAll("button").forEach((b) => {
       const on = b.dataset.device === name;
       b.classList.toggle("on", on);
@@ -93,8 +112,8 @@ if (tplList) {
     burger.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
     live.querySelector(".s-nav").appendChild(burger);
     modalShot.appendChild(live);
-    setDevice("desktop");
     modal.hidden = false;
+    setDevice("desktop");
     document.body.classList.add("no-scroll");
     modal.querySelector(".modal-close").focus();
   });
