@@ -2,10 +2,10 @@
 
 Marketing site for Shopiliar — create your business website online.
 
-Static HTML/CSS/JS, no build step. Open `index.html` in a browser or serve the folder:
+Static HTML/CSS/JS, no build step. Site files live in `public/`. Open `public/index.html` in a browser or serve the folder:
 
 ```
-python3 -m http.server 8000
+python3 -m http.server 8000 -d public
 ```
 
 ## Pages
@@ -15,5 +15,5 @@ python3 -m http.server 8000
 - `signin.html` — Sign in
 - `signup.html` — Sign up
 
-Shared styles live in `assets/styles.css`, shared behaviour in `assets/main.js`.
+Shared styles live in `public/assets/styles.css`, shared behaviour in `public/assets/main.js`. Deployed to Cloudflare Workers with `npx wrangler deploy` (see `wrangler.jsonc`).
 The sign-in / sign-up forms are front-end only until a backend is connected.
