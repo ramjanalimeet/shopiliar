@@ -1,4 +1,4 @@
-/* ---------- Store dashboard (/admin) ----------
+/* ---------- Dashboards (/admin and /master-admin) ----------
    Commerce-style layout on top of dash.css: soft gray sidebar,
    green accents, roomy stat cards and a sales line chart. */
 .store-admin {
@@ -253,3 +253,4 @@
   .s-close { top: 8px; right: 8px; }
   .s-content { padding: 20px 16px 28px; }
 }
+.profile-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
