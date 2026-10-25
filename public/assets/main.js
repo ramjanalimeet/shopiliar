@@ -24,20 +24,19 @@ if (tplList) {
   const chips = document.getElementById("tpl-chips");
   const empty = document.getElementById("tpl-empty");
   const best = document.getElementById("tpl-best");
-  const niches = document.getElementById("tpl-niches");
   const BEST = {
     local: "Best for cafés, restaurants, plumbers, electricians and clinics that take appointment bookings.",
     ecommerce: "Best for every kind of business that sells products online.",
     course: "Best for content creators, influencers and YouTubers selling online courses.",
   };
-  let cat = "all", niche = "all";
+  let cat = "all";
 
   const render = () => {
     const q = search.value.trim().toLowerCase();
     const terms = q.split(/\s+/).filter(Boolean);
     let shown = 0;
     cards.forEach((card) => {
-      const match = (cat === "all" || card.dataset.cat === cat) && (niche === "all" || card.dataset.niche === niche) &&
+      const match = (cat === "all" || card.dataset.cat === cat) &&
         terms.every((t) => card.dataset.search.includes(t));
       card.hidden = !match;
       if (match) shown++;
@@ -64,22 +63,8 @@ if (tplList) {
     });
     best.textContent = BEST[name] || "";
     best.hidden = !BEST[name];
-    // Show this type's niches and start again from "All niches"
-    niches.querySelectorAll("[data-type]").forEach((b) => { b.hidden = name !== "all" && b.dataset.type !== name; });
-    setNiche("all");
-  };
-  const setNiche = (name) => {
-    niche = name;
-    niches.querySelectorAll("button").forEach((b) => {
-      b.classList.toggle("on", b.dataset.niche === name);
-      b.setAttribute("aria-pressed", String(b.dataset.niche === name));
-    });
     render();
   };
-  niches.addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
-    if (btn) setNiche(btn.dataset.niche);
-  });
   chips.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
