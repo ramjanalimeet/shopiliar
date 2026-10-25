@@ -254,3 +254,13 @@
   .s-content { padding: 20px 16px 28px; }
 }
 .profile-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* ---------- Desktop scale ----------
+   Laptops and desktops show both dashboards at 80% (the same as 80% browser zoom),
+   like the public website. Zoom shrinks vh units too, so full-height parts use 125vh. */
+@media (min-width: 1024px) {
+  .store-admin { zoom: .8; }
+  .store-admin .app { height: 125vh; }
+  .store-admin .page { max-width: 1680px; }
+  .store-admin .dialog.settings { height: min(680px, calc(125vh - 60px)); }
+}
