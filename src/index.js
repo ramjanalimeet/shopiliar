@@ -16,9 +16,9 @@ const GOOGLE_STATE_COOKIE = "shopiliar_google";
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname.startsWith("/api/")) {
+    if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/master-admin/api/")) {
       try {
-        return await api(request, env, url);
+        return url.pathname.startsWith("/api/") ? await api(request, env, url) : await adminApi(request, env, url);
       } catch (err) {
         console.error(err);
         return json({ error: "Something went wrong. Please try again." }, 500);
@@ -46,10 +46,14 @@ async function api(request, env, url) {
     if (request.headers.get("Origin") !== url.origin) return json({ error: "Bad origin." }, 403);
     if (!(request.headers.get("Content-Type") || "").includes("application/json")) return json({ error: "Expected JSON." }, 415);
   }
-  if ((route === "POST /api/signup" || route === "POST /api/signin" || route === "POST /api/password" || route === "POST /api/ai/site") && env.AUTH_LIMITER) {
+  if ((route === "POST /api/signup" || route === "POST /api/signin" || route === "POST /api/password" || route === "POST /api/ai/site" || route.startsWith("POST /api/messages")) && env.AUTH_LIMITER) {
     const { success } = await env.AUTH_LIMITER.limit({ key: request.headers.get("CF-Connecting-IP") || "unknown" });
     if (!success) return json({ error: "Too many attempts. Please wait a minute and try again." }, 429);
   }
+
+  // Support messages: /api/messages and /api/messages/<id>
+  const msg = /^\/api\/messages(?:\/([\w-]{1,64}))?$/.exec(url.pathname);
+  if (msg) return userMessages(request, env, msg[1]);
 
   switch (route) {
     case "POST /api/signup": return signup(request, env);
@@ -185,6 +189,157 @@ async function changePassword(request, env) {
     env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token_hash != ?").bind(user.id, keep),
   ]);
   return json({ ok: true });
+}
+
+// ---------- Support messages ----------
+// Users talk to the Shopilier team from their dashboard; the master panel answers.
+const MESSAGE_KINDS = ["question", "complaint", "billing", "website"];
+const MAX_MESSAGE = 2000;
+
+async function userMessages(request, env, id) {
+  const user = await currentUser(request, env);
+  if (!user) return json({ error: "Not signed in." }, 401);
+  const now = new Date().toISOString();
+  if (!id && request.method === "GET") {
+    const { results } = await env.DB.prepare(
+      `SELECT c.*, (SELECT body FROM messages m WHERE m.conversation_id = c.id ORDER BY created_at DESC LIMIT 1) AS last
+       FROM conversations c WHERE c.user_id = ? ORDER BY c.updated_at DESC LIMIT 100`
+    ).bind(user.id).all();
+    return json({ conversations: results.map(publicConversation) });
+  }
+  if (!id && request.method === "POST") {
+    const body = await readJson(request);
+    const subject = clean(body.subject, 120), text = clean(body.body, MAX_MESSAGE);
+    if (!subject || !text) return json({ error: "Please add a subject and a message." }, 400);
+    const cid = crypto.randomUUID();
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO conversations (id, user_id, subject, kind, status, admin_unread, user_unread, created_at, updated_at) VALUES (?, ?, ?, ?, 'open', 1, 0, ?, ?)")
+        .bind(cid, user.id, subject, MESSAGE_KINDS.includes(body.kind) ? body.kind : "question", now, now),
+      env.DB.prepare("INSERT INTO messages (id, conversation_id, sender, body, created_at) VALUES (?, ?, 'user', ?, ?)").bind(crypto.randomUUID(), cid, text, now),
+    ]);
+    return json({ id: cid }, 201);
+  }
+  const conv = id && await env.DB.prepare("SELECT * FROM conversations WHERE id = ? AND user_id = ?").bind(id, user.id).first();
+  if (!conv) return json({ error: "Conversation not found." }, 404);
+  if (request.method === "GET") {
+    await env.DB.prepare("UPDATE conversations SET user_unread = 0 WHERE id = ?").bind(id).run();
+    return json(await thread(env, { ...conv, user_unread: 0 }));
+  }
+  if (request.method === "POST") {
+    const text = clean((await readJson(request)).body, MAX_MESSAGE);
+    if (!text) return json({ error: "Write a message first." }, 400);
+    // A new message reopens a resolved conversation
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO messages (id, conversation_id, sender, body, created_at) VALUES (?, ?, 'user', ?, ?)").bind(crypto.randomUUID(), id, text, now),
+      env.DB.prepare("UPDATE conversations SET status = 'open', admin_unread = 1, updated_at = ? WHERE id = ?").bind(now, id),
+    ]);
+    return json(await thread(env, { ...conv, status: "open", updated_at: now }));
+  }
+  return json({ error: "Not found." }, 404);
+}
+
+async function thread(env, conv) {
+  const { results } = await env.DB.prepare("SELECT sender, body, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at").bind(conv.id).all();
+  return { conversation: publicConversation(conv), messages: results.map((m) => ({ from: m.sender, body: m.body, at: m.created_at })) };
+}
+
+const publicConversation = (c) => ({
+  id: c.id, subject: c.subject, kind: c.kind, status: c.status, last: c.last ?? undefined,
+  unread: !!c.user_unread, adminUnread: !!c.admin_unread, createdAt: c.created_at, updatedAt: c.updated_at,
+  user: c.user_email ? { name: c.user_name, email: c.user_email, business: c.user_business, category: c.user_category, plan: c.user_plan, billing: c.user_billing, joined: c.user_joined } : undefined,
+});
+
+// ---------- Master admin API (/master-admin/api/*) ----------
+// Cloudflare Access guards /master-admin; the Worker also checks Access's signed
+// token so these routes can never be reached without your Access login.
+async function adminApi(request, env, url) {
+  const admin = await accessEmail(request, env);
+  if (!admin) return json({ error: "Not allowed." }, 403);
+  if (request.method !== "GET") {
+    if (request.headers.get("Origin") !== url.origin) return json({ error: "Bad origin." }, 403);
+    if (!(request.headers.get("Content-Type") || "").includes("application/json")) return json({ error: "Expected JSON." }, 415);
+  }
+  const now = new Date().toISOString();
+  const path = url.pathname.slice("/master-admin/api".length);
+  const USER_COLS = "u.name AS user_name, u.email AS user_email, u.business AS user_business, u.category AS user_category, u.plan AS user_plan, u.billing AS user_billing, u.created_at AS user_joined";
+
+  if (path === "/conversations" && request.method === "GET") {
+    const { results } = await env.DB.prepare(
+      `SELECT c.*, ${USER_COLS}, (SELECT body FROM messages m WHERE m.conversation_id = c.id ORDER BY created_at DESC LIMIT 1) AS last,
+         (SELECT sender FROM messages m WHERE m.conversation_id = c.id ORDER BY created_at DESC LIMIT 1) AS last_from
+       FROM conversations c JOIN users u ON u.id = c.user_id ORDER BY c.updated_at DESC LIMIT 300`
+    ).all();
+    return json({ conversations: results.map((c) => ({ ...publicConversation(c), lastFrom: c.last_from })) });
+  }
+  if (path === "/conversations" && request.method === "POST") {
+    // Start a conversation with a user
+    const body = await readJson(request);
+    const subject = clean(body.subject, 120), text = clean(body.body, MAX_MESSAGE);
+    const user = await env.DB.prepare("SELECT id FROM users WHERE id = ?").bind(String(body.userId || "")).first();
+    if (!user) return json({ error: "Pick a user." }, 400);
+    if (!subject || !text) return json({ error: "Please add a subject and a message." }, 400);
+    const cid = crypto.randomUUID();
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO conversations (id, user_id, subject, kind, status, admin_unread, user_unread, created_at, updated_at) VALUES (?, ?, ?, 'question', 'open', 0, 1, ?, ?)").bind(cid, user.id, subject, now, now),
+      env.DB.prepare("INSERT INTO messages (id, conversation_id, sender, body, created_at) VALUES (?, ?, 'admin', ?, ?)").bind(crypto.randomUUID(), cid, text, now),
+    ]);
+    return json({ id: cid }, 201);
+  }
+  if (path === "/users" && request.method === "GET") {
+    const { results } = await env.DB.prepare("SELECT id, name, email, business, category, plan, billing, created_at FROM users ORDER BY created_at DESC LIMIT 500").all();
+    return json({ users: results.map((u) => ({ id: u.id, name: u.name, email: u.email, business: u.business, category: u.category, plan: u.plan, billing: u.billing, joined: u.created_at })) });
+  }
+  const m = /^\/conversations\/([\w-]{1,64})(\/status)?$/.exec(path);
+  if (m) {
+    const conv = await env.DB.prepare(`SELECT c.*, ${USER_COLS} FROM conversations c JOIN users u ON u.id = c.user_id WHERE c.id = ?`).bind(m[1]).first();
+    if (!conv) return json({ error: "Conversation not found." }, 404);
+    if (!m[2] && request.method === "GET") {
+      await env.DB.prepare("UPDATE conversations SET admin_unread = 0 WHERE id = ?").bind(conv.id).run();
+      return json(await thread(env, { ...conv, admin_unread: 0 }));
+    }
+    if (!m[2] && request.method === "POST") {
+      const text = clean((await readJson(request)).body, MAX_MESSAGE);
+      if (!text) return json({ error: "Write a reply first." }, 400);
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO messages (id, conversation_id, sender, body, created_at) VALUES (?, ?, 'admin', ?, ?)").bind(crypto.randomUUID(), conv.id, text, now),
+        env.DB.prepare("UPDATE conversations SET user_unread = 1, admin_unread = 0, updated_at = ? WHERE id = ?").bind(now, conv.id),
+      ]);
+      return json(await thread(env, { ...conv, admin_unread: 0, updated_at: now }));
+    }
+    if (m[2] && request.method === "POST") {
+      const status = (await readJson(request)).status === "closed" ? "closed" : "open";
+      await env.DB.prepare("UPDATE conversations SET status = ? WHERE id = ?").bind(status, conv.id).run();
+      return json(await thread(env, { ...conv, status }));
+    }
+  }
+  return json({ error: "Not found." }, 404);
+}
+
+// Verifies the Cf-Access-Jwt-Assertion token Cloudflare Access adds to requests it let through.
+let accessKeys = null;
+async function accessEmail(request, env) {
+  if (env.ACCESS_DEV_BYPASS === "1") return "dev@localhost"; // local `wrangler dev` only; never set in production
+  const token = request.headers.get("Cf-Access-Jwt-Assertion");
+  if (!token || !env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return null;
+  try {
+    const [h, p, sig] = token.split(".");
+    const header = JSON.parse(new TextDecoder().decode(unb64(h)));
+    const claims = JSON.parse(new TextDecoder().decode(unb64(p)));
+    const aud = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+    if (!aud.includes(env.ACCESS_AUD) || claims.iss !== `https://${env.ACCESS_TEAM_DOMAIN}` || claims.exp * 1000 < Date.now()) return null;
+    if (!accessKeys || Date.now() - accessKeys.at > 36e5 || !accessKeys.keys.some((k) => k.kid === header.kid)) {
+      const res = await fetch(`https://${env.ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`);
+      accessKeys = { at: Date.now(), keys: (await res.json()).keys || [] };
+    }
+    const jwk = accessKeys.keys.find((k) => k.kid === header.kid);
+    if (!jwk) return null;
+    const key = await crypto.subtle.importKey("jwk", { kty: jwk.kty, n: jwk.n, e: jwk.e, alg: "RS256" }, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    const ok = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, unb64(sig), new TextEncoder().encode(h + "." + p));
+    return ok ? claims.email || "admin" : null;
+  } catch (err) {
+    console.error("Access token check failed", err);
+    return null;
+  }
 }
 
 // ---------- Create with AI ----------

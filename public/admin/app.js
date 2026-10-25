@@ -358,6 +358,13 @@
         </table></div></div></div>`,
     },
 
+    messages: {
+      title: "Messages",
+      render: () => `${head("Messages", "Questions, complaints or help with your website — talk to the Shopilier team here.", `<button class="btn btn-primary" data-action="new-message">${icon("plus")}New message</button>`)}
+        <div id="inbox-root"></div></div>`,
+      mount: (view) => { inbox = ShopilierInbox(view.querySelector("#inbox-root"), { mode: "user", onUnread: setMsgBadge }); },
+    },
+
     help: {
       title: "Help Center",
       render: () => `${head("Help Center", "Answers to common questions.")}
@@ -374,6 +381,7 @@
             ["Can I use my own domain?", "Yes. Go to Settings and add your domain. Yearly Business and Pro plans include a free domain."],
             ...(kind === "ecommerce" ? [["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."]] : []),
             ["How do I change my plan?", "Open Billing and choose Switch next to the plan you want."],
+            ["How do I contact the Shopilier team?", "Open Messages in the sidebar and click New message. Pick what it's about (a question, a complaint, billing or a website problem) and we'll reply right there."],
           ].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
         </div></div></div>`,
     },
@@ -641,7 +649,15 @@
   });
 
   const pixelById = (id) => PIXELS.find((p) => p.id === id);
+  // Support messages: unread replies show as a badge on Messages in the sidebar
+  let inbox = null;
+  const setMsgBadge = (n) => { document.getElementById("msg-count").textContent = n || ""; };
+  const checkMessages = () => ShopilierInbox.unread("user").then(setMsgBadge);
+  checkMessages();
+  setInterval(() => { if (location.hash !== "#/messages") checkMessages(); }, 60000);
+
   const actions = {
+    "new-message": () => inbox && inbox.newMessage(),
     "pixel-edit": (el) => {
       const p = pixelById(el.dataset.id), px = store.marketing.pixels[p.id];
       dialog({

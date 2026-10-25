@@ -155,6 +155,13 @@
       },
     },
 
+    messages: {
+      title: "Messages",
+      render: () => `${head("Messages", "Every conversation with your users — questions, complaints and billing. Replies show up in their dashboard.", `<button class="btn btn-primary" data-action="new-message">${icon("plus")}New message</button>`)}
+        <div id="inbox-root"></div></div>`,
+      mount: (view) => { inbox = ShopilierInbox(view.querySelector("#inbox-root"), { mode: "admin", onUnread: setMsgBadge }); },
+    },
+
     users: {
       title: "Users",
       render: () => {
@@ -398,7 +405,14 @@
   };
 
   // ---------- Actions ----------
+  // Support messages from real users (stored in D1, unlike the sample data above)
+  let inbox = null;
+  const setMsgBadge = (n) => { document.getElementById("msg-count").textContent = n || ""; };
+  ShopilierInbox.unread("admin").then(setMsgBadge);
+  setInterval(() => { if (location.hash !== "#/messages") ShopilierInbox.unread("admin").then(setMsgBadge); }, 60000);
+
   const actions = {
+    "new-message": () => inbox && inbox.newMessage(),
     "user-tab": (el) => { userTab = el.dataset.tab; go(); },
     "add-user": () => userDialog(null),
     "open-user": (el) => userDialog(userById(el.dataset.id)),

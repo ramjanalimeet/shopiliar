@@ -30,3 +30,26 @@ CREATE TABLE IF NOT EXISTS stores (
 
 -- Added after launch. On a database created before this column existed, run once:
 --   ALTER TABLE users ADD COLUMN category TEXT NOT NULL DEFAULT 'ecommerce';
+
+-- Support messages between users and the Shopilier team
+CREATE TABLE IF NOT EXISTS conversations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  subject TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'question',   -- question, complaint, billing or website
+  status TEXT NOT NULL DEFAULT 'open',     -- open or closed
+  admin_unread INTEGER NOT NULL DEFAULT 0,
+  user_unread INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS conversations_user ON conversations(user_id);
+CREATE INDEX IF NOT EXISTS conversations_updated ON conversations(updated_at);
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  sender TEXT NOT NULL,                    -- user or admin
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS messages_conversation ON messages(conversation_id, created_at);
