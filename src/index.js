@@ -191,7 +191,8 @@ async function changePassword(request, env) {
 // Writes the first version of a website (template, headline, text) from a short
 // description, using Workers AI when the AI binding is available and simple
 // rules otherwise, so sign-up never gets stuck.
-const AI_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+// Tried in order; Cloudflare retires models over time (plain llama-3.1-8b-instruct went in May 2026)
+const AI_MODELS = ["@cf/meta/llama-3.1-8b-instruct-fast", "@cf/zai-org/glm-4.7-flash"];
 const TEMPLATES_BY_TYPE = {
   local: ["bistro-restaurant", "fixly-services", "growify-agency"],
   ecommerce: ["luxe-store", "saas-landing", "launchly-landing"],
@@ -210,29 +211,31 @@ async function aiSite(request, env) {
   const basic = basicSite(type, name, about, city);
   // "fallback" says why the simple version was used (not shown to users; helps when checking the setup)
   if (!env.AI) return json({ ...basic, source: "basic", fallback: "no-ai-binding" });
-  try {
-    const out = await env.AI.run(AI_MODEL, {
-      max_tokens: 400,
-      messages: [
-        { role: "system", content: "You write short, friendly website copy for small businesses in Bangladesh. Reply with one JSON object only, no other text." },
-        { role: "user", content: `Business name: ${name}\nCity: ${city}\nType: ${{ local: "local business that takes bookings", ecommerce: "online shop", course: "online course creator" }[type]}\nWhat they do: ${about}\n\n` +
-          `Return JSON with keys: "template" (one of ${TEMPLATES_BY_TYPE[type].map((t) => `"${t}"`).join(", ")} - pick the closest style), "headline" (max 50 characters), "sub" (one sentence, max 100 characters), "cta" (button text, max 18 characters), "about" (2 sentences for an About section, max 260 characters).` },
-      ],
-    });
-    // Most text models return { response: "…" }; some return the parsed object directly
-    const raw = out?.response ?? out;
-    if (raw && typeof raw === "object" && raw.headline) return json(aiResult(type, raw, basic));
-    const text = String(raw ?? "");
-    let parsed;
-    try { parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)); } catch {
-      console.error("AI site: reply wasn't JSON", text.slice(0, 300));
-      return json({ ...basic, source: "basic", fallback: "ai-reply-not-json" });
+  const messages = [
+    { role: "system", content: "You write short, friendly website copy for small businesses in Bangladesh. Reply with one JSON object only, no other text." },
+    { role: "user", content: `Business name: ${name}\nCity: ${city}\nType: ${{ local: "local business that takes bookings", ecommerce: "online shop", course: "online course creator" }[type]}\nWhat they do: ${about}\n\n` +
+      `Return JSON with keys: "template" (one of ${TEMPLATES_BY_TYPE[type].map((t) => `"${t}"`).join(", ")} - pick the closest style), "headline" (max 50 characters), "sub" (one sentence, max 100 characters), "cta" (button text, max 18 characters), "about" (2 sentences for an About section, max 260 characters).` },
+  ];
+  let lastError = "";
+  for (const model of AI_MODELS) {
+    try {
+      const out = await env.AI.run(model, { max_tokens: 600, messages });
+      // Text models return { response: "…" }, OpenAI-style ones { choices: [{ message }] }, some the object itself
+      const raw = out?.response ?? out?.choices?.[0]?.message?.content ?? out;
+      if (raw && typeof raw === "object" && raw.headline) return json(aiResult(type, raw, basic));
+      const text = String(raw ?? "");
+      try {
+        return json(aiResult(type, JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)), basic));
+      } catch {
+        console.error("AI site: reply wasn't JSON", model, text.slice(0, 300));
+        lastError = "ai-reply-not-json";
+      }
+    } catch (err) {
+      console.error("AI site failed", model, err);
+      lastError = "ai-error: " + String(err?.message || err).slice(0, 120);
     }
-    return json(aiResult(type, parsed, basic));
-  } catch (err) {
-    console.error("AI site failed", err);
-    return json({ ...basic, source: "basic", fallback: "ai-error: " + String(err?.message || err).slice(0, 120) });
   }
+  return json({ ...basic, source: "basic", fallback: lastError });
 }
 
 function aiResult(type, parsed, basic) {
