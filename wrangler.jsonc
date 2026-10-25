@@ -7,7 +7,7 @@
     "binding": "ASSETS",
     "not_found_handling": "404-page",
     // The Worker handles the account API and checks sign-in before serving /admin
-    "run_worker_first": ["/api/*", "/admin", "/admin/*"]
+    "run_worker_first": ["/api/*", "/admin", "/admin/*", "/master-admin/api/*"]
   },
   "d1_databases": [
     { "binding": "DB", "database_name": "shopiliar-db", "database_id": "45d1c9c1-3aa1-4ac7-900d-322fc8a738ca" }
@@ -18,5 +18,10 @@
   ],
   // Workers AI writes the first draft of a website in "Create with AI"
   "ai": { "binding": "AI" },
+  // Cloudflare Access app that protects /master-admin (team domain and Application Audience tag)
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "muddy-hat-9802.cloudflareaccess.com",
+    "ACCESS_AUD": "caa0b5cfd1121879a6a8096cb273c8bf7ed16d0c825dcab038f273729a8ce31f"
+  },
   "observability": { "enabled": true }
 }
