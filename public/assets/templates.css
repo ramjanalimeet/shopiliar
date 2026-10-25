@@ -25,19 +25,9 @@
 .sort svg { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; }
 
 
-.tpl-page .cat-tabs { display: flex; margin: 0; flex: none; padding: 4px; border-radius: 14px; }
-@media (min-width: 761px) {
-  .tpl-page .cat-tabs button { height: 42px; padding: 0 16px; border-radius: 10px; white-space: nowrap; }
-}
-@media (max-width: 760px) {
-  /* Icon above the label so four tabs fit across */
-  .tpl-page .cat-tabs button { flex-direction: column; gap: 4px; height: 64px; font-size: 13px; line-height: 1.15; padding: 0 4px; }
-}
 .tpl-page .search input, .tpl-page .sort select { height: 52px; }
-.tpl-page .cat-best { margin: 0 auto 22px; }
 @media (max-width: 1100px) {
   .tpl-bar { flex-direction: column; align-items: stretch; }
-  .tpl-page .cat-tabs { display: grid; width: 100%; max-width: none; }
   .tpl-tools { margin-left: 0; }
   .tpl-page .search { flex: 1; width: auto; }
 }

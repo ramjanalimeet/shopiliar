@@ -177,15 +177,15 @@ const Dash = (() => {
 
   // Template catalog shared by both dashboards (mirrors the public Templates page).
   const TEMPLATES = () => [
-    { id: "luxe-store", type: "ecommerce", name: "Luxe Store", category: "Online Store", desc: "A modern and elegant online store template for fashion, beauty and lifestyle brands.", layout: "split", bg: "#f7f4f0", text: "#111111", accent: "#111111", headline: "Modern Fashion For Everyone", sub: "Premium quality. Timeless style.", cta: "Shop Now", status: "published", uses: 214, created: daysAgo(120) },
-    { id: "saas-landing", type: "ecommerce", name: "SaaS Landing", category: "Landing Page", desc: "A clean and modern template for SaaS, startup and tech businesses.", layout: "center", bg: "#efedfd", text: "#121735", accent: "#4b5cf0", headline: "Build Better Products Faster", sub: "All the tools you need to launch, grow and manage your business.", cta: "Get Started", status: "published", uses: 96, created: daysAgo(90) },
-    { id: "bistro-restaurant", type: "local", name: "Bistro Restaurant", category: "Food & Drink", desc: "A stylish template for restaurants, cafes and food businesses.", layout: "bleed", bg: "#16110d", text: "#ffffff", accent: "#e8743b", headline: "Good Food Brings People Together", sub: "Fresh ingredients. Amazing taste. Unforgettable experience.", cta: "View Menu", status: "published", uses: 158, created: daysAgo(80) },
-    { id: "nova-portfolio", type: "course", name: "Nova Portfolio", category: "Portfolio", desc: "A minimalist portfolio template for creatives, designers and professionals.", layout: "split", bg: "#fafafa", text: "#111111", accent: "#111111", headline: "Product Designer & Creative Thinker", sub: "I design digital experiences that make a difference.", cta: "View My Work", status: "published", uses: 73, created: daysAgo(70) },
-    { id: "growify-agency", type: "local", name: "Growify Agency", category: "Agency", desc: "A modern template for agencies, consultancies and service-based businesses.", layout: "split", bg: "#fbfbfa", text: "#111111", accent: "#2f6b2a", headline: "We Help Brands Grow Online", sub: "Strategy, design, and development to take your business further.", cta: "Get Started", status: "published", uses: 61, created: daysAgo(60) },
-    { id: "writely-blog", type: "course", name: "Writely Blog", category: "Blog", desc: "A clean blog template for writers, creators and thought leaders.", layout: "split", bg: "#ffffff", text: "#111111", accent: "#3d6b8f", headline: "Stories, Ideas and Insights", sub: "A blog about design, business, productivity and life.", cta: "Read the Latest", status: "published", uses: 44, created: daysAgo(50) },
-    { id: "fixly-services", type: "local", name: "Fixly Services", category: "Services", desc: "A trustworthy template for repair, cleaning and local service businesses.", layout: "split", bg: "#eef4ff", text: "#0b1b46", accent: "#1d4ed8", headline: "Fast, Reliable Home Services", sub: "Book trusted local pros in under 60 seconds.", cta: "Book a Service", status: "published", uses: 37, created: daysAgo(40) },
-    { id: "launchly-landing", type: "ecommerce", name: "Launchly", category: "Landing Page", desc: "A bold one-page template to launch a product and collect sign-ups.", layout: "center", bg: "#0b0b1a", text: "#ffffff", accent: "#ff3d8b", headline: "Launch Your Idea This Weekend", sub: "Everything you need to go from idea to paying customers.", cta: "Get Early Access", status: "published", uses: 29, created: daysAgo(30) },
-    { id: "mia-personal", type: "course", name: "Mia Personal", category: "Personal", desc: "A warm personal site for your bio, links and contact details.", layout: "center", bg: "#fdf6ef", text: "#3b2418", accent: "#e0794f", headline: "Hi, I'm Mia", sub: "Writer, speaker & coffee lover.", cta: "Say Hello", status: "published", uses: 18, created: daysAgo(20) },
+    { id: "luxe-store", name: "Luxe Store", category: "Online Store", desc: "A modern and elegant online store template for fashion, beauty and lifestyle brands.", layout: "split", bg: "#f7f4f0", text: "#111111", accent: "#111111", headline: "Modern Fashion For Everyone", sub: "Premium quality. Timeless style.", cta: "Shop Now", status: "published", uses: 214, created: daysAgo(120) },
+    { id: "saas-landing", name: "SaaS Landing", category: "Landing Page", desc: "A clean and modern template for SaaS, startup and tech businesses.", layout: "center", bg: "#efedfd", text: "#121735", accent: "#4b5cf0", headline: "Build Better Products Faster", sub: "All the tools you need to launch, grow and manage your business.", cta: "Get Started", status: "published", uses: 96, created: daysAgo(90) },
+    { id: "bistro-restaurant", name: "Bistro Restaurant", category: "Food & Drink", desc: "A stylish template for restaurants, cafes and food businesses.", layout: "bleed", bg: "#16110d", text: "#ffffff", accent: "#e8743b", headline: "Good Food Brings People Together", sub: "Fresh ingredients. Amazing taste. Unforgettable experience.", cta: "View Menu", status: "published", uses: 158, created: daysAgo(80) },
+    { id: "nova-portfolio", name: "Nova Portfolio", category: "Portfolio", desc: "A minimalist portfolio template for creatives, designers and professionals.", layout: "split", bg: "#fafafa", text: "#111111", accent: "#111111", headline: "Product Designer & Creative Thinker", sub: "I design digital experiences that make a difference.", cta: "View My Work", status: "published", uses: 73, created: daysAgo(70) },
+    { id: "growify-agency", name: "Growify Agency", category: "Agency", desc: "A modern template for agencies, consultancies and service-based businesses.", layout: "split", bg: "#fbfbfa", text: "#111111", accent: "#2f6b2a", headline: "We Help Brands Grow Online", sub: "Strategy, design, and development to take your business further.", cta: "Get Started", status: "published", uses: 61, created: daysAgo(60) },
+    { id: "writely-blog", name: "Writely Blog", category: "Blog", desc: "A clean blog template for writers, creators and thought leaders.", layout: "split", bg: "#ffffff", text: "#111111", accent: "#3d6b8f", headline: "Stories, Ideas and Insights", sub: "A blog about design, business, productivity and life.", cta: "Read the Latest", status: "published", uses: 44, created: daysAgo(50) },
+    { id: "fixly-services", name: "Fixly Services", category: "Services", desc: "A trustworthy template for repair, cleaning and local service businesses.", layout: "split", bg: "#eef4ff", text: "#0b1b46", accent: "#1d4ed8", headline: "Fast, Reliable Home Services", sub: "Book trusted local pros in under 60 seconds.", cta: "Book a Service", status: "published", uses: 37, created: daysAgo(40) },
+    { id: "launchly-landing", name: "Launchly", category: "Landing Page", desc: "A bold one-page template to launch a product and collect sign-ups.", layout: "center", bg: "#0b0b1a", text: "#ffffff", accent: "#ff3d8b", headline: "Launch Your Idea This Weekend", sub: "Everything you need to go from idea to paying customers.", cta: "Get Early Access", status: "published", uses: 29, created: daysAgo(30) },
+    { id: "mia-personal", name: "Mia Personal", category: "Personal", desc: "A warm personal site for your bio, links and contact details.", layout: "center", bg: "#fdf6ef", text: "#3b2418", accent: "#e0794f", headline: "Hi, I'm Mia", sub: "Writer, speaker & coffee lover.", cta: "Say Hello", status: "published", uses: 18, created: daysAgo(20) },
   ];
   const CATEGORIES = ["Online Store", "Business", "Portfolio", "Food & Drink", "Services", "Blog", "Agency", "Landing Page", "Personal"];
   const PLANS = () => ({
@@ -193,15 +193,6 @@ const Dash = (() => {
     business: { name: "Business", price: 549, pages: 100, products: 150 },
     pro: { name: "Pro", price: 1449, pages: null, products: null },
   });
-  // Monthly price in Taka for each type of business (matches the Pricing page)
-  const BUSINESS_TYPES = { local: "Local Business", ecommerce: "E-commerce", course: "Course Selling" };
-  // Courses allowed on each Course Selling plan (null means unlimited)
-  const COURSE_LIMITS = { starter: 1, business: 10, pro: null };
-  const PLAN_PRICES = {
-    local: { starter: 149, business: 349, pro: 549 },
-    ecommerce: { starter: 249, business: 549, pro: 1449 },
-    course: { starter: 299, business: 599, pro: 1499 },
-  };
   // null means unlimited
   const limitText = (n) => (n == null ? "Unlimited" : String(n));
   const withinLimit = (limit, count) => limit == null || count < limit;
@@ -317,8 +308,8 @@ const Dash = (() => {
     classic: 'Georgia, "Times New Roman", serif',
     friendly: '"Trebuchet MS", "Segoe UI", Verdana, sans-serif',
   };
-  // items: products, services or courses ({ name, price, color, status }); itemsTitle names that section
-  const siteHTML = (site, products = [], pages = [], itemsTitle = "Products") => {
+  // products: { name, price, color, status }
+  const siteHTML = (site, products = [], pages = []) => {
     const navPages = (pages.length ? pages.filter((p) => p.inNav).map((p) => p.title) : ["Home", "Shop", "About", "Contact"]).slice(0, 5);
     const prods = products.filter((p) => p.status !== "draft").slice(0, 6);
     const dark = isDark(site.bg);
@@ -328,7 +319,7 @@ const Dash = (() => {
         <div class="sp-copy"><h1>${esc(site.headline)}</h1><p>${esc(site.sub)}</p><span class="sp-btn">${esc(site.cta || "Shop Now")}</span></div>
         <div class="sp-art"></div>
       </section>
-      ${site.showProducts !== false ? `<section class="sp-sec"><h2>${esc(itemsTitle)}</h2>${prods.length ? `<div class="sp-grid">${prods.map((p) => `<div class="sp-item"><span class="sp-img" style="background:${esc(p.color || "#ddd")}"></span><b>${esc(p.name)}</b><em>${taka(p.price)}</em></div>`).join("")}</div>` : `<p class="sp-empty">Your ${esc(itemsTitle.toLowerCase())} will appear here.</p>`}</section>` : ""}
+      ${site.showProducts !== false ? `<section class="sp-sec"><h2>Products</h2>${prods.length ? `<div class="sp-grid">${prods.map((p) => `<div class="sp-item"><span class="sp-img" style="background:${esc(p.color || "#ddd")}"></span><b>${esc(p.name)}</b><em>${taka(p.price)}</em></div>`).join("")}</div>` : `<p class="sp-empty">Your products will appear here.</p>`}</section>` : ""}
       ${site.showAbout !== false ? `<section class="sp-sec sp-about"><h2>About us</h2><p>${esc(site.about || "Tell customers your story.")}</p></section>` : ""}
       ${site.showContact !== false ? `<section class="sp-sec sp-contact"><h2>Contact</h2><p>${[site.phone, site.email, site.address].filter(Boolean).map(esc).join(" · ") || "Add your phone, email and address."}</p></section>` : ""}
       <footer class="sp-foot">© ${new Date().getFullYear()} ${esc(site.name || "My Store")} · Made with Shopilier</footer>
@@ -341,5 +332,5 @@ const Dash = (() => {
     return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 < 128;
   };
 
-  return { esc, taka, uid, day, daysAgo, initials, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, delta, lineChart, TEMPLATES, CATEGORIES, PLANS, BUSINESS_TYPES, PLAN_PRICES, COURSE_LIMITS, PIXELS, normalizePixelId, trackingCode, limitText, withinLimit, siteHTML, isDark };
+  return { esc, taka, uid, day, daysAgo, initials, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, delta, lineChart, TEMPLATES, CATEGORIES, PLANS, PIXELS, normalizePixelId, trackingCode, limitText, withinLimit, siteHTML, isDark };
 })();

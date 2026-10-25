@@ -2,8 +2,6 @@
 (async () => {
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
   const PLANS = Dash.PLANS();
-  const { BUSINESS_TYPES, PLAN_PRICES } = Dash;
-  const PLAN_PRICES_KINDS = Object.keys(PLAN_PRICES);
   const SIGN_IN = "/signin.html?next=" + encodeURIComponent(location.pathname + location.search);
 
   // ---------- Data (saved to the signed-in account by the Worker) ----------
@@ -54,17 +52,14 @@
       site: {
         name: account.business || "My Store", template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, font: "modern",
         headline: t.headline, sub: t.sub, cta: t.cta, showProducts: true, showAbout: true, showContact: true,
-        about: {
-          local: "We're a local business that looks after every customer personally. Book a time that suits you and we'll take care of the rest.",
-          course: "I share practical, easy-to-follow lessons so you can learn at your own pace — from anywhere in Bangladesh.",
-        }[account.category] || "We make simple, beautiful things for everyday life — designed and delivered across Bangladesh.",
+        about: "We make simple, beautiful things for everyday life — designed and delivered across Bangladesh.",
         phone: "01700-000000", email: account.email, address: "Dhaka, Bangladesh",
       },
       published: false, publishedAt: null,
       products, customers, orders,
       pages: [
         { id: uid("pg"), title: "Home", slug: "", inNav: true, locked: true },
-        { id: uid("pg"), title: { local: "Services", course: "Courses" }[account.category] || "Shop", slug: { local: "services", course: "courses" }[account.category] || "shop", inNav: true },
+        { id: uid("pg"), title: "Shop", slug: "shop", inNav: true },
         { id: uid("pg"), title: "About", slug: "about", inNav: true },
         { id: uid("pg"), title: "Contact", slug: "contact", inNav: true },
       ],
@@ -77,13 +72,8 @@
       customized: false,
     };
   };
-  // Local Business and Course Selling dashboards live in local.js / course.js
-  const kind = PLAN_PRICES_KINDS.includes(account.category) ? account.category : "ecommerce";
-  const extension = (window.ShopilierDash || {})[kind] || null;
-  let ext = null; // the built extension (routes, actions…), set up once the helpers below exist
   const newStore = () => {
     const fresh = seedStore();
-    if (extension) Object.assign(fresh, extension.seed({ account, uid, daysAgo }));
     // Text written in the sign-up flow (Create with AI) becomes the first version of the website
     let start = null;
     try { start = JSON.parse(sessionStorage.getItem("shopilier.start") || "null"); sessionStorage.removeItem("shopilier.start"); } catch (e) { /* storage blocked */ }
@@ -134,15 +124,13 @@
   }
   if (picked) history.replaceState(null, "", location.pathname + location.hash);
   if (!me.store || picked) saveNow();
-  const category = () => (PLAN_PRICES[account.category] ? account.category : "ecommerce");
-  const priceOf = (id, cat = category()) => PLAN_PRICES[cat][id];
-  const plan = () => ({ ...(PLANS[account.plan] || PLANS.starter), price: priceOf(PLANS[account.plan] ? account.plan : "starter") });
-  // Business and Pro get a free domain with yearly billing; Local Business Pro includes one for a year anyway
-  const hasFreeDomain = () => (account.billing === "yearly" && account.plan !== "starter") || (category() === "local" && account.plan === "pro");
+  const plan = () => PLANS[account.plan] || PLANS.starter;
+  // Business and Pro get a free domain with yearly billing
+  const hasFreeDomain = () => account.billing === "yearly" && account.plan !== "starter";
 
   // ---------- Chrome ----------
   const refreshChrome = () => {
-    const pending = ext ? ext.badge() : store.orders.filter((o) => o.status === "Pending").length;
+    const pending = store.orders.filter((o) => o.status === "Pending").length;
     document.querySelectorAll("[data-badge]").forEach((el) => { el.textContent = pending || ""; });
     document.getElementById("count-pages").textContent = store.pages.length;
     document.getElementById("bell-count").textContent = pending ? (pending > 9 ? "9+" : pending) : "";
@@ -151,7 +139,7 @@
     document.getElementById("me-store").textContent = siteUrl();
     document.getElementById("menu-name").textContent = account.name;
     document.getElementById("me-email").textContent = account.email;
-    document.getElementById("me-plan").textContent = BUSINESS_TYPES[category()] + " · " + plan().name + " · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
+    document.getElementById("me-plan").textContent = plan().name + " · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
   };
   const profileBtn = document.getElementById("profile-btn");
   const profileMenu = document.getElementById("profile-menu");
@@ -199,11 +187,8 @@
   };
   // Daily line chart for this period against the previous one (shared with the master dashboard)
   const lineChart = (now, span, valueFor, money = true) => Dash.lineChart(range, now, span, valueFor, money);
-  // Website preview: products, or services / courses for the other business types
-  const previewHTML = (site) => {
-    const [items, itemsTitle] = ext ? ext.siteItems() : [store.products, "Products"];
-    return siteHTML(site, items, store.pages, itemsTitle);
-  };
+  // Website preview with the store's products
+  const previewHTML = (site) => siteHTML(site, store.products, store.pages);
   const salesChart = (now, span) => lineChart(now, span, (from, to) => sales(inPeriod(store.orders, from, to)));
   const topProducts = (orders) => {
     if (!store.products.length) return `<p class="empty-note">No products yet. <a class="link" href="#/products" data-action="add-product">Add your first product</a></p>`;
@@ -370,16 +355,11 @@
       render: () => `${head("Help Center", "Answers to common questions.")}
         <div class="card"><div class="card-body help-list">
           ${[
-            ...({
-              local: [["How do I take a booking?", "Add your services under Services, then click New appointment on Home or Appointments. Set your opening hours on the Services page."],
-                ["How do I mark a visit as done?", "On Appointments, change the status to Completed (or No-show) right in the table."]],
-              course: [["How do I create a course?", "Go to Courses and click New course. Give it a title and price, then click Lessons to add each lesson."],
-                ["How do I record a sale?", "Click Record a sale on Home or Sales, pick the course and enter the student. They're added to Students automatically."]],
-            }[kind] || [["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."]]),
+            ["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."],
             ["How do I change how my website looks?", "Open Online Store. Pick a template, change colors and text, and watch the live preview."],
             ["How do I publish my website?", "In Online Store, click Publish. Your site goes live at your free shopilier.com address."],
             ["Can I use my own domain?", "Yes. Go to Settings and add your domain. Yearly Business and Pro plans include a free domain."],
-            ...(kind === "ecommerce" ? [["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."]] : []),
+            ["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."],
             ["How do I change my plan?", "Open Billing and choose Switch next to the plan you want."],
             ["How do I contact the Shopilier team?", "Open Messages in the sidebar and click New message. Pick what it's about (a question, a complaint, billing or a website problem) and we'll reply right there."],
           ].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
@@ -502,8 +482,7 @@
           ["Classic", "#ffffff", "#111111", "#111111"], ["Sand", "#f7f4f0", "#2b211a", "#8a5a3b"], ["Ocean", "#eef6fb", "#0b2a3f", "#0b6e99"],
           ["Forest", "#f3f7f1", "#1c3326", "#2f6b2a"], ["Berry", "#fdf3f6", "#3d1527", "#ad1a72"], ["Night", "#14141c", "#ffffff", "#ff7a59"],
         ];
-        // This business type's templates first
-        const published = catalog.filter((t) => t.status === "published").sort((a, b) => (b.type === kind) - (a.type === kind));
+        const published = catalog.filter((t) => t.status === "published");
         return `${head("Customize website", "Pick a template, choose colors and edit your text. The preview updates as you type.",
           `${store.published ? '<span class="tag dot green">Live</span>' : '<span class="tag dot yellow">Draft</span>'}<button class="btn" data-action="reset-site">Reset</button><button class="btn btn-primary" data-action="publish">${icon("rocket")}${store.published ? "Publish changes" : "Publish website"}</button>`)}
           <div style="display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start" class="customizer">
@@ -779,19 +758,13 @@
       persist(); go(); toast(v ? "Domain saved — waiting for DNS" : "Custom domain removed");
     },
     "change-plan": () => {
-      const planOptions = (cat) => Object.entries(PLANS).map(([id, p]) => `<option value="${id}"${id === account.plan ? " selected" : ""}>${p.name} — ${taka(priceOf(id, cat))}/month</option>`).join("");
+      const planOptions = Object.entries(PLANS).map(([id, p]) => `<option value="${id}"${id === account.plan ? " selected" : ""}>${p.name} — ${taka(p.price)}/month</option>`).join("");
       dialog({
         title: "Change plan",
-        body: `<div class="field"><label>Type of business</label><select class="select" name="category">${Object.entries(BUSINESS_TYPES).map(([id, n]) => `<option value="${id}"${id === category() ? " selected" : ""}>${n}</option>`).join("")}</select></div>
-          <div class="field"><label>Plan</label><select class="select" name="plan">${planOptions(category())}</select></div>
+        body: `<div class="field"><label>Plan</label><select class="select" name="plan">${planOptions}</select></div>
           <div class="field"><label>Billing</label><select class="select" name="billing"><option value="monthly">Monthly</option><option value="yearly"${account.billing === "yearly" ? " selected" : ""}>Yearly (free custom domain on Business &amp; Pro)</option></select></div>`,
         submit: "Update plan",
-        onOpen: (form) => form.elements.category.addEventListener("change", (e) => {
-          const keep = form.elements.plan.value;
-          form.elements.plan.innerHTML = planOptions(e.target.value);
-          form.elements.plan.value = keep;
-        }),
-        onSubmit: (v) => { account.category = v.category; account.plan = v.plan; account.billing = v.billing; persist(); go(); toast(`Plan updated to ${BUSINESS_TYPES[v.category]} ${PLANS[v.plan].name}`); },
+        onSubmit: (v) => { account.plan = v.plan; account.billing = v.billing; persist(); go(); toast(`Plan updated to ${PLANS[v.plan].name}`); },
       });
     },
     "set-plan": (el) => { account.plan = el.dataset.plan; persist(); go(); toast("Plan updated to " + PLANS[account.plan].name); },
@@ -803,23 +776,6 @@
       await saveNow(); location.reload();
     },
   };
-
-  // ---------- Business type: Local Business / Course Selling ----------
-  // Their dashboards replace the e-commerce Home, Orders, Products, Customers and Analytics pages.
-  if (extension) {
-    ext = extension.build({
-      store, account, kind, plan, range: () => range, siteUrl,
-      esc, taka, uid, day, daysAgo, avatar, tag, icon, toast, dialog, confirm, bars, limitText, withinLimit,
-      head, delta, inPeriod, lineChart, searchBox, usage, limitCallout, feature, persist, go: () => go(),
-    });
-    ["home", "orders", "products", "customers", "analytics"].forEach((r) => delete routes[r]);
-    Object.assign(routes, ext.routes);
-    Object.assign(actions, ext.actions);
-  }
-  const searchHint = { local: "Search appointments, clients, services…", course: "Search sales, students, courses…" }[kind];
-  if (searchHint) { const ts = document.getElementById("top-search"); ts.placeholder = searchHint; ts.setAttribute("aria-label", searchHint.replace("…", "")); }
-  // Only this business type's menu items show in the sidebar
-  document.querySelectorAll("[data-kind]").forEach((el) => { el.hidden = !el.dataset.kind.split(" ").includes(kind); });
 
   // ---------- Settings popup ----------
   const SETTINGS_TABS = [
@@ -850,16 +806,16 @@
       const p = plan(), yearly = account.billing === "yearly";
       return `<h2>Plan &amp; billing</h2><p class="muted">Your plan and how much of it you're using.</p>
         <div class="s-card">
-          <div class="s-plan"><div><span class="tag green">${esc(BUSINESS_TYPES[category()])} · ${esc(p.name)} plan</span>
+          <div class="s-plan"><div><span class="tag green">${esc(p.name)} plan</span>
             <div class="stat-value" style="margin-top:8px">${yearly ? taka(p.price * 12) + '<span class="muted" style="font-size:14px;font-weight:500"> /year</span>' : taka(p.price) + '<span class="muted" style="font-size:14px;font-weight:500"> /month</span>'}</div>
-            <p class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${hasFreeDomain() ? (yearly ? " · includes a free custom domain" : " · includes a free domain for 1 year") : ""}</p></div>
+            <p class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${hasFreeDomain() ? " · includes a free custom domain" : ""}</p></div>
             <button class="btn btn-primary" type="button" data-action="change-plan">Change plan</button></div>
-          ${[["Pages", store.pages.length, p.pages], ...(ext ? ext.usage() : [["Products", store.products.length, p.products]])].map(([n, used, lim]) => `
+          ${[["Pages", store.pages.length, p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
             <div class="meter" style="margin-top:14px"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
             <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
         </div>
-        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>${esc(BUSINESS_TYPES[category()])} plan</th><th class="t-right">Monthly</th><th>Pages</th>${kind === "local" ? "<th>Bookings</th>" : kind === "course" ? "<th>Courses</th><th>Students</th>" : "<th>Products</th><th>Sales</th>"}<th class="t-actions"></th></tr></thead>
-          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(priceOf(id))}</td><td>${limitText(pl.pages)}</td>${kind === "local" ? "<td>Unlimited</td>" : kind === "course" ? `<td>${limitText(Dash.COURSE_LIMITS[id])}</td><td>Unlimited</td>` : `<td>${limitText(pl.products)}</td><td>Unlimited</td>`}
+        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Sales</th><th class="t-actions"></th></tr></thead>
+          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(pl.price)}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td><td>Unlimited</td>
             <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" type="button" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
         <p class="muted small">Online payment for plans isn't connected yet, so switching plans changes your limits straight away.</p>`;
     },
@@ -867,7 +823,7 @@
       const st = store.settings, freeDomain = hasFreeDomain();
       return `<h2>Domain</h2><p class="muted">Where customers find your website.</p>
         <div class="s-card"><b>Free address</b><p class="muted" style="margin-top:4px">${esc(st.subdomain)}.shopilier.com</p></div>
-        ${freeDomain ? `<div class="callout green"><span class="ico">${icon("gift")}</span><div><b>Your ${account.billing === "yearly" ? "yearly " : ""}${esc(plan().name)} plan includes a free custom domain${account.billing === "yearly" ? "" : " for 1 year"}.</b></div></div>` : ""}
+        ${freeDomain ? `<div class="callout green"><span class="ico">${icon("gift")}</span><div><b>Your yearly ${esc(plan().name)} plan includes a free custom domain.</b></div></div>` : ""}
         <div class="s-card">
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
             <div class="field" style="flex:1;margin:0;min-width:200px"><label for="s-domain">Custom domain</label><input class="input" id="s-domain" placeholder="www.yourbusiness.com" value="${esc(st.domain)}"></div>
@@ -999,7 +955,6 @@
   view.addEventListener("change", (e) => {
     const el = e.target;
     if (el.dataset.action === "range") { range = Number(el.value); go(); }
-    if (ext && ext.onChange) ext.onChange(el);
     if (el.dataset.action === "pixel-on") {
       const p = pixelById(el.dataset.id);
       store.marketing.pixels[p.id].on = el.checked; persist(); go(); toast(`${p.name} ${el.checked ? "is active" : "is paused"}`);
@@ -1026,20 +981,12 @@
       const again = view.querySelector(`[data-action="${el.dataset.action}"]`);
       again.focus(); again.setSelectionRange(pos, pos);
     }
-    // Search boxes on the Local Business / Course Selling pages: ext.onInput returns true when it used the input
-    if (ext && ext.onInput && ext.onInput(el)) {
-      const pos = el.selectionStart;
-      go();
-      const again = view.querySelector(`[data-action="${el.dataset.action}"]`);
-      if (again) { again.focus(); again.setSelectionRange(pos, pos); }
-    }
   });
 
   // Top bar search: products when it matches one, otherwise orders
   document.getElementById("top-search").addEventListener("keydown", (e) => {
     if (e.key !== "Enter") return;
     const q = e.target.value.trim();
-    if (ext) { ext.search(q); return; }
     const isProduct = q && store.products.some((p) => p.name.toLowerCase().includes(q.toLowerCase()));
     if (isProduct) { productSearch = q; location.hash = "#/products"; } else { orderSearch = q; orderFilter = "All"; location.hash = "#/orders"; }
     if (location.hash === (isProduct ? "#/products" : "#/orders")) go();

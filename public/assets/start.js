@@ -1,34 +1,25 @@
-// Get started: business type → template or Create with AI → plan → account, then the dashboard.
-// Links from Pricing (?category=&plan=&billing=) and Templates (?category=&template=) skip the steps already answered.
+// Get started: template or Create with AI → plan → account, then the store dashboard.
+// Links from Pricing (?plan=&billing=) and Templates (?template=) skip the steps already answered.
 (() => {
   const root = document.getElementById("start-step");
   const stepsEl = document.getElementById("start-steps");
   if (!root) return;
-  const { esc, icon, TEMPLATES, PLAN_PRICES, BUSINESS_TYPES, COURSE_LIMITS } = Dash;
+  const { esc, icon, TEMPLATES } = Dash;
   const templates = TEMPLATES();
+  const PLANS = Dash.PLANS();
   const taka = (n) => "৳" + Number(n).toLocaleString("en-US");
 
-  const TYPES = {
-    local: { icon: "store", best: "Cafés, restaurants, plumbers, electricians and clinics that take appointment bookings." },
-    ecommerce: { icon: "cart", best: "Any business that sells products online." },
-    course: { icon: "play", best: "Content creators, influencers and YouTubers selling online courses." },
-  };
   const PLAN_NAMES = { starter: "Starter", business: "Business", pro: "Pro" };
-  const FEATURES = {
-    local: { starter: ["5 page website", "Online appointment booking", "Unlimited bookings"], business: ["100 page website", "Online appointment booking", "Unlimited bookings"], pro: ["Unlimited pages", "Online appointment booking", "1 year free domain"] },
-    ecommerce: { starter: ["5 page website", "3 products", "Unlimited sales"], business: ["100 page website", "150+ products", "Unlimited sales"], pro: ["Unlimited pages", "Unlimited products", "Unlimited sales"] },
-    course: { starter: ["5 page website", `${COURSE_LIMITS.starter} course`, "Unlimited students"], business: ["100 page website", `${COURSE_LIMITS.business} courses`, "Unlimited students"], pro: ["Unlimited pages", "Unlimited courses", "Unlimited students"] },
-  };
-  const STEPS = [["type", "Business type"], ["site", "Your website"], ["plan", "Plan"], ["account", "Account"]];
+  const FEATURES = { starter: ["5 page website", "3 products", "Unlimited sales"], business: ["100 page website", "150+ products", "Unlimited sales"], pro: ["Unlimited pages", "Unlimited products", "Unlimited sales"] };
+  const STEPS = [["site", "Your website"], ["plan", "Plan"], ["account", "Account"]];
 
   // ---------- State (seeded from the link that brought the visitor here) ----------
   const params = new URLSearchParams(location.search);
-  const state = { type: null, start: null, template: null, ai: null, plan: null, billing: params.get("billing") === "yearly" ? "yearly" : "monthly", step: "type", planPreset: false };
-  if (TYPES[params.get("category")]) state.type = params.get("category");
+  const state = { start: null, template: null, ai: null, plan: null, billing: params.get("billing") === "yearly" ? "yearly" : "monthly", step: "site", planPreset: false };
   const presetTpl = templates.find((t) => t.id === params.get("template"));
-  if (presetTpl) { state.type = state.type || presetTpl.type; state.start = "template"; state.template = presetTpl.id; }
-  if (state.type && PLAN_NAMES[params.get("plan")]) { state.plan = params.get("plan"); state.planPreset = true; }
-  state.step = !state.type ? "type" : !state.template ? "site" : !state.plan ? "plan" : "account";
+  if (presetTpl) { state.start = "template"; state.template = presetTpl.id; }
+  if (PLAN_NAMES[params.get("plan")]) { state.plan = params.get("plan"); state.planPreset = true; }
+  state.step = !state.template ? "site" : !state.plan ? "plan" : "account";
 
   const go = (step) => { state.step = step; render(); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const nextAfterSite = () => go(state.plan ? "account" : "plan");
@@ -43,21 +34,14 @@
   const head = (title, sub) => `<div class="start-head"><h1 tabindex="-1">${title}</h1>${sub ? `<p>${sub}</p>` : ""}</div>`;
 
   const views = {
-    type: () => `${head("What kind of business do you have?", "We'll set up the right dashboard and templates for you.")}
-      <div class="choice-grid three">${Object.entries(TYPES).map(([id, t]) => `
-        <button type="button" class="choice${state.type === id ? " on" : ""}" data-type="${id}">
-          <span class="choice-ico">${icon(t.icon)}</span><b>${BUSINESS_TYPES[id]}</b><span>${t.best}</span>
-          <em>From ${taka(PLAN_PRICES[id].starter)}/month</em>
-        </button>`).join("")}</div>`,
-
-    site: () => `${back("type")}${head("How do you want to start?", `Your ${BUSINESS_TYPES[state.type]} website — you can change everything later.`)}
+    site: () => `${head("How do you want to start?", "Your online store — you can change everything later.")}
       <div class="choice-grid two">
-        <button type="button" class="choice big" data-start="template"><span class="choice-ico">${icon("grid")}</span><b>Pick a template</b><span>Choose from designs made for ${BUSINESS_TYPES[state.type].toLowerCase()} businesses.</span></button>
+        <button type="button" class="choice big" data-start="template"><span class="choice-ico">${icon("grid")}</span><b>Pick a template</b><span>Choose from ready-made designs for your online store.</span></button>
         <button type="button" class="choice big ai" data-start="ai"><span class="choice-ico">${icon("sparkle")}</span><b>Create with AI</b><span>Describe your business and we'll write your website's first draft.</span></button>
       </div>`,
 
-    template: () => `${back("site")}${head("Pick a template", `Made for ${BUSINESS_TYPES[state.type].toLowerCase()} businesses. <a class="link" href="templates.html#${state.type}" target="_blank" rel="noopener">See full previews</a>`)}
-      <div class="tpl-pick">${templates.filter((t) => t.type === state.type && t.status === "published").map((t) => `
+    template: () => `${back("site")}${head("Pick a template", `Designs for your online store. <a class="link" href="templates.html" target="_blank" rel="noopener">See full previews</a>`)}
+      <div class="tpl-pick">${templates.filter((t) => t.status === "published").map((t) => `
         <button type="button" class="tpl-option${state.template === t.id ? " on" : ""}" data-template="${t.id}">${mini(t)}<b>${esc(t.name)}</b><span>${esc(t.desc)}</span></button>`).join("")}</div>`,
 
     ai: () => {
@@ -81,16 +65,15 @@
 
     "ai-form": () => `${back("site")}${head("Tell us about your business", "A couple of sentences is enough. We'll write your headline, description and About section.")}
       <form class="start-form" id="ai-form">
-        <div class="row2"><div class="field"><label for="ai-name">Business name</label><input id="ai-name" name="name" required maxlength="60" value="${esc(state.ai?.name || "")}" placeholder="${{ local: "Rahim Dental Care", ecommerce: "Lume Furniture", course: "Learn with Mia" }[state.type]}"></div>
+        <div class="row2"><div class="field"><label for="ai-name">Business name</label><input id="ai-name" name="name" required maxlength="60" value="${esc(state.ai?.name || "")}" placeholder="Lume Furniture"></div>
         <div class="field"><label for="ai-city">City</label><input id="ai-city" name="city" maxlength="40" value="${esc(state.ai?.city || "")}" placeholder="Dhaka"></div></div>
-        <div class="field"><label for="ai-about-in">What do you do?</label><textarea id="ai-about-in" name="about" required minlength="10" maxlength="500" rows="4" placeholder="${{ local: "We're a family dental clinic in Mirpur. We do check-ups, cleaning and braces.", ecommerce: "We sell handmade wooden furniture and home decor, delivered across Bangladesh.", course: "I teach spoken English for job interviews through short video lessons." }[state.type]}">${esc(state.ai?.input || "")}</textarea></div>
+        <div class="field"><label for="ai-about-in">What do you do?</label><textarea id="ai-about-in" name="about" required minlength="10" maxlength="500" rows="4" placeholder="We sell handmade wooden furniture and home decor, delivered across Bangladesh.">${esc(state.ai?.input || "")}</textarea></div>
         <p class="form-msg" role="status"></p>
         <div class="start-actions"><button class="btn btn-dark btn-lg" type="submit">${icon("sparkle")}Create my website</button></div>
       </form>`,
 
     plan: () => {
-      const prices = PLAN_PRICES[state.type];
-      return `${back(state.start === "ai" ? "ai" : "template")}${head("Choose your plan", `${BUSINESS_TYPES[state.type]} plans. Every plan includes a free website, CMS access and support.`)}
+      return `${back(state.start === "ai" ? "ai" : "template")}${head("Choose your plan", "Every plan includes a free website, CMS access and support.")}
         <div class="start-toggle" role="group" aria-label="Billing period">
           <button type="button" data-billing="monthly" class="${state.billing === "monthly" ? "on" : ""}" aria-pressed="${state.billing === "monthly"}">Monthly</button>
           <button type="button" data-billing="yearly" class="${state.billing === "yearly" ? "on" : ""}" aria-pressed="${state.billing === "yearly"}">Yearly <small>Free domain</small></button>
@@ -99,16 +82,16 @@
           <button type="button" class="plan-option${state.plan === id ? " on" : ""}${id === "business" ? " pop" : ""}" data-plan="${id}">
             ${id === "business" ? '<span class="pop-tag">Most popular</span>' : ""}
             <b>${PLAN_NAMES[id]}</b>
-            <span class="plan-price">${taka(state.billing === "yearly" ? prices[id] * 12 : prices[id])}<small>/${state.billing === "yearly" ? "year" : "month"}</small></span>
-            <ul>${FEATURES[state.type][id].map((f) => `<li>${icon("check")}${f}</li>`).join("")}</ul>
+            <span class="plan-price">${taka(state.billing === "yearly" ? PLANS[id].price * 12 : PLANS[id].price)}<small>/${state.billing === "yearly" ? "year" : "month"}</small></span>
+            <ul>${FEATURES[id].map((f) => `<li>${icon("check")}${f}</li>`).join("")}</ul>
             <span class="plan-cta">Choose ${PLAN_NAMES[id]}</span>
           </button>`).join("")}</div>`;
     },
 
     account: () => {
-      const price = PLAN_PRICES[state.type][state.plan];
+      const price = PLANS[state.plan].price;
       const t = tplById(state.template);
-      const google = new URLSearchParams({ next: "/admin/", category: state.type, plan: state.plan, billing: state.billing, template: state.template });
+      const google = new URLSearchParams({ next: "/admin/", plan: state.plan, billing: state.billing, template: state.template });
       return `${back(state.planPreset ? (state.start === "ai" ? "ai" : "template") : "plan")}${head("Create your account", "Last step — then you're in your dashboard.")}
         <div class="account-grid">
           <form class="start-form" id="account-form">
@@ -125,7 +108,6 @@
           <aside class="summary">
             <h2>Your order</h2>
             <dl>
-              <div><dt>Business type</dt><dd>${BUSINESS_TYPES[state.type]} <button type="button" class="link-btn" data-go="type">Change</button></dd></div>
               <div><dt>Website</dt><dd>${state.start === "ai" ? "Created with AI · " : ""}${esc(t.name)} <button type="button" class="link-btn" data-go="${state.start === "ai" ? "ai" : "template"}">Change</button></dd></div>
               <div><dt>Plan</dt><dd>${PLAN_NAMES[state.plan]} · ${state.billing === "yearly" ? "Yearly" : "Monthly"} <button type="button" class="link-btn" data-go="plan">Change</button></dd></div>
             </dl>
@@ -136,7 +118,7 @@
     },
   };
 
-  const stepOf = { type: "type", site: "site", template: "site", ai: "site", "ai-form": "site", plan: "plan", account: "account" };
+  const stepOf = { site: "site", template: "site", ai: "site", "ai-form": "site", plan: "plan", account: "account" };
   const render = () => {
     const current = STEPS.findIndex(([id]) => id === stepOf[state.step]);
     stepsEl.innerHTML = STEPS.map(([, label], i) => `<li class="${i < current ? "done" : i === current ? "on" : ""}"${i === current ? ' aria-current="step"' : ""}><span>${i < current ? icon("check") : i + 1}</span>${label}</li>`).join("");
@@ -161,7 +143,7 @@
     btn.innerHTML = `${icon("sparkle")}Writing your website…`;
     msg.textContent = "";
     try {
-      const res = await fetch("/api/ai/site", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: state.type, ...values }) });
+      const res = await fetch("/api/ai/site", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
       state.ai = { ...data, name: values.name, city: values.city, input: values.about };
@@ -177,14 +159,10 @@
 
   // ---------- Events ----------
   root.addEventListener("click", (e) => {
-    const el = e.target.closest("[data-go], [data-type], [data-start], [data-template], [data-plan], [data-billing], [data-ai-again]");
+    const el = e.target.closest("[data-go], [data-start], [data-template], [data-plan], [data-billing], [data-ai-again]");
     if (!el) return;
     if (el.dataset.go) go(el.dataset.go);
-    else if (el.dataset.type) {
-      if (state.type !== el.dataset.type) { state.template = null; state.ai = null; if (!state.planPreset) state.plan = null; }
-      state.type = el.dataset.type;
-      go("site");
-    } else if (el.dataset.start) { state.start = el.dataset.start; go(el.dataset.start === "ai" ? (state.ai?.headline ? "ai" : "ai-form") : "template"); }
+    else if (el.dataset.start) { state.start = el.dataset.start; go(el.dataset.start === "ai" ? (state.ai?.headline ? "ai" : "ai-form") : "template"); }
     else if (el.dataset.template) { state.template = el.dataset.template; state.ai = null; nextAfterSite(); }
     else if (el.dataset.plan) { state.plan = el.dataset.plan; go("account"); }
     else if (el.dataset.billing) { state.billing = el.dataset.billing; render(); }
@@ -205,7 +183,7 @@
       try {
         const res = await fetch("/api/signup", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: val("name"), business: val("business"), email: val("email"), password: f.get("password"), category: state.type, plan: state.plan, billing: state.billing, template: state.template }),
+          body: JSON.stringify({ name: val("name"), business: val("business"), email: val("email"), password: f.get("password"), plan: state.plan, billing: state.billing, template: state.template }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
