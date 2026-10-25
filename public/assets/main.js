@@ -141,40 +141,69 @@ if (pickedNote) {
   const slug = params.get("template");
   const plan = params.get("plan");
   const period = params.get("billing") === "yearly" ? "yearly" : "monthly";
+  const CATEGORY = { local: "Local Business", ecommerce: "E-commerce", course: "Course Selling" };
+  const category = CATEGORY[params.get("category")];
   if (slug && /^[a-z0-9-]+$/.test(slug)) {
     pickedNote.textContent = "Template selected: " + title(slug);
     pickedNote.hidden = false;
   } else if (plan && /^(starter|business|pro)$/.test(plan)) {
-    pickedNote.textContent = "Plan selected: " + title(plan) + " (" + period + ")";
+    pickedNote.textContent = "Plan selected: " + (category ? category + " · " : "") + title(plan) + " (" + period + ")";
     pickedNote.hidden = false;
   }
 }
 
-// Pricing monthly / yearly toggle
+// Pricing: business type tabs (Local Business / E-commerce / Course Selling) and monthly / yearly toggle
 const billing = document.querySelector("[data-billing]");
 if (billing) {
   const taka = (n) => n.toLocaleString("en-US");
-  billing.addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-    const yearly = btn.dataset.period === "yearly";
+  const tabs = [...document.querySelectorAll(".cat-tabs [role=tab]")];
+  let yearly = false;
+  let cat = tabs.some((t) => t.dataset.cat === location.hash.slice(1)) ? location.hash.slice(1) : tabs[0].dataset.cat;
+
+  const render = () => {
+    tabs.forEach((t) => {
+      const on = t.dataset.cat === cat;
+      t.classList.toggle("on", on);
+      t.setAttribute("aria-selected", String(on));
+      t.tabIndex = on ? 0 : -1;
+    });
+    document.querySelectorAll(".cat-panel, .compare table[data-cat]").forEach((el) => { el.hidden = el.dataset.cat !== cat; });
     billing.querySelectorAll("button").forEach((b) => {
-      b.classList.toggle("on", b === btn);
-      b.setAttribute("aria-pressed", String(b === btn));
+      const on = (b.dataset.period === "yearly") === yearly;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
     });
     document.body.classList.toggle("is-yearly", yearly);
-    document.querySelectorAll(".pcard").forEach((card) => {
+    document.querySelectorAll(".cat-panel .pcard").forEach((card) => {
       const price = card.querySelector("[data-month]");
       const month = Number(price.dataset.month);
       price.textContent = taka(yearly ? month * 12 : month);
       card.querySelector("[data-per]").textContent = yearly ? "/year" : "/month";
-      card.querySelector("[data-bill]").textContent = yearly
-        ? "৳" + taka(month) + "/month, billed yearly"
-        : "Billed monthly";
-      card.querySelector("[data-plan-link]").href =
-        "signup.html?plan=" + card.dataset.plan + "&billing=" + (yearly ? "yearly" : "monthly");
+      card.querySelector("[data-bill]").textContent = yearly ? "৳" + taka(month) + "/month, billed yearly" : "Billed monthly";
+      card.querySelector("[data-plan-link]").href = "signup.html?category=" + card.closest(".cat-panel").dataset.cat +
+        "&plan=" + card.dataset.plan + "&billing=" + (yearly ? "yearly" : "monthly");
+    });
+  };
+  const select = (name, focus) => {
+    cat = name;
+    history.replaceState(null, "", "#" + name);
+    render();
+    if (focus) tabs.find((t) => t.dataset.cat === name).focus();
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener("click", () => select(t.dataset.cat));
+    t.addEventListener("keydown", (e) => {
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (step) { e.preventDefault(); select(tabs[(i + step + tabs.length) % tabs.length].dataset.cat, true); }
     });
   });
+  billing.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    yearly = btn.dataset.period === "yearly";
+    render();
+  });
+  render();
 }
 
 // Accounts are kept by the Worker (src/index.js); the session is an HttpOnly cookie.
@@ -206,7 +235,7 @@ document.querySelectorAll("form[data-auth]").forEach((form) => {
 
   // Google sign-in carries the same template / plan picks
   const google = new URLSearchParams({ next });
-  ["plan", "billing", "template"].forEach((k) => { if (params.get(k)) google.set(k, params.get(k)); });
+  ["category", "plan", "billing", "template"].forEach((k) => { if (params.get(k)) google.set(k, params.get(k)); });
   form.querySelectorAll("a[data-google]").forEach((a) => { a.href = "/api/auth/google?" + google; });
   const GOOGLE_ERRORS = {
     google: "Google sign-in didn't finish. Please try again.",
@@ -230,7 +259,7 @@ document.querySelectorAll("form[data-auth]").forEach((form) => {
       if (form.dataset.auth === "signup") {
         await api("/api/signup", {
           name: val("name"), business: val("business"), email: val("email"), password: form.querySelector("#password").value,
-          plan: params.get("plan"), billing: params.get("billing"), template,
+          category: params.get("category"), plan: params.get("plan"), billing: params.get("billing"), template,
         });
         location.href = "/admin/";
       } else {
