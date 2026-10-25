@@ -6,9 +6,10 @@ const SESSION_HOURS = 24; // "Remember me" unticked
 const PBKDF2_ITERATIONS = 100000; // the maximum Workers allows
 const MAX_STORE_BYTES = 1_000_000;
 const PLANS = ["starter", "business", "pro"];
-const CATEGORIES = ["local", "ecommerce", "course"]; // Local Business, E-commerce, Course Selling
-// Starting template when none was picked, so each business type gets a fitting design
-const DEFAULT_TEMPLATE = { local: "fixly-services", ecommerce: "luxe-store", course: "mia-personal" };
+// Every account is an e-commerce store (the users.category column is kept as "ecommerce")
+const CATEGORY = "ecommerce";
+// Starting template when none was picked
+const DEFAULT_TEMPLATE = "luxe-store";
 const SLUG = /^[a-z0-9-]{1,60}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GOOGLE_STATE_COOKIE = "shopiliar_google";
@@ -87,10 +88,10 @@ async function signup(request, env) {
     email,
     name,
     business: clean(body.business, 80) || name + "'s Store",
-    category: CATEGORIES.includes(body.category) ? body.category : "ecommerce",
+    category: CATEGORY,
     plan: PLANS.includes(body.plan) ? body.plan : "starter",
     billing: body.billing === "yearly" ? "yearly" : "monthly",
-    template: SLUG.test(body.template || "") ? body.template : DEFAULT_TEMPLATE[CATEGORIES.includes(body.category) ? body.category : "ecommerce"],
+    template: SLUG.test(body.template || "") ? body.template : DEFAULT_TEMPLATE,
     created_at: new Date().toISOString(),
   };
   try {
@@ -149,7 +150,7 @@ async function saveStore(request, env) {
     name: clean(a.name, 80) || user.name,
     business: clean(a.business, 80) || user.business,
     email: clean(a.email, 254).toLowerCase() || user.email,
-    category: CATEGORIES.includes(a.category) ? a.category : user.category,
+    category: CATEGORY,
     plan: PLANS.includes(a.plan) ? a.plan : user.plan,
     billing: a.billing === "yearly" || a.billing === "monthly" ? a.billing : user.billing,
     template: SLUG.test(a.template || "") ? a.template : user.template,
@@ -348,28 +349,22 @@ async function accessEmail(request, env) {
 // rules otherwise, so sign-up never gets stuck.
 // Tried in order; Cloudflare retires models over time (plain llama-3.1-8b-instruct went in May 2026)
 const AI_MODELS = ["@cf/meta/llama-3.1-8b-instruct-fast", "@cf/zai-org/glm-4.7-flash"];
-const TEMPLATES_BY_TYPE = {
-  local: ["bistro-restaurant", "fixly-services", "growify-agency"],
-  ecommerce: ["luxe-store", "saas-landing", "launchly-landing"],
-  course: ["mia-personal", "nova-portfolio", "writely-blog"],
-};
-const CTA = { local: "Book Now", ecommerce: "Shop Now", course: "Enroll Now" };
+const TEMPLATE_IDS = ["luxe-store", "saas-landing", "launchly-landing", "bistro-restaurant", "growify-agency", "fixly-services", "nova-portfolio", "writely-blog", "mia-personal"];
 
 async function aiSite(request, env) {
   const body = await readJson(request);
-  const type = CATEGORIES.includes(body.type) ? body.type : "ecommerce";
   const name = clean(body.name, 60);
   const about = clean(body.about, 500);
   const city = clean(body.city, 40) || "Bangladesh";
   if (!name || about.length < 10) return json({ error: "Tell us your business name and a sentence about what you do." }, 400);
 
-  const basic = basicSite(type, name, about, city);
+  const basic = basicSite(name, about);
   // "fallback" says why the simple version was used (not shown to users; helps when checking the setup)
   if (!env.AI) return json({ ...basic, source: "basic", fallback: "no-ai-binding" });
   const messages = [
     { role: "system", content: "You write short, friendly website copy for small businesses in Bangladesh. Reply with one JSON object only, no other text." },
-    { role: "user", content: `Business name: ${name}\nCity: ${city}\nType: ${{ local: "local business that takes bookings", ecommerce: "online shop", course: "online course creator" }[type]}\nWhat they do: ${about}\n\n` +
-      `Return JSON with keys: "template" (one of ${TEMPLATES_BY_TYPE[type].map((t) => `"${t}"`).join(", ")} - pick the closest style), "headline" (max 50 characters), "sub" (one sentence, max 100 characters), "cta" (button text, max 18 characters), "about" (2 sentences for an About section, max 260 characters).` },
+    { role: "user", content: `Business name: ${name}\nCity: ${city}\nType: online shop\nWhat they do: ${about}\n\n` +
+      `Return JSON with keys: "template" (one of ${TEMPLATE_IDS.map((t) => `"${t}"`).join(", ")} - pick the closest style), "headline" (max 50 characters), "sub" (one sentence, max 100 characters), "cta" (button text, max 18 characters), "about" (2 sentences for an About section, max 260 characters).` },
   ];
   let lastError = "";
   for (const model of AI_MODELS) {
@@ -377,10 +372,10 @@ async function aiSite(request, env) {
       const out = await env.AI.run(model, { max_tokens: 600, messages });
       // Text models return { response: "…" }, OpenAI-style ones { choices: [{ message }] }, some the object itself
       const raw = out?.response ?? out?.choices?.[0]?.message?.content ?? out;
-      if (raw && typeof raw === "object" && raw.headline) return json(aiResult(type, raw, basic));
+      if (raw && typeof raw === "object" && raw.headline) return json(aiResult(raw, basic));
       const text = String(raw ?? "");
       try {
-        return json(aiResult(type, JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)), basic));
+        return json(aiResult(JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)), basic));
       } catch {
         console.error("AI site: reply wasn't JSON", model, text.slice(0, 300));
         lastError = "ai-reply-not-json";
@@ -393,10 +388,10 @@ async function aiSite(request, env) {
   return json({ ...basic, source: "basic", fallback: lastError });
 }
 
-function aiResult(type, parsed, basic) {
+function aiResult(parsed, basic) {
   const pick = (v, max, fallback) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : fallback);
   return {
-    template: TEMPLATES_BY_TYPE[type].includes(parsed.template) ? parsed.template : basic.template,
+    template: TEMPLATE_IDS.includes(parsed.template) ? parsed.template : basic.template,
     headline: pick(parsed.headline, 60, basic.headline),
     sub: pick(parsed.sub, 120, basic.sub),
     cta: pick(parsed.cta, 20, basic.cta),
@@ -405,19 +400,16 @@ function aiResult(type, parsed, basic) {
   };
 }
 
-function basicSite(type, name, about, city) {
+function basicSite(name, about) {
   const has = (...words) => words.some((w) => about.toLowerCase().includes(w));
-  const template = type === "local"
-    ? (has("restaurant", "cafe", "café", "food", "bakery", "coffee") ? "bistro-restaurant" : has("repair", "plumb", "electric", "clean", "clinic", "doctor", "dental", "salon", "service") ? "fixly-services" : "growify-agency")
-    : type === "course"
-      ? (has("blog", "writ", "article") ? "writely-blog" : has("design", "portfolio", "photo") ? "nova-portfolio" : "mia-personal")
-      : (has("software", "app", "saas", "tech") ? "saas-landing" : has("launch", "pre-order", "preorder") ? "launchly-landing" : "luxe-store");
+  const template = has("software", "app", "saas", "tech") ? "saas-landing" : has("launch", "pre-order", "preorder") ? "launchly-landing"
+    : has("restaurant", "cafe", "café", "food", "bakery", "coffee") ? "bistro-restaurant" : "luxe-store";
   const first = about.split(/(?<=[.!?])\s/)[0].slice(0, 110);
   return {
     template,
-    headline: { local: `${name}, trusted in ${city}`, ecommerce: `Shop ${name} online`, course: `Learn with ${name}` }[type].slice(0, 60),
+    headline: `Shop ${name} online`.slice(0, 60),
     sub: first,
-    cta: CTA[type],
+    cta: "Shop Now",
     about: `${name} — ${about}`.slice(0, 300),
   };
 }
@@ -435,7 +427,6 @@ async function googleStart(env, url) {
   const pick = {
     state,
     next: nextPath(url.searchParams.get("next")),
-    category: url.searchParams.get("category"),
     plan: url.searchParams.get("plan"),
     billing: url.searchParams.get("billing"),
     template: url.searchParams.get("template"),
@@ -488,10 +479,10 @@ async function googleCallback(request, env, url) {
     const name = clean(claims.name, 80) || email.split("@")[0];
     user = {
       id: crypto.randomUUID(), email, name, business: name + "'s Store",
-      category: CATEGORIES.includes(pick.category) ? pick.category : "ecommerce",
+      category: CATEGORY,
       plan: PLANS.includes(pick.plan) ? pick.plan : "starter",
       billing: pick.billing === "yearly" ? "yearly" : "monthly",
-      template: SLUG.test(pick.template || "") ? pick.template : DEFAULT_TEMPLATE[CATEGORIES.includes(pick.category) ? pick.category : "ecommerce"],
+      template: SLUG.test(pick.template || "") ? pick.template : DEFAULT_TEMPLATE,
       created_at: new Date().toISOString(),
     };
     // No password: this account signs in with Google (an empty hash never matches)
@@ -527,7 +518,7 @@ async function withSession(env, userId, remember, res) {
 }
 
 const publicAccount = (u) => ({
-  name: u.name, business: u.business, email: u.email, category: u.category || "ecommerce", plan: u.plan, billing: u.billing, template: u.template, createdAt: u.created_at,
+  name: u.name, business: u.business, email: u.email, category: CATEGORY, plan: u.plan, billing: u.billing, template: u.template, createdAt: u.created_at,
   hasPassword: !!u.password_hash,
 });
 

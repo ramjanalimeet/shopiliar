@@ -2,7 +2,7 @@
 // mode "user": a customer talking to the Shopilier team (/api/messages).
 // mode "admin": the master panel answering every customer (/master-admin/api/...).
 window.ShopilierInbox = (root, { mode, onUnread }) => {
-  const { esc, icon, toast, dialog, BUSINESS_TYPES } = Dash;
+  const { esc, icon, toast, dialog } = Dash;
   const admin = mode === "admin";
   const base = admin ? "/master-admin/api/conversations" : "/api/messages";
   const KINDS = { question: ["Question", "gray"], complaint: ["Complaint", "red"], billing: ["Billing", "blue"], website: ["Website problem", "orange"] };
@@ -68,7 +68,7 @@ window.ShopilierInbox = (root, { mode, onUnread }) => {
         ${admin ? `<button type="button" class="btn btn-sm" data-status="${c.status === "closed" ? "open" : "closed"}">${c.status === "closed" ? "Reopen" : `${icon("check")}Mark resolved`}</button>` : ""}
       </div>
       ${admin && u ? `<div class="thread-user"><span class="avatar">${esc((u.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase())}</span>
-        <div><b>${esc(u.name)}</b> · ${esc(u.business)}<span>${esc(u.email)} · ${esc(BUSINESS_TYPES[u.category] || "E-commerce")} · ${esc((u.plan || "starter")[0].toUpperCase() + (u.plan || "starter").slice(1))} plan (${esc(u.billing || "monthly")})</span></div></div>` : ""}
+        <div><b>${esc(u.name)}</b> · ${esc(u.business)}<span>${esc(u.email)} · ${esc((u.plan || "starter")[0].toUpperCase() + (u.plan || "starter").slice(1))} plan (${esc(u.billing || "monthly")})</span></div></div>` : ""}
       <div class="thread-messages" tabindex="0" aria-label="Messages">${bubbles()}</div>
       <form class="thread-reply" data-reply>
         <textarea name="body" rows="2" maxlength="2000" required placeholder="${admin ? `Reply to ${esc(u?.name || "the customer")}…` : "Write a message…"}" aria-label="Message"></textarea>

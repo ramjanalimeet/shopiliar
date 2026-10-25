@@ -15,29 +15,20 @@ document.querySelectorAll(".site-header").forEach((header) => {
   matchMedia("(min-width: 761px)").addEventListener("change", (e) => { if (e.matches) setOpen(false); });
 });
 
-// Templates: search, category, sort and preview
+// Templates: search, sort and preview
 const tplList = document.getElementById("tpl-list");
 if (tplList) {
   const cards = [...tplList.querySelectorAll(".tcard")];
   const search = document.getElementById("tpl-search");
   const sort = document.getElementById("tpl-sort");
-  const chips = document.getElementById("tpl-chips");
   const empty = document.getElementById("tpl-empty");
-  const best = document.getElementById("tpl-best");
-  const BEST = {
-    local: "Best for cafés, restaurants, plumbers, electricians and clinics that take appointment bookings.",
-    ecommerce: "Best for every kind of business that sells products online.",
-    course: "Best for content creators, influencers and YouTubers selling online courses.",
-  };
-  let cat = "all";
 
   const render = () => {
     const q = search.value.trim().toLowerCase();
     const terms = q.split(/\s+/).filter(Boolean);
     let shown = 0;
     cards.forEach((card) => {
-      const match = (cat === "all" || card.dataset.cat === cat) &&
-        terms.every((t) => card.dataset.search.includes(t));
+      const match = terms.every((t) => card.dataset.search.includes(t));
       card.hidden = !match;
       if (match) shown++;
     });
@@ -54,24 +45,6 @@ if (tplList) {
 
   search.addEventListener("input", render);
   sort.addEventListener("change", sortCards);
-  // Business type tabs (All / Local Business / E-commerce / Course Selling); #local etc. opens one
-  const setCat = (name) => {
-    cat = name;
-    chips.querySelectorAll("button").forEach((b) => {
-      b.classList.toggle("on", b.dataset.cat === name);
-      b.setAttribute("aria-pressed", String(b.dataset.cat === name));
-    });
-    best.textContent = BEST[name] || "";
-    best.hidden = !BEST[name];
-    render();
-  };
-  chips.addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-    history.replaceState(null, "", btn.dataset.cat === "all" ? location.pathname : "#" + btn.dataset.cat);
-    setCat(btn.dataset.cat);
-  });
-  if (BEST[location.hash.slice(1)]) setCat(location.hash.slice(1));
 
   const modal = document.getElementById("tpl-modal");
   const modalShot = document.getElementById("tpl-modal-shot");
@@ -148,22 +121,13 @@ if (tplList) {
 }
 
 
-// Pricing: business type tabs (Local Business / E-commerce / Course Selling) and monthly / yearly toggle
+// Pricing: monthly / yearly toggle
 const billing = document.querySelector("[data-billing]");
 if (billing) {
   const taka = (n) => n.toLocaleString("en-US");
-  const tabs = [...document.querySelectorAll(".cat-tabs [role=tab]")];
   let yearly = false;
-  let cat = tabs.some((t) => t.dataset.cat === location.hash.slice(1)) ? location.hash.slice(1) : tabs[0].dataset.cat;
 
   const render = () => {
-    tabs.forEach((t) => {
-      const on = t.dataset.cat === cat;
-      t.classList.toggle("on", on);
-      t.setAttribute("aria-selected", String(on));
-      t.tabIndex = on ? 0 : -1;
-    });
-    document.querySelectorAll(".cat-panel, .compare table[data-cat]").forEach((el) => { el.hidden = el.dataset.cat !== cat; });
     billing.querySelectorAll("button").forEach((b) => {
       const on = (b.dataset.period === "yearly") === yearly;
       b.classList.toggle("on", on);
@@ -176,23 +140,9 @@ if (billing) {
       price.textContent = taka(yearly ? month * 12 : month);
       card.querySelector("[data-per]").textContent = yearly ? "/year" : "/month";
       card.querySelector("[data-bill]").textContent = yearly ? "৳" + taka(month) + "/month, billed yearly" : "Billed monthly";
-      card.querySelector("[data-plan-link]").href = "signup.html?category=" + card.closest(".cat-panel").dataset.cat +
-        "&plan=" + card.dataset.plan + "&billing=" + (yearly ? "yearly" : "monthly");
+      card.querySelector("[data-plan-link]").href = "signup.html?plan=" + card.dataset.plan + "&billing=" + (yearly ? "yearly" : "monthly");
     });
   };
-  const select = (name, focus) => {
-    cat = name;
-    history.replaceState(null, "", "#" + name);
-    render();
-    if (focus) tabs.find((t) => t.dataset.cat === name).focus();
-  };
-  tabs.forEach((t, i) => {
-    t.addEventListener("click", () => select(t.dataset.cat));
-    t.addEventListener("keydown", (e) => {
-      const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-      if (step) { e.preventDefault(); select(tabs[(i + step + tabs.length) % tabs.length].dataset.cat, true); }
-    });
-  });
   billing.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;

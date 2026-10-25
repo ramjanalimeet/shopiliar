@@ -1,6 +1,6 @@
 # Shopilier
 
-Marketing site for Shopilier — create your business website online.
+Marketing site for Shopilier — create your online store.
 
 Static HTML/CSS/JS, no build step. Site files live in `public/`. Open `public/index.html` in a browser or serve the folder:
 
@@ -10,7 +10,7 @@ python3 -m http.server 8000 -d public
 
 ## Pages
 - `index.html` — Home
-- `templates.html` — Templates (search, sort, category filters and live preview)
+- `templates.html` — Templates (search, sort and live preview)
 - `pricing.html` — Pricing (monthly / yearly toggle, FAQ)
 - `signin.html` — Sign in
 - `signup.html` — Get started: the step-by-step sign-up (see below)
@@ -37,17 +37,14 @@ npx wrangler dev
 ```
 
 ## Get started (sign-up)
-`signup.html` + `assets/start.js` walk new users through: business type → pick a template or **Create with AI** →
+`signup.html` + `assets/start.js` walk new users through: pick a template or **Create with AI** →
 plan → account, then open their dashboard. Links from Pricing and Templates skip the steps already chosen.
 Create with AI calls `POST /api/ai/site`, which uses Workers AI (the `AI` binding) and falls back to simple
 rules when AI isn't available. Online payment isn't connected yet; the plan starts without charging.
 
 ## Dashboards
-- `/admin` — the customer dashboard, one per business type:
-  - **E-commerce** (`admin/app.js`): orders, products, customers.
-  - **Local Business** (`admin/local.js`): appointments, services, clients, opening hours.
-  - **Course Selling** (`admin/course.js`): courses with lessons, students, sales.
-  All three share Home/Analytics layout, the website customizer, pages, marketing, discounts and settings.
+- `/admin` — the store owner dashboard (`admin/app.js`): orders, products, customers, analytics,
+  the website customizer, pages, marketing, discounts and settings. Shopilier is for online stores only.
 - `/master-admin` — business owner dashboard: overview, users, templates (add, customize,
   publish/unpublish, duplicate, delete), payments, plans & pricing, activity, settings.
 

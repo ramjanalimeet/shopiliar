@@ -204,13 +204,6 @@ button { font: inherit; cursor: pointer; }
 .site-footer nav { display: flex; gap: 22px; }
 
 /* Business type tabs (Pricing and Templates) */
-.cat-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 640px; margin: 34px auto 0; padding: 6px; background: #fff; border: 1px solid #eceef2; border-radius: 18px; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
-.cat-tabs button { display: flex; align-items: center; justify-content: center; gap: 9px; height: 52px; padding: 0 12px; border: 0; border-radius: 13px; background: none; color: var(--text); font-weight: 600; font-size: 15px; transition: background .15s, color .15s; }
-.cat-tabs button svg { width: 20px; height: 20px; flex: none; }
-.cat-tabs button:hover { background: var(--brand-soft); color: var(--ink); }
-.cat-tabs button.on { background: var(--ink); color: #fff; }
-.cat-tabs button:focus-visible { outline: 3px solid var(--brand-ring); outline-offset: 2px; }
-.cat-tabs.four { grid-template-columns: repeat(4, 1fr); max-width: 780px; }
 .cat-best { text-align: center; color: var(--muted); font-size: 15px; max-width: 560px; margin: 18px auto 26px; }
 
 /* ---------- Responsive ---------- */
@@ -270,6 +263,4 @@ button { font: inherit; cursor: pointer; }
   .auth-wrap { min-height: calc(100vh - 82px); }
 }
 @media (max-width: 560px) {
-  .cat-tabs { gap: 4px; padding: 4px; border-radius: 16px; }
-  .cat-tabs button { flex-direction: column; gap: 4px; height: 64px; font-size: 13px; line-height: 1.15; padding: 0 6px; }
 }

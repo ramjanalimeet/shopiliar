@@ -24,7 +24,6 @@
 
 /* Big choice cards */
 .choice-grid { display: grid; gap: 16px; }
-.choice-grid.three { grid-template-columns: repeat(3, 1fr); }
 .choice-grid.two { grid-template-columns: repeat(2, 1fr); max-width: 760px; margin: 0 auto; }
 .choice {
   display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; padding: 24px; border-radius: 18px;
@@ -118,7 +117,7 @@
 .pay-note svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
 
 @media (max-width: 900px) {
-  .choice-grid.three, .tpl-pick, .plan-pick { grid-template-columns: 1fr; max-width: 520px; margin: 0 auto; }
+  .tpl-pick, .plan-pick { grid-template-columns: 1fr; max-width: 520px; margin: 0 auto; }
   .ai-result, .account-grid { grid-template-columns: 1fr; }
   .ai-preview, .summary { position: static; }
   .summary { order: -1; }

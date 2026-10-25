@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   business TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
-  category TEXT NOT NULL DEFAULT 'ecommerce', -- local, ecommerce or course
+  category TEXT NOT NULL DEFAULT 'ecommerce', -- always ecommerce (online stores only)
   plan TEXT NOT NULL DEFAULT 'starter',
   billing TEXT NOT NULL DEFAULT 'monthly',
   template TEXT NOT NULL DEFAULT 'luxe-store',
