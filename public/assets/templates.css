@@ -21,14 +21,10 @@
 }
 .sort svg { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; }
 
-.chips { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 18px auto 22px; }
-.chips button {
-  height: 42px; padding: 0 20px; border: 1px solid #dfe2e8; background: #fff; border-radius: 999px;
-  font-size: 15px; color: #3d4350; transition: border-color .15s, background .15s;
-}
-.chips button:hover { border-color: #b9bec8; }
-.chips button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 
+.tpl-page .cat-tabs { margin: 22px auto 0; }
+.tpl-page .cat-best { margin: 14px auto 0; }
+.tpl-page .tpl-list { margin-top: 24px; }
 .tpl-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .tcard {
   background: #fff; border: 1px solid #eceef2; border-radius: 12px; padding: 8px 8px 14px;
@@ -303,9 +299,6 @@ body.no-scroll { overflow: hidden; }
   .tpl-list { grid-template-columns: 1fr; }
   .tpl-tools { flex-direction: column; }
   .sort select { width: 100%; }
-  .chips { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; margin-left: -16px; margin-right: -16px; padding: 0 16px 4px; scrollbar-width: none; }
-  .chips::-webkit-scrollbar { display: none; }
-  .chips button { flex: none; }
   .tcard-foot { flex-wrap: wrap; }
   .tcard-foot > div { flex-basis: 100%; }
   .tcard .btn { flex: 1; }
