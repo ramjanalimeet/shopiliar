@@ -6,6 +6,7 @@ const SESSION_HOURS = 24; // "Remember me" unticked
 const PBKDF2_ITERATIONS = 100000; // the maximum Workers allows
 const MAX_STORE_BYTES = 1_000_000;
 const PLANS = ["starter", "business", "pro"];
+const CATEGORIES = ["local", "ecommerce", "course"]; // Local Business, E-commerce, Course Selling
 const SLUG = /^[a-z0-9-]{1,60}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GOOGLE_STATE_COOKIE = "shopiliar_google";
@@ -79,6 +80,7 @@ async function signup(request, env) {
     email,
     name,
     business: clean(body.business, 80) || name + "'s Store",
+    category: CATEGORIES.includes(body.category) ? body.category : "ecommerce",
     plan: PLANS.includes(body.plan) ? body.plan : "starter",
     billing: body.billing === "yearly" ? "yearly" : "monthly",
     template: SLUG.test(body.template || "") ? body.template : "luxe-store",
@@ -86,8 +88,8 @@ async function signup(request, env) {
   };
   try {
     await env.DB.prepare(
-      "INSERT INTO users (id, email, name, business, password_hash, password_salt, plan, billing, template, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    ).bind(user.id, user.email, user.name, user.business, await hashPassword(password, salt), b64(salt), user.plan, user.billing, user.template, user.created_at).run();
+      "INSERT INTO users (id, email, name, business, password_hash, password_salt, category, plan, billing, template, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).bind(user.id, user.email, user.name, user.business, await hashPassword(password, salt), b64(salt), user.category, user.plan, user.billing, user.template, user.created_at).run();
   } catch (err) {
     // Lost a race with another sign-up for the same email
     if (String(err).includes("UNIQUE")) return json({ error: "An account with this email already exists. Please sign in." }, 409);
@@ -140,6 +142,7 @@ async function saveStore(request, env) {
     name: clean(a.name, 80) || user.name,
     business: clean(a.business, 80) || user.business,
     email: clean(a.email, 254).toLowerCase() || user.email,
+    category: CATEGORIES.includes(a.category) ? a.category : user.category,
     plan: PLANS.includes(a.plan) ? a.plan : user.plan,
     billing: a.billing === "yearly" || a.billing === "monthly" ? a.billing : user.billing,
     template: SLUG.test(a.template || "") ? a.template : user.template,
@@ -152,8 +155,8 @@ async function saveStore(request, env) {
 
   const now = new Date().toISOString();
   await env.DB.batch([
-    env.DB.prepare("UPDATE users SET name = ?, business = ?, email = ?, plan = ?, billing = ?, template = ? WHERE id = ?")
-      .bind(next.name, next.business, next.email, next.plan, next.billing, next.template, user.id),
+    env.DB.prepare("UPDATE users SET name = ?, business = ?, email = ?, category = ?, plan = ?, billing = ?, template = ? WHERE id = ?")
+      .bind(next.name, next.business, next.email, next.category, next.plan, next.billing, next.template, user.id),
     env.DB.prepare("INSERT INTO stores (user_id, data, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at")
       .bind(user.id, JSON.stringify(body.store), now),
   ]);
@@ -194,6 +197,7 @@ async function googleStart(env, url) {
   const pick = {
     state,
     next: nextPath(url.searchParams.get("next")),
+    category: url.searchParams.get("category"),
     plan: url.searchParams.get("plan"),
     billing: url.searchParams.get("billing"),
     template: url.searchParams.get("template"),
@@ -246,6 +250,7 @@ async function googleCallback(request, env, url) {
     const name = clean(claims.name, 80) || email.split("@")[0];
     user = {
       id: crypto.randomUUID(), email, name, business: name + "'s Store",
+      category: CATEGORIES.includes(pick.category) ? pick.category : "ecommerce",
       plan: PLANS.includes(pick.plan) ? pick.plan : "starter",
       billing: pick.billing === "yearly" ? "yearly" : "monthly",
       template: SLUG.test(pick.template || "") ? pick.template : "luxe-store",
@@ -253,8 +258,8 @@ async function googleCallback(request, env, url) {
     };
     // No password: this account signs in with Google (an empty hash never matches)
     await env.DB.prepare(
-      "INSERT INTO users (id, email, name, business, password_hash, password_salt, plan, billing, template, created_at) VALUES (?, ?, ?, ?, '', '', ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING"
-    ).bind(user.id, user.email, user.name, user.business, user.plan, user.billing, user.template, user.created_at).run();
+      "INSERT INTO users (id, email, name, business, password_hash, password_salt, category, plan, billing, template, created_at) VALUES (?, ?, ?, ?, '', '', ?, ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING"
+    ).bind(user.id, user.email, user.name, user.business, user.category, user.plan, user.billing, user.template, user.created_at).run();
     user = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
   }
 
@@ -284,7 +289,7 @@ async function withSession(env, userId, remember, res) {
 }
 
 const publicAccount = (u) => ({
-  name: u.name, business: u.business, email: u.email, plan: u.plan, billing: u.billing, template: u.template, createdAt: u.created_at,
+  name: u.name, business: u.business, email: u.email, category: u.category || "ecommerce", plan: u.plan, billing: u.billing, template: u.template, createdAt: u.created_at,
   hasPassword: !!u.password_hash,
 });
 

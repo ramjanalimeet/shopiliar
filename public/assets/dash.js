@@ -187,10 +187,17 @@ const Dash = (() => {
   ];
   const CATEGORIES = ["Online Store", "Business", "Portfolio", "Food & Drink", "Services", "Blog", "Agency", "Landing Page", "Personal"];
   const PLANS = () => ({
-    starter: { name: "Starter", price: 149, pages: 5, products: 3 },
+    starter: { name: "Starter", price: 249, pages: 5, products: 3 },
     business: { name: "Business", price: 549, pages: 100, products: 150 },
-    pro: { name: "Pro", price: 2449, pages: null, products: null },
+    pro: { name: "Pro", price: 1449, pages: null, products: null },
   });
+  // Monthly price in Taka for each type of business (matches the Pricing page)
+  const BUSINESS_TYPES = { local: "Local Business", ecommerce: "E-commerce", course: "Course Selling" };
+  const PLAN_PRICES = {
+    local: { starter: 149, business: 349, pro: 549 },
+    ecommerce: { starter: 249, business: 549, pro: 1449 },
+    course: { starter: 299, business: 599, pro: 1499 },
+  };
   // null means unlimited
   const limitText = (n) => (n == null ? "Unlimited" : String(n));
   const withinLimit = (limit, count) => limit == null || count < limit;
@@ -281,5 +288,5 @@ const Dash = (() => {
     return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 < 128;
   };
 
-  return { esc, taka, uid, day, daysAgo, initials, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, TEMPLATES, CATEGORIES, PLANS, PIXELS, normalizePixelId, trackingCode, limitText, withinLimit, siteHTML, isDark };
+  return { esc, taka, uid, day, daysAgo, initials, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, TEMPLATES, CATEGORIES, PLANS, BUSINESS_TYPES, PLAN_PRICES, PIXELS, normalizePixelId, trackingCode, limitText, withinLimit, siteHTML, isDark };
 })();

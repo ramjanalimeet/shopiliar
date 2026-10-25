@@ -1,8 +1,8 @@
 // Shopilier store owner dashboard (/admin)
 (async () => {
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
-  // Plan prices and limits are managed from /master-admin when available
-  const PLANS = (load("shopiliar.master", null) || {}).plans || Dash.PLANS();
+  const PLANS = Dash.PLANS();
+  const { BUSINESS_TYPES, PLAN_PRICES } = Dash;
   const SIGN_IN = "/signin.html?next=" + encodeURIComponent(location.pathname + location.search);
 
   // ---------- Data (saved to the signed-in account by the Worker) ----------
@@ -112,7 +112,11 @@
   }
   if (picked) history.replaceState(null, "", location.pathname + location.hash);
   if (!me.store || picked) saveNow();
-  const plan = () => PLANS[account.plan] || PLANS.starter;
+  const category = () => (PLAN_PRICES[account.category] ? account.category : "ecommerce");
+  const priceOf = (id, cat = category()) => PLAN_PRICES[cat][id];
+  const plan = () => ({ ...(PLANS[account.plan] || PLANS.starter), price: priceOf(PLANS[account.plan] ? account.plan : "starter") });
+  // Business and Pro get a free domain with yearly billing; Local Business Pro includes one for a year anyway
+  const hasFreeDomain = () => (account.billing === "yearly" && account.plan !== "starter") || (category() === "local" && account.plan === "pro");
 
   // ---------- Chrome ----------
   const refreshChrome = () => {
@@ -125,7 +129,7 @@
     document.getElementById("me-store").textContent = siteUrl();
     document.getElementById("menu-name").textContent = account.name;
     document.getElementById("me-email").textContent = account.email;
-    document.getElementById("me-plan").textContent = plan().name + " plan · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
+    document.getElementById("me-plan").textContent = BUSINESS_TYPES[category()] + " · " + plan().name + " · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
   };
   const profileBtn = document.getElementById("profile-btn");
   const profileMenu = document.getElementById("profile-menu");
@@ -764,13 +768,22 @@
       store.settings.domain = v; store.settings.domainStatus = v ? "pending" : "";
       persist(); go(); toast(v ? "Domain saved — waiting for DNS" : "Custom domain removed");
     },
-    "change-plan": () => dialog({
-      title: "Change plan",
-      body: `<div class="field"><label>Plan</label><select class="select" name="plan">${Object.entries(PLANS).map(([id, p]) => `<option value="${id}"${id === account.plan ? " selected" : ""}>${p.name} — ${taka(p.price)}/month</option>`).join("")}</select></div>
-        <div class="field"><label>Billing</label><select class="select" name="billing"><option value="monthly">Monthly</option><option value="yearly"${account.billing === "yearly" ? " selected" : ""}>Yearly (free custom domain on Business &amp; Pro)</option></select></div>`,
-      submit: "Update plan",
-      onSubmit: (v) => { account.plan = v.plan; account.billing = v.billing; persist(); go(); toast("Plan updated to " + PLANS[v.plan].name); },
-    }),
+    "change-plan": () => {
+      const planOptions = (cat) => Object.entries(PLANS).map(([id, p]) => `<option value="${id}"${id === account.plan ? " selected" : ""}>${p.name} — ${taka(priceOf(id, cat))}/month</option>`).join("");
+      dialog({
+        title: "Change plan",
+        body: `<div class="field"><label>Type of business</label><select class="select" name="category">${Object.entries(BUSINESS_TYPES).map(([id, n]) => `<option value="${id}"${id === category() ? " selected" : ""}>${n}</option>`).join("")}</select></div>
+          <div class="field"><label>Plan</label><select class="select" name="plan">${planOptions(category())}</select></div>
+          <div class="field"><label>Billing</label><select class="select" name="billing"><option value="monthly">Monthly</option><option value="yearly"${account.billing === "yearly" ? " selected" : ""}>Yearly (free custom domain on Business &amp; Pro)</option></select></div>`,
+        submit: "Update plan",
+        onOpen: (form) => form.elements.category.addEventListener("change", (e) => {
+          const keep = form.elements.plan.value;
+          form.elements.plan.innerHTML = planOptions(e.target.value);
+          form.elements.plan.value = keep;
+        }),
+        onSubmit: (v) => { account.category = v.category; account.plan = v.plan; account.billing = v.billing; persist(); go(); toast(`Plan updated to ${BUSINESS_TYPES[v.category]} ${PLANS[v.plan].name}`); },
+      });
+    },
     "set-plan": (el) => { account.plan = el.dataset.plan; persist(); go(); toast("Plan updated to " + PLANS[account.plan].name); },
     "reset-all": async () => {
       if (!(await confirm("Reset store?", "All products, orders, customers, pages and website changes will be deleted.", "Reset store"))) return;
@@ -810,24 +823,24 @@
       const p = plan(), yearly = account.billing === "yearly";
       return `<h2>Plan &amp; billing</h2><p class="muted">Your plan and how much of it you're using.</p>
         <div class="s-card">
-          <div class="s-plan"><div><span class="tag green">${esc(p.name)} plan</span>
+          <div class="s-plan"><div><span class="tag green">${esc(BUSINESS_TYPES[category()])} · ${esc(p.name)} plan</span>
             <div class="stat-value" style="margin-top:8px">${yearly ? taka(p.price * 12) + '<span class="muted" style="font-size:14px;font-weight:500"> /year</span>' : taka(p.price) + '<span class="muted" style="font-size:14px;font-weight:500"> /month</span>'}</div>
-            <p class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${yearly && account.plan !== "starter" ? " · includes a free custom domain" : ""}</p></div>
+            <p class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${hasFreeDomain() ? (yearly ? " · includes a free custom domain" : " · includes a free domain for 1 year") : ""}</p></div>
             <button class="btn btn-primary" type="button" data-action="change-plan">Change plan</button></div>
           ${[["Pages", store.pages.length, p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
             <div class="meter" style="margin-top:14px"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
             <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
         </div>
-        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Sales</th><th class="t-actions"></th></tr></thead>
-          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(pl.price)}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td><td>Unlimited</td>
+        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>${esc(BUSINESS_TYPES[category()])} plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Sales</th><th class="t-actions"></th></tr></thead>
+          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(priceOf(id))}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td><td>Unlimited</td>
             <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" type="button" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
         <p class="muted small">Online payment for plans isn't connected yet, so switching plans changes your limits straight away.</p>`;
     },
     domain: () => {
-      const st = store.settings, freeDomain = account.billing === "yearly" && account.plan !== "starter";
+      const st = store.settings, freeDomain = hasFreeDomain();
       return `<h2>Domain</h2><p class="muted">Where customers find your website.</p>
         <div class="s-card"><b>Free address</b><p class="muted" style="margin-top:4px">${esc(st.subdomain)}.shopilier.com</p></div>
-        ${freeDomain ? `<div class="callout green"><span class="ico">${icon("gift")}</span><div><b>Your yearly ${esc(plan().name)} plan includes a free custom domain.</b></div></div>` : ""}
+        ${freeDomain ? `<div class="callout green"><span class="ico">${icon("gift")}</span><div><b>Your ${account.billing === "yearly" ? "yearly " : ""}${esc(plan().name)} plan includes a free custom domain${account.billing === "yearly" ? "" : " for 1 year"}.</b></div></div>` : ""}
         <div class="s-card">
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
             <div class="field" style="flex:1;margin:0;min-width:200px"><label for="s-domain">Custom domain</label><input class="input" id="s-domain" placeholder="www.yourbusiness.com" value="${esc(st.domain)}"></div>

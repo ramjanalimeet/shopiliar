@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pricing — Shopilier</title>
-  <meta name="description" content="Shopilier plans in Bangladeshi Taka: Starter ৳149, Business ৳549 and Pro ৳2,449 per month. Every plan includes a free website, CMS access and support.">
+  <meta name="description" content="Shopilier plans in Bangladeshi Taka for local businesses (from ৳149/month), e-commerce stores (from ৳249/month) and course creators (from ৳299/month). Every plan includes a free website, CMS access and support.">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -36,58 +36,134 @@
     <section class="page-head">
       <span class="pill">Pricing</span>
       <h1>Simple pricing in <span class="gradient-text">Taka</span></h1>
-      <p>Choose the plan that fits your business. Every plan comes with a free website, free CMS access and free support.</p>
-      <div class="toggle" data-billing role="group" aria-label="Billing period">
-        <button type="button" class="on" data-period="monthly" aria-pressed="true">Monthly</button>
-        <button type="button" data-period="yearly" aria-pressed="false">Yearly <small>Free domain</small></button>
+      <p>Pick your type of business, then the plan that fits. Every plan comes with a free website, free CMS access and free support.</p>
+    </section>
+
+    <div class="cat-tabs" role="tablist" aria-label="Type of business">
+      <button type="button" role="tab" id="tab-local" data-cat="local" aria-controls="panel-local" aria-selected="true" class="on" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v9h14v-9M10 21v-5h4v5"/></svg>Local Business</button>
+      <button type="button" role="tab" id="tab-ecommerce" data-cat="ecommerce" aria-controls="panel-ecommerce" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/></svg>E-commerce</button>
+      <button type="button" role="tab" id="tab-course" data-cat="course" aria-controls="panel-course" aria-selected="false" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="m10 8 5 3-5 3z"/><path d="M8 22h8"/></svg>Course Selling</button>
+    </div>
+    <div class="toggle-row">
+        <div class="toggle" data-billing role="group" aria-label="Billing period">
+          <button type="button" class="on" data-period="monthly" aria-pressed="true">Monthly</button>
+          <button type="button" data-period="yearly" aria-pressed="false">Yearly <small>Free domain</small></button>
+        </div>
+    </div>
+    <section class="cat-panel" id="panel-local" role="tabpanel" aria-labelledby="tab-local" data-cat="local">
+      <p class="cat-best">Best for cafés, restaurants, plumbers, electricians and clinics that take appointment bookings.</p>
+      <div class="pcards">
+        <article class="pcard" data-plan="starter">
+          <h3>Starter</h3>
+          <p class="pcard-sub">For getting started online</p>
+          <div class="pcard-price"><span class="tk">৳</span><strong data-month="149">149</strong><span class="per" data-per>/month</span></div>
+          <p class="pcard-bill" data-bill>Billed monthly</p>
+          <a class="btn btn-block btn-dark" data-plan-link href="signup.html?category=local&amp;plan=starter&amp;billing=monthly">Get Starter</a>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>5</b> page website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Online appointment booking</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> bookings</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
+          <p class="pcard-every">Included free</p>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
+        </article>
+        <article class="pcard pcard-pop" data-plan="business">
+          <span class="pcard-tag">Most popular</span>
+          <h3>Business</h3>
+          <p class="pcard-sub">For growing businesses</p>
+          <div class="pcard-price"><span class="tk">৳</span><strong data-month="349">349</strong><span class="per" data-per>/month</span></div>
+          <p class="pcard-bill" data-bill>Billed monthly</p>
+          <a class="btn btn-block btn-light" data-plan-link href="signup.html?category=local&amp;plan=business&amp;billing=monthly">Get Business</a>
+          <div class="yearly-gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span><b>Free custom domain</b> with the yearly plan</span></div>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>100</b> page website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Online appointment booking</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> bookings</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
+          <p class="pcard-every">Included free</p>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
+        </article>
+        <article class="pcard" data-plan="pro">
+          <h3>Pro</h3>
+          <p class="pcard-sub">For established brands</p>
+          <div class="pcard-price"><span class="tk">৳</span><strong data-month="549">549</strong><span class="per" data-per>/month</span></div>
+          <p class="pcard-bill" data-bill>Billed monthly</p>
+          <a class="btn btn-block btn-dark" data-plan-link href="signup.html?category=local&amp;plan=pro&amp;billing=monthly">Get Pro</a>
+          <div class="yearly-gift always"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span><b>1 year free domain</b> included</span></div>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> pages</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Online appointment booking</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> bookings</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
+          <p class="pcard-every">Included free</p>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
+        </article>
       </div>
     </section>
-
-    <section class="pcards">
-      <article class="pcard" data-plan="starter">
-        
-        <h3>Starter</h3>
-        <p class="pcard-sub">For small shops getting online</p>
-        <div class="pcard-price">
-          <span class="tk">৳</span><strong data-month="149">149</strong><span class="per" data-per>/month</span>
-        </div>
-        <p class="pcard-bill" data-bill>Billed monthly</p>
-        <a class="btn btn-block btn-dark" data-plan-link href="signup.html?plan=starter&amp;billing=monthly">Get Starter</a>
-        
-        <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>5</b> page website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>3</b> products list</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> sales</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
-        <p class="pcard-every">Included free</p>
-        <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
-      </article>
-      <article class="pcard pcard-pop" data-plan="business">
-        <span class="pcard-tag">Most popular</span>
-        <h3>Business</h3>
-        <p class="pcard-sub">For growing businesses</p>
-        <div class="pcard-price">
-          <span class="tk">৳</span><strong data-month="549">549</strong><span class="per" data-per>/month</span>
-        </div>
-        <p class="pcard-bill" data-bill>Billed monthly</p>
-        <a class="btn btn-block btn-light" data-plan-link href="signup.html?plan=business&amp;billing=monthly">Get Business</a>
-        <div class="yearly-gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13M12 8c-2-4-6-4-6-1.5S10 8 12 8zM12 8c2-4 6-4 6-1.5S14 8 12 8z"/></svg><span><b>Free custom domain</b> with the yearly plan</span></div>
-        <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>100</b> page website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>150+</b> products list</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> sales</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
-        <p class="pcard-every">Included free</p>
-        <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
-      </article>
-      <article class="pcard" data-plan="pro">
-        
-        <h3>Pro</h3>
-        <p class="pcard-sub">For large stores and brands</p>
-        <div class="pcard-price">
-          <span class="tk">৳</span><strong data-month="2449">2,449</strong><span class="per" data-per>/month</span>
-        </div>
-        <p class="pcard-bill" data-bill>Billed monthly</p>
-        <a class="btn btn-block btn-dark" data-plan-link href="signup.html?plan=pro&amp;billing=monthly">Get Pro</a>
-        <div class="yearly-gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13M12 8c-2-4-6-4-6-1.5S10 8 12 8zM12 8c2-4 6-4 6-1.5S14 8 12 8z"/></svg><span><b>Free custom domain</b> with the yearly plan</span></div>
-        <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> pages</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> products</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> sales</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
-        <p class="pcard-every">Included free</p>
-        <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
-      </article>
+    <section class="cat-panel" id="panel-ecommerce" role="tabpanel" aria-labelledby="tab-ecommerce" data-cat="ecommerce" hidden>
+      <p class="cat-best">Best for every kind of business that sells products online.</p>
+      <div class="pcards">
+        <article class="pcard" data-plan="starter">
+          <h3>Starter</h3>
+          <p class="pcard-sub">For getting started online</p>
+          <div class="pcard-price"><span class="tk">৳</span><strong data-month="249">249</strong><span class="per" data-per>/month</span></div>
+          <p class="pcard-bill" data-bill>Billed monthly</p>
+          <a class="btn btn-block btn-dark" data-plan-link href="signup.html?category=ecommerce&amp;plan=starter&amp;billing=monthly">Get Starter</a>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>5</b> page website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>3</b> products list</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> sales</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
+          <p class="pcard-every">Included free</p>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
+        </article>
+        <article class="pcard pcard-pop" data-plan="business">
+          <span class="pcard-tag">Most popular</span>
+          <h3>Business</h3>
+          <p class="pcard-sub">For growing businesses</p>
+          <div class="pcard-price"><span class="tk">৳</span><strong data-month="549">549</strong><span class="per" data-per>/month</span></div>
+          <p class="pcard-bill" data-bill>Billed monthly</p>
+          <a class="btn btn-block btn-light" data-plan-link href="signup.html?category=ecommerce&amp;plan=business&amp;billing=monthly">Get Business</a>
+          <div class="yearly-gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span><b>Free custom domain</b> with the yearly plan</span></div>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>100</b> page website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>150+</b> products list</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> sales</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
+          <p class="pcard-every">Included free</p>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
+        </article>
+        <article class="pcard" data-plan="pro">
+          <h3>Pro</h3>
+          <p class="pcard-sub">For established brands</p>
+          <div class="pcard-price"><span class="tk">৳</span><strong data-month="1449">1,449</strong><span class="per" data-per>/month</span></div>
+          <p class="pcard-bill" data-bill>Billed monthly</p>
+          <a class="btn btn-block btn-dark" data-plan-link href="signup.html?category=ecommerce&amp;plan=pro&amp;billing=monthly">Get Pro</a>
+          <div class="yearly-gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span><b>Free custom domain</b> with the yearly plan</span></div>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> pages</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> products</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> sales</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
+          <p class="pcard-every">Included free</p>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
+        </article>
+      </div>
     </section>
-
+    <section class="cat-panel" id="panel-course" role="tabpanel" aria-labelledby="tab-course" data-cat="course" hidden>
+      <p class="cat-best">Best for content creators, influencers and YouTubers selling online courses.</p>
+      <div class="pcards">
+        <article class="pcard" data-plan="starter">
+          <h3>Starter</h3>
+          <p class="pcard-sub">For getting started online</p>
+          <div class="pcard-price"><span class="tk">৳</span><strong data-month="299">299</strong><span class="per" data-per>/month</span></div>
+          <p class="pcard-bill" data-bill>Billed monthly</p>
+          <a class="btn btn-block btn-dark" data-plan-link href="signup.html?category=course&amp;plan=starter&amp;billing=monthly">Get Starter</a>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>5</b> page website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>1</b> course</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> students</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
+          <p class="pcard-every">Included free</p>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
+        </article>
+        <article class="pcard pcard-pop" data-plan="business">
+          <span class="pcard-tag">Most popular</span>
+          <h3>Business</h3>
+          <p class="pcard-sub">For growing businesses</p>
+          <div class="pcard-price"><span class="tk">৳</span><strong data-month="599">599</strong><span class="per" data-per>/month</span></div>
+          <p class="pcard-bill" data-bill>Billed monthly</p>
+          <a class="btn btn-block btn-light" data-plan-link href="signup.html?category=course&amp;plan=business&amp;billing=monthly">Get Business</a>
+          <div class="yearly-gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span><b>Free custom domain</b> with the yearly plan</span></div>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>100</b> page website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>10</b> courses</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> students</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
+          <p class="pcard-every">Included free</p>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
+        </article>
+        <article class="pcard" data-plan="pro">
+          <h3>Pro</h3>
+          <p class="pcard-sub">For established brands</p>
+          <div class="pcard-price"><span class="tk">৳</span><strong data-month="1499">1,499</strong><span class="per" data-per>/month</span></div>
+          <p class="pcard-bill" data-bill>Billed monthly</p>
+          <a class="btn btn-block btn-dark" data-plan-link href="signup.html?category=course&amp;plan=pro&amp;billing=monthly">Get Pro</a>
+          <div class="yearly-gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span><b>Free custom domain</b> with the yearly plan</span></div>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> pages</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> courses</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>Unlimited</b> students</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Custom domain</span></li></ul>
+          <p class="pcard-every">Included free</p>
+          <ul class="pcard-list"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free website</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free CMS access</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span>Free support</span></li></ul>
+        </article>
+      </div>
+    </section>
     <section class="perks" aria-label="Included in every plan">
       <div class="perk">
         <span class="perk-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 6.5h.01M10 6.5h.01"/></svg></span>
@@ -106,17 +182,46 @@
     <section class="compare">
       <h2>Compare plans</h2>
       <div class="compare-wrap">
-        <table>
-          <thead><tr><th scope="col">Features</th><th scope="col">Starter<small>৳149/mo</small></th><th scope="col" class="hl">Business<small>৳549/mo</small></th><th scope="col">Pro<small>৳2,449/mo</small></th></tr></thead>
+        <table data-cat="local">
+          <caption class="sr-only">Local Business plans</caption>
+          <thead><tr><th scope="col">Features</th><th scope="col">Starter<small>৳149/mo</small></th><th scope="col" class="hl">Business<small>৳349/mo</small></th><th scope="col">Pro<small>৳549/mo</small></th></tr></thead>
           <tbody>
-          <tr><th scope="row">Website pages</th><td>5</td><td>100</td><td>Unlimited</td></tr>
-          <tr><th scope="row">Products list</th><td>3</td><td>150+</td><td>Unlimited</td></tr>
-          <tr><th scope="row">Sales</th><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
-          <tr><th scope="row">Custom domain</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
-          <tr><th scope="row">Free custom domain (yearly plan)</th><td><span class="no" aria-label="Not included">—</span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
-          <tr><th scope="row">Free website</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
-          <tr><th scope="row">Free CMS access</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
-          <tr><th scope="row">Free support</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Website pages</th><td>5</td><td>100</td><td>Unlimited</td></tr>
+            <tr><th scope="row">Online appointment booking</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Bookings</th><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
+            <tr><th scope="row">Custom domain</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Free custom domain</th><td><span class="no" aria-label="Not included">—</span></td><td>Yearly plan</td><td>1 year included</td></tr>
+            <tr><th scope="row">Free website</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Free CMS access</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Free support</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+          </tbody>
+        </table>
+        <table data-cat="ecommerce" hidden>
+          <caption class="sr-only">E-commerce plans</caption>
+          <thead><tr><th scope="col">Features</th><th scope="col">Starter<small>৳249/mo</small></th><th scope="col" class="hl">Business<small>৳549/mo</small></th><th scope="col">Pro<small>৳1,449/mo</small></th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Website pages</th><td>5</td><td>100</td><td>Unlimited</td></tr>
+            <tr><th scope="row">Products list</th><td>3</td><td>150+</td><td>Unlimited</td></tr>
+            <tr><th scope="row">Sales</th><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
+            <tr><th scope="row">Custom domain</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Free custom domain</th><td><span class="no" aria-label="Not included">—</span></td><td>Yearly plan</td><td>Yearly plan</td></tr>
+            <tr><th scope="row">Free website</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Free CMS access</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Free support</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+          </tbody>
+        </table>
+        <table data-cat="course" hidden>
+          <caption class="sr-only">Course Selling plans</caption>
+          <thead><tr><th scope="col">Features</th><th scope="col">Starter<small>৳299/mo</small></th><th scope="col" class="hl">Business<small>৳599/mo</small></th><th scope="col">Pro<small>৳1,499/mo</small></th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Website pages</th><td>5</td><td>100</td><td>Unlimited</td></tr>
+            <tr><th scope="row">Courses</th><td>1</td><td>10</td><td>Unlimited</td></tr>
+            <tr><th scope="row">Students</th><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
+            <tr><th scope="row">Custom domain</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Free custom domain</th><td><span class="no" aria-label="Not included">—</span></td><td>Yearly plan</td><td>Yearly plan</td></tr>
+            <tr><th scope="row">Free website</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Free CMS access</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
+            <tr><th scope="row">Free support</th><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td><td><span class="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></td></tr>
           </tbody>
         </table>
       </div>
@@ -125,10 +230,11 @@
     <section class="faq">
       <h2>Frequently asked questions</h2>
       <details><summary>Which currency are the prices in?</summary><p>All prices are in Bangladeshi Taka (৳ BDT).</p></details>
-      <details><summary>What do I get with a yearly plan?</summary><p>You pay for 12 months at once. On the Business and Pro plans, the yearly plan also comes with a free custom domain.</p></details>
+      <details><summary>Which type of plan should I choose?</summary><p>Local Business is for shops and services that take appointments, like cafés, restaurants, plumbers, electricians and clinics. E-commerce is for selling products online. Course Selling is for creators, influencers and YouTubers selling courses.</p></details>
+      <details><summary>What do I get with a yearly plan?</summary><p>You pay for 12 months at once. On Business and Pro plans, the yearly plan also comes with a free custom domain. The Local Business Pro plan includes a free domain for 1 year even when you pay monthly.</p></details>
       <details><summary>Can I use my own domain on Starter?</summary><p>Yes. Every plan, including Starter, lets you connect a custom domain to your website.</p></details>
       <details><summary>What is CMS access?</summary><p>The CMS is your dashboard for editing pages, adding products and updating your website — no coding needed. It's free on every plan.</p></details>
-      <details><summary>Can I change my plan later?</summary><p>Yes. You can move to a bigger or smaller plan whenever your business needs change.</p></details>
+      <details><summary>Can I change my plan later?</summary><p>Yes. You can move to a bigger or smaller plan, or to a different type of plan, whenever your business needs change.</p></details>
       <details><summary>Is support really free?</summary><p>Yes. Every plan includes free support to help you set up and run your website.</p></details>
     </section>
   </main>

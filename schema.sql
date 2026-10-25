@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   business TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'ecommerce', -- local, ecommerce or course
   plan TEXT NOT NULL DEFAULT 'starter',
   billing TEXT NOT NULL DEFAULT 'monthly',
   template TEXT NOT NULL DEFAULT 'luxe-store',
@@ -26,3 +27,6 @@ CREATE TABLE IF NOT EXISTS stores (
   data TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+
+-- Added after launch. On a database created before this column existed, run once:
+--   ALTER TABLE users ADD COLUMN category TEXT NOT NULL DEFAULT 'ecommerce';
