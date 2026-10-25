@@ -34,28 +34,29 @@
   <main class="container tpl-page">
     <h1 class="tpl-title">Get all templates for <span class="gradient-text">free</span></h1>
 
-    <div class="tpl-tools">
-      <label class="search">
-        <span class="sr-only">Search templates</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="tpl-search" placeholder="Search templates (e.g. restaurant, store, course...)" autocomplete="off">
-      </label>
-      <label class="sort">
-        <span class="sr-only">Sort templates</span>
-        <select id="tpl-sort">
-          <option value="pop">Popular</option>
-          <option value="new">Newest</option>
-          <option value="az">A–Z</option>
-        </select>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
-      </label>
-    </div>
-
-    <div class="cat-tabs four" id="tpl-chips" role="group" aria-label="Type of business">
-      <button type="button" data-cat="all" class="on" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>All</button>
-      <button type="button" data-cat="local" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v9h14v-9M10 21v-5h4v5"/></svg>Local Business</button>
-      <button type="button" data-cat="ecommerce" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/></svg>E‑commerce</button>
-      <button type="button" data-cat="course" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="m10 8 5 3-5 3z"/><path d="M8 22h8"/></svg>Course Selling</button>
+    <div class="tpl-bar">
+      <div class="cat-tabs four" id="tpl-chips" role="group" aria-label="Type of business">
+        <button type="button" data-cat="all" class="on" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>All</button>
+        <button type="button" data-cat="local" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 4.5 4h15L21 9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v9h14v-9M10 21v-5h4v5"/></svg>Local Business</button>
+        <button type="button" data-cat="ecommerce" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/></svg>E‑commerce</button>
+        <button type="button" data-cat="course" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="m10 8 5 3-5 3z"/><path d="M8 22h8"/></svg>Course Selling</button>
+      </div>
+      <div class="tpl-tools">
+        <label class="search">
+          <span class="sr-only">Search templates</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="search" id="tpl-search" placeholder="Search templates (e.g. restaurant, store, course...)" autocomplete="off">
+        </label>
+        <label class="sort">
+          <span class="sr-only">Sort templates</span>
+          <select id="tpl-sort">
+            <option value="pop">Popular</option>
+            <option value="new">Newest</option>
+            <option value="az">A–Z</option>
+          </select>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </label>
+      </div>
     </div>
     <p class="cat-best" id="tpl-best" hidden></p>
 
