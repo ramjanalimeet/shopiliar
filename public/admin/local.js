@@ -146,9 +146,9 @@ window.ShopilierDash.local = (() => {
               ${DAYS.map(([k, label]) => { const h = store.hours[k]; return `<div class="set-row">
                 <span style="min-width:110px;font-weight:500;color:var(--ink)">${label}</span>
                 <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-                  <input class="input" type="time" name="${k}_open" value="${esc(h.open)}" style="width:120px" aria-label="${label} opens" ${h.closed ? "disabled" : ""}>
+                  <input class="input" type="time" name="${k}_open" value="${esc(h.open)}" style="width:140px" aria-label="${label} opens" ${h.closed ? "disabled" : ""}>
                   <span class="muted">to</span>
-                  <input class="input" type="time" name="${k}_close" value="${esc(h.close)}" style="width:120px" aria-label="${label} closes" ${h.closed ? "disabled" : ""}>
+                  <input class="input" type="time" name="${k}_close" value="${esc(h.close)}" style="width:140px" aria-label="${label} closes" ${h.closed ? "disabled" : ""}>
                   <label class="check" style="margin-left:6px"><input type="checkbox" name="${k}_closed" data-action="day-closed" ${h.closed ? "checked" : ""}> Closed</label>
                 </span></div>`; }).join("")}
               <div class="set-row"><span>Time between booking slots</span>
