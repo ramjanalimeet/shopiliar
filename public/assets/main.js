@@ -23,6 +23,12 @@ if (tplList) {
   const sort = document.getElementById("tpl-sort");
   const chips = document.getElementById("tpl-chips");
   const empty = document.getElementById("tpl-empty");
+  const best = document.getElementById("tpl-best");
+  const BEST = {
+    local: "Best for cafés, restaurants, plumbers, electricians and clinics that take appointment bookings.",
+    ecommerce: "Best for every kind of business that sells products online.",
+    course: "Best for content creators, influencers and YouTubers selling online courses.",
+  };
   let cat = "all";
 
   const render = () => {
@@ -48,16 +54,24 @@ if (tplList) {
 
   search.addEventListener("input", render);
   sort.addEventListener("change", sortCards);
+  // Business type tabs (All / Local Business / E-commerce / Course Selling); #local etc. opens one
+  const setCat = (name) => {
+    cat = name;
+    chips.querySelectorAll("button").forEach((b) => {
+      b.classList.toggle("on", b.dataset.cat === name);
+      b.setAttribute("aria-pressed", String(b.dataset.cat === name));
+    });
+    best.textContent = BEST[name] || "";
+    best.hidden = !BEST[name];
+    render();
+  };
   chips.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
-    cat = btn.dataset.cat;
-    chips.querySelectorAll("button").forEach((b) => {
-      b.classList.toggle("on", b === btn);
-      b.setAttribute("aria-pressed", String(b === btn));
-    });
-    render();
+    history.replaceState(null, "", btn.dataset.cat === "all" ? location.pathname : "#" + btn.dataset.cat);
+    setCat(btn.dataset.cat);
   });
+  if (BEST[location.hash.slice(1)]) setCat(location.hash.slice(1));
 
   const modal = document.getElementById("tpl-modal");
   const modalShot = document.getElementById("tpl-modal-shot");
@@ -144,7 +158,7 @@ if (pickedNote) {
   const CATEGORY = { local: "Local Business", ecommerce: "E-commerce", course: "Course Selling" };
   const category = CATEGORY[params.get("category")];
   if (slug && /^[a-z0-9-]+$/.test(slug)) {
-    pickedNote.textContent = "Template selected: " + title(slug);
+    pickedNote.textContent = "Template selected: " + title(slug) + (category ? " · " + category : "");
     pickedNote.hidden = false;
   } else if (plan && /^(starter|business|pro)$/.test(plan)) {
     pickedNote.textContent = "Plan selected: " + (category ? category + " · " : "") + title(plan) + " (" + period + ")";
