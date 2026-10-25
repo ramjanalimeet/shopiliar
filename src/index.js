@@ -208,7 +208,8 @@ async function aiSite(request, env) {
   if (!name || about.length < 10) return json({ error: "Tell us your business name and a sentence about what you do." }, 400);
 
   const basic = basicSite(type, name, about, city);
-  if (!env.AI) return json({ ...basic, source: "basic" });
+  // "fallback" says why the simple version was used (not shown to users; helps when checking the setup)
+  if (!env.AI) return json({ ...basic, source: "basic", fallback: "no-ai-binding" });
   try {
     const out = await env.AI.run(AI_MODEL, {
       max_tokens: 400,
@@ -218,21 +219,32 @@ async function aiSite(request, env) {
           `Return JSON with keys: "template" (one of ${TEMPLATES_BY_TYPE[type].map((t) => `"${t}"`).join(", ")} - pick the closest style), "headline" (max 50 characters), "sub" (one sentence, max 100 characters), "cta" (button text, max 18 characters), "about" (2 sentences for an About section, max 260 characters).` },
       ],
     });
-    const text = String(out?.response ?? "");
-    const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-    const pick = (v, max, fallback) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : fallback);
-    return json({
-      template: TEMPLATES_BY_TYPE[type].includes(parsed.template) ? parsed.template : basic.template,
-      headline: pick(parsed.headline, 60, basic.headline),
-      sub: pick(parsed.sub, 120, basic.sub),
-      cta: pick(parsed.cta, 20, basic.cta),
-      about: pick(parsed.about, 300, basic.about),
-      source: "ai",
-    });
+    // Most text models return { response: "…" }; some return the parsed object directly
+    const raw = out?.response ?? out;
+    if (raw && typeof raw === "object" && raw.headline) return json(aiResult(type, raw, basic));
+    const text = String(raw ?? "");
+    let parsed;
+    try { parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)); } catch {
+      console.error("AI site: reply wasn't JSON", text.slice(0, 300));
+      return json({ ...basic, source: "basic", fallback: "ai-reply-not-json" });
+    }
+    return json(aiResult(type, parsed, basic));
   } catch (err) {
     console.error("AI site failed", err);
-    return json({ ...basic, source: "basic" });
+    return json({ ...basic, source: "basic", fallback: "ai-error: " + String(err?.message || err).slice(0, 120) });
   }
+}
+
+function aiResult(type, parsed, basic) {
+  const pick = (v, max, fallback) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : fallback);
+  return {
+    template: TEMPLATES_BY_TYPE[type].includes(parsed.template) ? parsed.template : basic.template,
+    headline: pick(parsed.headline, 60, basic.headline),
+    sub: pick(parsed.sub, 120, basic.sub),
+    cta: pick(parsed.cta, 20, basic.cta),
+    about: pick(parsed.about, 300, basic.about),
+    source: "ai",
+  };
 }
 
 function basicSite(type, name, about, city) {
