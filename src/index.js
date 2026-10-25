@@ -7,6 +7,8 @@ const PBKDF2_ITERATIONS = 100000; // the maximum Workers allows
 const MAX_STORE_BYTES = 1_000_000;
 const PLANS = ["starter", "business", "pro"];
 const CATEGORIES = ["local", "ecommerce", "course"]; // Local Business, E-commerce, Course Selling
+// Starting template when none was picked, so each business type gets a fitting design
+const DEFAULT_TEMPLATE = { local: "fixly-services", ecommerce: "luxe-store", course: "mia-personal" };
 const SLUG = /^[a-z0-9-]{1,60}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GOOGLE_STATE_COOKIE = "shopiliar_google";
@@ -44,7 +46,7 @@ async function api(request, env, url) {
     if (request.headers.get("Origin") !== url.origin) return json({ error: "Bad origin." }, 403);
     if (!(request.headers.get("Content-Type") || "").includes("application/json")) return json({ error: "Expected JSON." }, 415);
   }
-  if ((route === "POST /api/signup" || route === "POST /api/signin" || route === "POST /api/password") && env.AUTH_LIMITER) {
+  if ((route === "POST /api/signup" || route === "POST /api/signin" || route === "POST /api/password" || route === "POST /api/ai/site") && env.AUTH_LIMITER) {
     const { success } = await env.AUTH_LIMITER.limit({ key: request.headers.get("CF-Connecting-IP") || "unknown" });
     if (!success) return json({ error: "Too many attempts. Please wait a minute and try again." }, 429);
   }
@@ -58,6 +60,7 @@ async function api(request, env, url) {
     case "GET /api/auth/google/callback": return googleCallback(request, env, url);
     case "PUT /api/store": return saveStore(request, env);
     case "POST /api/password": return changePassword(request, env);
+    case "POST /api/ai/site": return aiSite(request, env);
     default: return json({ error: "Not found." }, 404);
   }
 }
@@ -83,7 +86,7 @@ async function signup(request, env) {
     category: CATEGORIES.includes(body.category) ? body.category : "ecommerce",
     plan: PLANS.includes(body.plan) ? body.plan : "starter",
     billing: body.billing === "yearly" ? "yearly" : "monthly",
-    template: SLUG.test(body.template || "") ? body.template : "luxe-store",
+    template: SLUG.test(body.template || "") ? body.template : DEFAULT_TEMPLATE[CATEGORIES.includes(body.category) ? body.category : "ecommerce"],
     created_at: new Date().toISOString(),
   };
   try {
@@ -184,6 +187,71 @@ async function changePassword(request, env) {
   return json({ ok: true });
 }
 
+// ---------- Create with AI ----------
+// Writes the first version of a website (template, headline, text) from a short
+// description, using Workers AI when the AI binding is available and simple
+// rules otherwise, so sign-up never gets stuck.
+const AI_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+const TEMPLATES_BY_TYPE = {
+  local: ["bistro-restaurant", "fixly-services", "growify-agency"],
+  ecommerce: ["luxe-store", "saas-landing", "launchly-landing"],
+  course: ["mia-personal", "nova-portfolio", "writely-blog"],
+};
+const CTA = { local: "Book Now", ecommerce: "Shop Now", course: "Enroll Now" };
+
+async function aiSite(request, env) {
+  const body = await readJson(request);
+  const type = CATEGORIES.includes(body.type) ? body.type : "ecommerce";
+  const name = clean(body.name, 60);
+  const about = clean(body.about, 500);
+  const city = clean(body.city, 40) || "Bangladesh";
+  if (!name || about.length < 10) return json({ error: "Tell us your business name and a sentence about what you do." }, 400);
+
+  const basic = basicSite(type, name, about, city);
+  if (!env.AI) return json({ ...basic, source: "basic" });
+  try {
+    const out = await env.AI.run(AI_MODEL, {
+      max_tokens: 400,
+      messages: [
+        { role: "system", content: "You write short, friendly website copy for small businesses in Bangladesh. Reply with one JSON object only, no other text." },
+        { role: "user", content: `Business name: ${name}\nCity: ${city}\nType: ${{ local: "local business that takes bookings", ecommerce: "online shop", course: "online course creator" }[type]}\nWhat they do: ${about}\n\n` +
+          `Return JSON with keys: "template" (one of ${TEMPLATES_BY_TYPE[type].map((t) => `"${t}"`).join(", ")} - pick the closest style), "headline" (max 50 characters), "sub" (one sentence, max 100 characters), "cta" (button text, max 18 characters), "about" (2 sentences for an About section, max 260 characters).` },
+      ],
+    });
+    const text = String(out?.response ?? "");
+    const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+    const pick = (v, max, fallback) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : fallback);
+    return json({
+      template: TEMPLATES_BY_TYPE[type].includes(parsed.template) ? parsed.template : basic.template,
+      headline: pick(parsed.headline, 60, basic.headline),
+      sub: pick(parsed.sub, 120, basic.sub),
+      cta: pick(parsed.cta, 20, basic.cta),
+      about: pick(parsed.about, 300, basic.about),
+      source: "ai",
+    });
+  } catch (err) {
+    console.error("AI site failed", err);
+    return json({ ...basic, source: "basic" });
+  }
+}
+
+function basicSite(type, name, about, city) {
+  const has = (...words) => words.some((w) => about.toLowerCase().includes(w));
+  const template = type === "local"
+    ? (has("restaurant", "cafe", "café", "food", "bakery", "coffee") ? "bistro-restaurant" : has("repair", "plumb", "electric", "clean", "clinic", "doctor", "dental", "salon", "service") ? "fixly-services" : "growify-agency")
+    : type === "course"
+      ? (has("blog", "writ", "article") ? "writely-blog" : has("design", "portfolio", "photo") ? "nova-portfolio" : "mia-personal")
+      : (has("software", "app", "saas", "tech") ? "saas-landing" : has("launch", "pre-order", "preorder") ? "launchly-landing" : "luxe-store");
+  const first = about.split(/(?<=[.!?])\s/)[0].slice(0, 110);
+  return {
+    template,
+    headline: { local: `${name}, trusted in ${city}`, ecommerce: `Shop ${name} online`, course: `Learn with ${name}` }[type].slice(0, 60),
+    sub: first,
+    cta: CTA[type],
+    about: `${name} — ${about}`.slice(0, 300),
+  };
+}
+
 // ---------- Google sign-in (OAuth 2.0 / OpenID Connect) ----------
 // Needs the GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET secrets, and
 // <site>/api/auth/google/callback listed as a redirect URI in Google Cloud.
@@ -253,7 +321,7 @@ async function googleCallback(request, env, url) {
       category: CATEGORIES.includes(pick.category) ? pick.category : "ecommerce",
       plan: PLANS.includes(pick.plan) ? pick.plan : "starter",
       billing: pick.billing === "yearly" ? "yearly" : "monthly",
-      template: SLUG.test(pick.template || "") ? pick.template : "luxe-store",
+      template: SLUG.test(pick.template || "") ? pick.template : DEFAULT_TEMPLATE[CATEGORIES.includes(pick.category) ? pick.category : "ecommerce"],
       created_at: new Date().toISOString(),
     };
     // No password: this account signs in with Google (an empty hash never matches)

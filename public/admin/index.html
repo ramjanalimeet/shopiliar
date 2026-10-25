@@ -21,9 +21,15 @@
       <a class="brand" href="/"><img class="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="">Shopilier</a>
       <nav class="side-nav">
         <a class="nav-item" data-route="home" href="#/home"><span data-icon="home"></span>Home</a>
-        <a class="nav-item" data-route="orders" href="#/orders"><span data-icon="orders"></span>Orders<span class="count" id="count-orders"></span></a>
-        <a class="nav-item" data-route="products" href="#/products"><span data-icon="tag"></span>Products</a>
-        <a class="nav-item" data-route="customers" href="#/customers"><span data-icon="customers"></span>Customers</a>
+        <a class="nav-item" data-route="orders" data-kind="ecommerce" href="#/orders"><span data-icon="orders"></span>Orders<span class="count" data-badge></span></a>
+        <a class="nav-item" data-route="products" data-kind="ecommerce" href="#/products"><span data-icon="tag"></span>Products</a>
+        <a class="nav-item" data-route="customers" data-kind="ecommerce" href="#/customers"><span data-icon="customers"></span>Customers</a>
+        <a class="nav-item" data-route="appointments" data-kind="local" href="#/appointments" hidden><span data-icon="calendar"></span>Appointments<span class="count" data-badge></span></a>
+        <a class="nav-item" data-route="services" data-kind="local" href="#/services" hidden><span data-icon="tag"></span>Services</a>
+        <a class="nav-item" data-route="clients" data-kind="local" href="#/clients" hidden><span data-icon="customers"></span>Clients</a>
+        <a class="nav-item" data-route="courses" data-kind="course" href="#/courses" hidden><span data-icon="play"></span>Courses</a>
+        <a class="nav-item" data-route="students" data-kind="course" href="#/students" hidden><span data-icon="customers"></span>Students</a>
+        <a class="nav-item" data-route="sales" data-kind="course" href="#/sales" hidden><span data-icon="money"></span>Sales</a>
         <a class="nav-item" data-route="analytics" href="#/analytics"><span data-icon="barchart"></span>Analytics</a>
         <a class="nav-item" data-route="marketing" href="#/marketing"><span data-icon="megaphone"></span>Marketing</a>
         <a class="nav-item" data-route="discounts" href="#/discounts"><span data-icon="discount"></span>Discounts</a>
@@ -63,6 +69,8 @@
     </div>
   </div>
   <script src="../assets/dash.js"></script>
+  <script src="local.js"></script>
+  <script src="course.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -145,6 +145,11 @@
 .pill.Pending { background: #e2edfd; color: #1d56c9; }
 .pill.Shipped { background: #fdf3cd; color: #8a6200; }
 .pill.Cancelled { background: #fde4e4; color: #b42318; }
+/* Local Business appointment statuses */
+.pill.Booked { background: #e2edfd; color: #1d56c9; }
+.pill.Confirmed { background: #ede7fd; color: #5b35c9; }
+.pill.Completed { background: #dcf3e5; color: #0b6b3c; }
+.pill.No-show { background: #eef0f2; color: #5a6270; }
 
 /* Top products */
 .top-list { list-style: none; display: grid; gap: 14px; }

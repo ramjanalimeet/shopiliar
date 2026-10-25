@@ -3,6 +3,7 @@
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
   const PLANS = Dash.PLANS();
   const { BUSINESS_TYPES, PLAN_PRICES } = Dash;
+  const PLAN_PRICES_KINDS = Object.keys(PLAN_PRICES);
   const SIGN_IN = "/signin.html?next=" + encodeURIComponent(location.pathname + location.search);
 
   // ---------- Data (saved to the signed-in account by the Worker) ----------
@@ -53,14 +54,17 @@
       site: {
         name: account.business || "My Store", template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, font: "modern",
         headline: t.headline, sub: t.sub, cta: t.cta, showProducts: true, showAbout: true, showContact: true,
-        about: "We make simple, beautiful things for everyday life — designed and delivered across Bangladesh.",
+        about: {
+          local: "We're a local business that looks after every customer personally. Book a time that suits you and we'll take care of the rest.",
+          course: "I share practical, easy-to-follow lessons so you can learn at your own pace — from anywhere in Bangladesh.",
+        }[account.category] || "We make simple, beautiful things for everyday life — designed and delivered across Bangladesh.",
         phone: "01700-000000", email: account.email, address: "Dhaka, Bangladesh",
       },
       published: false, publishedAt: null,
       products, customers, orders,
       pages: [
         { id: uid("pg"), title: "Home", slug: "", inNav: true, locked: true },
-        { id: uid("pg"), title: "Shop", slug: "shop", inNav: true },
+        { id: uid("pg"), title: { local: "Services", course: "Courses" }[account.category] || "Shop", slug: { local: "services", course: "courses" }[account.category] || "shop", inNav: true },
         { id: uid("pg"), title: "About", slug: "about", inNav: true },
         { id: uid("pg"), title: "Contact", slug: "contact", inNav: true },
       ],
@@ -73,8 +77,26 @@
       customized: false,
     };
   };
-  const store = me.store || seedStore();
+  // Local Business and Course Selling dashboards live in local.js / course.js
+  const kind = PLAN_PRICES_KINDS.includes(account.category) ? account.category : "ecommerce";
+  const extension = (window.ShopilierDash || {})[kind] || null;
+  let ext = null; // the built extension (routes, actions…), set up once the helpers below exist
+  const newStore = () => {
+    const fresh = seedStore();
+    if (extension) Object.assign(fresh, extension.seed({ account, uid, daysAgo }));
+    // Text written in the sign-up flow (Create with AI) becomes the first version of the website
+    let start = null;
+    try { start = JSON.parse(sessionStorage.getItem("shopilier.start") || "null"); sessionStorage.removeItem("shopilier.start"); } catch (e) { /* storage blocked */ }
+    // Only text from a sign-up in the last hour, so an old draft never lands in someone else's new store
+    if (start && Date.now() - (start.at || 0) < 36e5) {
+      ["headline", "sub", "cta", "about"].forEach((k) => { if (start[k]) fresh.site[k] = String(start[k]).slice(0, 300); });
+      fresh.customized = !!start.headline;
+    }
+    return fresh;
+  };
+  const store = me.store || newStore();
   store.discounts ||= [];
+  store.orders ||= []; store.products ||= []; store.customers ||= [];
   store.marketing ||= { pixels: {}, headCode: "", bodyCode: "" };
   let saveTimer = null, saving = Promise.resolve();
   const saveNow = () => {
@@ -120,8 +142,8 @@
 
   // ---------- Chrome ----------
   const refreshChrome = () => {
-    const pending = store.orders.filter((o) => o.status === "Pending").length;
-    document.getElementById("count-orders").textContent = pending || "";
+    const pending = ext ? ext.badge() : store.orders.filter((o) => o.status === "Pending").length;
+    document.querySelectorAll("[data-badge]").forEach((el) => { el.textContent = pending || ""; });
     document.getElementById("count-pages").textContent = store.pages.length;
     document.getElementById("bell-count").textContent = pending ? (pending > 9 ? "9+" : pending) : "";
     document.getElementById("me-avatar").innerHTML = avatar(account.name);
@@ -190,24 +212,26 @@
     const c1 = [p1[0] + (p[0] - p0[0]) / 6, clampY(p1[1] + (p[1] - p0[1]) / 6)], c2 = [p[0] - (p3[0] - p1[0]) / 6, clampY(p[1] - (p3[1] - p1[1]) / 6)];
     return `C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p[0].toFixed(1)},${p[1].toFixed(1)}`;
   }).join("");
-  const salesChart = (now, span) => {
+  // Daily line chart for this period against the previous one. valueFor(from, to) gives a day's value.
+  const lineChart = (now, span, valueFor, money = true) => {
     const n = range, W = 760, H = 250, L = 50, R = 10, T = 10, B = 30;
     const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
     const daily = (offset) => Array.from({ length: n }, (_, i) => {
       const from = dayStart.getTime() - (n - 1 - i) * 864e5 - offset;
-      return sales(inPeriod(store.orders, from, from + 864e5));
+      return valueFor(from, from + 864e5);
     });
     const now1 = daily(0), prev1 = daily(span);
     const step = (v) => { const raw = v / 5, mag = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw); };
-    const tick = step(Math.max(500, ...now1, ...prev1));
+    const tick = step(Math.max(money ? 500 : 5, ...now1, ...prev1));
     const top = tick * 5;
     const x = (i) => L + (i / Math.max(1, n - 1)) * (W - L - R);
     const y = (v) => T + (1 - v / top) * (H - T - B);
     const pts = (arr) => arr.map((v, i) => [x(i), y(v)]);
-    const short = (v) => v >= 1000 ? "৳" + (v / 1000).toFixed(v % 1000 ? 1 : 0).replace(/\.0$/, "") + "K" : "৳" + v;
+    const cur = money ? "৳" : "";
+    const short = (v) => v >= 1000 ? cur + (v / 1000).toFixed(v % 1000 ? 1 : 0).replace(/\.0$/, "") + "K" : cur + v;
     const labels = Array.from({ length: 8 }, (_, k) => Math.round((k / 7) * (n - 1)));
     const line = smooth(pts(now1));
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Sales per day, this period and the previous one">
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Per day, this period and the previous one">
       <defs><linearGradient id="sales-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0e7a4b" stop-opacity=".2"/><stop offset="1" stop-color="#0e7a4b" stop-opacity="0"/></linearGradient></defs>
       ${Array.from({ length: 6 }, (_, k) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(k * tick)}" y2="${y(k * tick)}"/><text x="${L - 10}" y="${y(k * tick) + 4}" text-anchor="end">${short(k * tick)}</text>`).join("")}
       ${labels.map((i) => `<line class="grid" x1="${x(i)}" x2="${x(i)}" y1="${T}" y2="${H - B}"/><text x="${x(i)}" y="${H - 8}" text-anchor="middle">${shortDay(dayStart.getTime() - (n - 1 - i) * 864e5)}</text>`).join("")}
@@ -217,6 +241,12 @@
       <circle class="dot" cx="${x(n - 1)}" cy="${y(now1[n - 1])}" r="4.5"/>
     </svg>`;
   };
+  // Website preview: products, or services / courses for the other business types
+  const previewHTML = (site) => {
+    const [items, itemsTitle] = ext ? ext.siteItems() : [store.products, "Products"];
+    return siteHTML(site, items, store.pages, itemsTitle);
+  };
+  const salesChart = (now, span) => lineChart(now, span, (from, to) => sales(inPeriod(store.orders, from, to)));
   const topProducts = (orders) => {
     if (!store.products.length) return `<p class="empty-note">No products yet. <a class="link" href="#/products" data-action="add-product">Add your first product</a></p>`;
     const sold = {};
@@ -375,11 +405,16 @@
       render: () => `${head("Help Center", "Answers to common questions.")}
         <div class="card"><div class="card-body help-list">
           ${[
-            ["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."],
+            ...({
+              local: [["How do I take a booking?", "Add your services under Services, then click New appointment on Home or Appointments. Set your opening hours on the Services page."],
+                ["How do I mark a visit as done?", "On Appointments, change the status to Completed (or No-show) right in the table."]],
+              course: [["How do I create a course?", "Go to Courses and click New course. Give it a title and price, then click Lessons to add each lesson."],
+                ["How do I record a sale?", "Click Record a sale on Home or Sales, pick the course and enter the student. They're added to Students automatically."]],
+            }[kind] || [["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."]]),
             ["How do I change how my website looks?", "Open Online Store. Pick a template, change colors and text, and watch the live preview."],
             ["How do I publish my website?", "In Online Store, click Publish. Your site goes live at your free shopilier.com address."],
             ["Can I use my own domain?", "Yes. Go to Settings and add your domain. Yearly Business and Pro plans include a free domain."],
-            ["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."],
+            ...(kind === "ecommerce" ? [["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."]] : []),
             ["How do I change my plan?", "Open Billing and choose Switch next to the plan you want."],
           ].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
         </div></div></div>`,
@@ -501,7 +536,8 @@
           ["Classic", "#ffffff", "#111111", "#111111"], ["Sand", "#f7f4f0", "#2b211a", "#8a5a3b"], ["Ocean", "#eef6fb", "#0b2a3f", "#0b6e99"],
           ["Forest", "#f3f7f1", "#1c3326", "#2f6b2a"], ["Berry", "#fdf3f6", "#3d1527", "#ad1a72"], ["Night", "#14141c", "#ffffff", "#ff7a59"],
         ];
-        const published = catalog.filter((t) => t.status === "published");
+        // This business type's templates first
+        const published = catalog.filter((t) => t.status === "published").sort((a, b) => (b.type === kind) - (a.type === kind));
         return `${head("Customize website", "Pick a template, choose colors and edit your text. The preview updates as you type.",
           `${store.published ? '<span class="tag dot green">Live</span>' : '<span class="tag dot yellow">Draft</span>'}<button class="btn" data-action="reset-site">Reset</button><button class="btn btn-primary" data-action="publish">${icon("rocket")}${store.published ? "Publish changes" : "Publish website"}</button>`)}
           <div style="display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start" class="customizer">
@@ -539,7 +575,7 @@
             <div class="card" style="position:sticky;top:0">
               <div class="card-head"><span class="card-title">Live preview<small>${esc(siteUrl())}</small></span>
                 <div class="seg"><button class="${previewMode === "desktop" ? "on" : ""}" data-action="preview-mode" data-mode="desktop">${icon("monitor")}Desktop</button><button class="${previewMode === "mobile" ? "on" : ""}" data-action="preview-mode" data-mode="mobile">${icon("phone")}Mobile</button></div></div>
-              <div class="card-body" style="background:var(--bg);border-radius:0 0 12px 12px"><div class="sp-frame ${previewMode === "mobile" ? "mobile" : ""}" id="site-preview">${siteHTML(s, store.products, store.pages)}</div></div>
+              <div class="card-body" style="background:var(--bg);border-radius:0 0 12px 12px"><div class="sp-frame ${previewMode === "mobile" ? "mobile" : ""}" id="site-preview">${previewHTML(s)}</div></div>
             </div>
           </div>
         </div>`;
@@ -552,7 +588,7 @@
           ["showProducts", "showAbout", "showContact"].forEach((k) => { store.site[k] = form.elements[k].checked; });
           store.site.text = Dash.isDark(store.site.bg) ? "#ffffff" : (Dash.isDark(store.site.text) ? store.site.text : "#111111");
           form.querySelectorAll("input[name=font]").forEach((r) => r.nextElementSibling.classList.toggle("on", r.checked));
-          view.querySelector("#site-preview").innerHTML = siteHTML(store.site, store.products, store.pages);
+          view.querySelector("#site-preview").innerHTML = previewHTML(store.site);
           store.customized = true;
           persist();
         };
@@ -794,6 +830,23 @@
     },
   };
 
+  // ---------- Business type: Local Business / Course Selling ----------
+  // Their dashboards replace the e-commerce Home, Orders, Products, Customers and Analytics pages.
+  if (extension) {
+    ext = extension.build({
+      store, account, kind, plan, range: () => range, siteUrl,
+      esc, taka, uid, day, daysAgo, avatar, tag, icon, toast, dialog, confirm, bars, limitText, withinLimit,
+      head, delta, inPeriod, lineChart, searchBox, usage, limitCallout, feature, persist, go: () => go(),
+    });
+    ["home", "orders", "products", "customers", "analytics"].forEach((r) => delete routes[r]);
+    Object.assign(routes, ext.routes);
+    Object.assign(actions, ext.actions);
+  }
+  const searchHint = { local: "Search appointments, clients, services…", course: "Search sales, students, courses…" }[kind];
+  if (searchHint) { const ts = document.getElementById("top-search"); ts.placeholder = searchHint; ts.setAttribute("aria-label", searchHint.replace("…", "")); }
+  // Only this business type's menu items show in the sidebar
+  document.querySelectorAll("[data-kind]").forEach((el) => { el.hidden = !el.dataset.kind.split(" ").includes(kind); });
+
   // ---------- Settings popup ----------
   const SETTINGS_TABS = [
     ["general", "General", "store"],
@@ -827,12 +880,12 @@
             <div class="stat-value" style="margin-top:8px">${yearly ? taka(p.price * 12) + '<span class="muted" style="font-size:14px;font-weight:500"> /year</span>' : taka(p.price) + '<span class="muted" style="font-size:14px;font-weight:500"> /month</span>'}</div>
             <p class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${hasFreeDomain() ? (yearly ? " · includes a free custom domain" : " · includes a free domain for 1 year") : ""}</p></div>
             <button class="btn btn-primary" type="button" data-action="change-plan">Change plan</button></div>
-          ${[["Pages", store.pages.length, p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
+          ${[["Pages", store.pages.length, p.pages], ...(ext ? ext.usage() : [["Products", store.products.length, p.products]])].map(([n, used, lim]) => `
             <div class="meter" style="margin-top:14px"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
             <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
         </div>
-        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>${esc(BUSINESS_TYPES[category()])} plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Sales</th><th class="t-actions"></th></tr></thead>
-          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(priceOf(id))}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td><td>Unlimited</td>
+        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>${esc(BUSINESS_TYPES[category()])} plan</th><th class="t-right">Monthly</th><th>Pages</th>${kind === "local" ? "<th>Bookings</th>" : kind === "course" ? "<th>Courses</th><th>Students</th>" : "<th>Products</th><th>Sales</th>"}<th class="t-actions"></th></tr></thead>
+          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(priceOf(id))}</td><td>${limitText(pl.pages)}</td>${kind === "local" ? "<td>Unlimited</td>" : kind === "course" ? `<td>${limitText(Dash.COURSE_LIMITS[id])}</td><td>Unlimited</td>` : `<td>${limitText(pl.products)}</td><td>Unlimited</td>`}
             <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" type="button" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
         <p class="muted small">Online payment for plans isn't connected yet, so switching plans changes your limits straight away.</p>`;
     },
@@ -972,6 +1025,7 @@
   view.addEventListener("change", (e) => {
     const el = e.target;
     if (el.dataset.action === "range") { range = Number(el.value); go(); }
+    if (ext && ext.onChange) ext.onChange(el);
     if (el.dataset.action === "pixel-on") {
       const p = pixelById(el.dataset.id);
       store.marketing.pixels[p.id].on = el.checked; persist(); go(); toast(`${p.name} ${el.checked ? "is active" : "is paused"}`);
@@ -998,12 +1052,20 @@
       const again = view.querySelector(`[data-action="${el.dataset.action}"]`);
       again.focus(); again.setSelectionRange(pos, pos);
     }
+    // Search boxes on the Local Business / Course Selling pages: ext.onInput returns true when it used the input
+    if (ext && ext.onInput && ext.onInput(el)) {
+      const pos = el.selectionStart;
+      go();
+      const again = view.querySelector(`[data-action="${el.dataset.action}"]`);
+      if (again) { again.focus(); again.setSelectionRange(pos, pos); }
+    }
   });
 
   // Top bar search: products when it matches one, otherwise orders
   document.getElementById("top-search").addEventListener("keydown", (e) => {
     if (e.key !== "Enter") return;
     const q = e.target.value.trim();
+    if (ext) { ext.search(q); return; }
     const isProduct = q && store.products.some((p) => p.name.toLowerCase().includes(q.toLowerCase()));
     if (isProduct) { productSearch = q; location.hash = "#/products"; } else { orderSearch = q; orderFilter = "All"; location.hash = "#/orders"; }
     if (location.hash === (isProduct ? "#/products" : "#/orders")) go();

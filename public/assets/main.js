@@ -147,24 +147,6 @@ if (tplList) {
   });
 }
 
-// Sign up: show the template or plan picked earlier
-const pickedNote = document.querySelector("[data-picked-template]");
-if (pickedNote) {
-  const params = new URLSearchParams(location.search);
-  const title = (s) => s.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-  const slug = params.get("template");
-  const plan = params.get("plan");
-  const period = params.get("billing") === "yearly" ? "yearly" : "monthly";
-  const CATEGORY = { local: "Local Business", ecommerce: "E-commerce", course: "Course Selling" };
-  const category = CATEGORY[params.get("category")];
-  if (slug && /^[a-z0-9-]+$/.test(slug)) {
-    pickedNote.textContent = "Template selected: " + title(slug) + (category ? " · " + category : "");
-    pickedNote.hidden = false;
-  } else if (plan && /^(starter|business|pro)$/.test(plan)) {
-    pickedNote.textContent = "Plan selected: " + (category ? category + " · " : "") + title(plan) + " (" + period + ")";
-    pickedNote.hidden = false;
-  }
-}
 
 // Pricing: business type tabs (Local Business / E-commerce / Course Selling) and monthly / yearly toggle
 const billing = document.querySelector("[data-billing]");
@@ -220,7 +202,7 @@ if (billing) {
   render();
 }
 
-// Accounts are kept by the Worker (src/index.js); the session is an HttpOnly cookie.
+// Sign in (sign-up is the step-by-step flow in start.js). Accounts are kept by the Worker (src/index.js); the session is an HttpOnly cookie.
 const api = async (path, body) => {
   const res = await fetch(path, body === undefined ? {} : {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -241,27 +223,18 @@ signedIn.then((yes) => {
 
 document.querySelectorAll("form[data-auth]").forEach((form) => {
   const params = new URLSearchParams(location.search);
-  const template = /^[a-z0-9-]+$/.test(params.get("template") || "") ? params.get("template") : "";
   // Only send people back to pages inside their dashboard
   const next = /^\/admin(\/|$)/.test(params.get("next") || "") ? params.get("next") : "/admin/";
   const msg = form.querySelector(".form-msg");
   const say = (text) => { msg.style.color = "#e03e3e"; msg.textContent = text; };
 
-  // Google sign-in carries the same template / plan picks
-  const google = new URLSearchParams({ next });
-  ["category", "plan", "billing", "template"].forEach((k) => { if (params.get(k)) google.set(k, params.get(k)); });
-  form.querySelectorAll("a[data-google]").forEach((a) => { a.href = "/api/auth/google?" + google; });
+  form.querySelectorAll("a[data-google]").forEach((a) => { a.href = "/api/auth/google?" + new URLSearchParams({ next }); });
   const GOOGLE_ERRORS = {
     google: "Google sign-in didn't finish. Please try again.",
     google_email: "Your Google email isn't verified yet.",
     google_off: "Google sign-in isn't set up yet. Please use your email and password.",
   };
   if (GOOGLE_ERRORS[params.get("error")]) say(GOOGLE_ERRORS[params.get("error")]);
-
-  // Already signed in: picking a template from the Templates page applies it in the dashboard
-  if (form.dataset.auth === "signup") {
-    signedIn.then((yes) => { if (yes) location.href = "/admin/" + (template ? "?template=" + template : ""); });
-  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -270,18 +243,10 @@ document.querySelectorAll("form[data-auth]").forEach((form) => {
     msg.textContent = "";
     button.disabled = true;
     try {
-      if (form.dataset.auth === "signup") {
-        await api("/api/signup", {
-          name: val("name"), business: val("business"), email: val("email"), password: form.querySelector("#password").value,
-          category: params.get("category"), plan: params.get("plan"), billing: params.get("billing"), template,
-        });
-        location.href = "/admin/";
-      } else {
-        await api("/api/signin", {
-          email: val("email"), password: form.querySelector("#password").value, remember: form.querySelector("#remember")?.checked,
-        });
-        location.href = next;
-      }
+      await api("/api/signin", {
+        email: val("email"), password: form.querySelector("#password").value, remember: form.querySelector("#remember")?.checked,
+      });
+      location.href = next;
     } catch (err) {
       say(err.message);
       button.disabled = false;
