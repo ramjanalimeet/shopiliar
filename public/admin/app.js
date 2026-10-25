@@ -187,12 +187,7 @@
   // ---------- Home helpers ----------
   let range = 30; // days shown on Home
   const inPeriod = (orders, from, to) => orders.filter((o) => { const t = new Date(o.date).getTime(); return t >= from && t < to; });
-  const delta = (cur, prev, points = false) => {
-    if (!prev) return `<span class="delta flat">${cur ? "New" : "—"}</span>`;
-    const change = points ? cur - prev : ((cur - prev) / prev) * 100;
-    const dir = change >= 0 ? "up" : "down";
-    return `<span class="delta ${dir}">${icon(dir === "up" ? "arrowUp" : "arrowDown")}${Math.abs(Math.round(change))}${points ? " pts" : "%"}</span>`;
-  };
+  const delta = Dash.delta;
   // Share of this period's customers who had ordered before
   const returning = (orders, from) => {
     const names = [...new Set(orders.map((o) => o.customer.toLowerCase()))];
@@ -202,45 +197,8 @@
     const back = names.filter((n) => counts[n] > 1 || store.orders.some((o) => o.customer.toLowerCase() === n && new Date(o.date).getTime() < from));
     return (back.length / names.length) * 100;
   };
-  const shortDay = (t) => new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  // Smooth line through points (Catmull-Rom as cubic Béziers). Control points stay
-  // between their two neighbours so the curve never overshoots, e.g. below ৳0.
-  const smooth = (pts) => pts.map((p, i) => {
-    if (!i) return `M${p[0].toFixed(1)},${p[1].toFixed(1)}`;
-    const p0 = pts[i - 2] || pts[i - 1], p1 = pts[i - 1], p3 = pts[i + 1] || p;
-    const lo = Math.min(p1[1], p[1]), hi = Math.max(p1[1], p[1]), clampY = (v) => Math.min(hi, Math.max(lo, v));
-    const c1 = [p1[0] + (p[0] - p0[0]) / 6, clampY(p1[1] + (p[1] - p0[1]) / 6)], c2 = [p[0] - (p3[0] - p1[0]) / 6, clampY(p[1] - (p3[1] - p1[1]) / 6)];
-    return `C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p[0].toFixed(1)},${p[1].toFixed(1)}`;
-  }).join("");
-  // Daily line chart for this period against the previous one. valueFor(from, to) gives a day's value.
-  const lineChart = (now, span, valueFor, money = true) => {
-    const n = range, W = 760, H = 250, L = 50, R = 10, T = 10, B = 30;
-    const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
-    const daily = (offset) => Array.from({ length: n }, (_, i) => {
-      const from = dayStart.getTime() - (n - 1 - i) * 864e5 - offset;
-      return valueFor(from, from + 864e5);
-    });
-    const now1 = daily(0), prev1 = daily(span);
-    const step = (v) => { const raw = v / 5, mag = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw); };
-    const tick = step(Math.max(money ? 500 : 5, ...now1, ...prev1));
-    const top = tick * 5;
-    const x = (i) => L + (i / Math.max(1, n - 1)) * (W - L - R);
-    const y = (v) => T + (1 - v / top) * (H - T - B);
-    const pts = (arr) => arr.map((v, i) => [x(i), y(v)]);
-    const cur = money ? "৳" : "";
-    const short = (v) => v >= 1000 ? cur + (v / 1000).toFixed(v % 1000 ? 1 : 0).replace(/\.0$/, "") + "K" : cur + v;
-    const labels = Array.from({ length: 8 }, (_, k) => Math.round((k / 7) * (n - 1)));
-    const line = smooth(pts(now1));
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Per day, this period and the previous one">
-      <defs><linearGradient id="sales-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0e7a4b" stop-opacity=".2"/><stop offset="1" stop-color="#0e7a4b" stop-opacity="0"/></linearGradient></defs>
-      ${Array.from({ length: 6 }, (_, k) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(k * tick)}" y2="${y(k * tick)}"/><text x="${L - 10}" y="${y(k * tick) + 4}" text-anchor="end">${short(k * tick)}</text>`).join("")}
-      ${labels.map((i) => `<line class="grid" x1="${x(i)}" x2="${x(i)}" y1="${T}" y2="${H - B}"/><text x="${x(i)}" y="${H - 8}" text-anchor="middle">${shortDay(dayStart.getTime() - (n - 1 - i) * 864e5)}</text>`).join("")}
-      <path d="${line}L${x(n - 1)},${y(0)}L${x(0)},${y(0)}Z" fill="url(#sales-fill)"/>
-      <path class="prev" d="${smooth(pts(prev1))}"/>
-      <path class="now" d="${line}"/>
-      <circle class="dot" cx="${x(n - 1)}" cy="${y(now1[n - 1])}" r="4.5"/>
-    </svg>`;
-  };
+  // Daily line chart for this period against the previous one (shared with the master dashboard)
+  const lineChart = (now, span, valueFor, money = true) => Dash.lineChart(range, now, span, valueFor, money);
   // Website preview: products, or services / courses for the other business types
   const previewHTML = (site) => {
     const [items, itemsTitle] = ext ? ext.siteItems() : [store.products, "Products"];

@@ -13,37 +13,48 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/dash.css">
+  <link rel="stylesheet" href="../assets/admin.css">
 </head>
-<body data-app-name="Shopilier Master">
+<body data-app-name="Shopilier Master" class="store-admin master-admin">
   <div class="app">
     <aside class="side" aria-label="Master admin navigation">
-      <a class="brand" href="../index.html"><img class="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="">Shopilier<small>Admin</small></a>
-      <a class="nav-item" data-route="overview" href="#/overview"><span data-icon="home"></span>Overview</a>
-      <a class="nav-item" data-route="users" href="#/users"><span data-icon="customers"></span>Users<span class="count" id="count-users"></span></a>
-      <a class="nav-item" data-route="templates" href="#/templates"><span data-icon="layout"></span>Templates<span class="count" id="count-templates"></span></a>
-      <a class="nav-item" data-route="payments" href="#/payments"><span data-icon="money"></span>Payments<span class="count" id="count-due"></span></a>
-      <a class="nav-item" data-route="plans" href="#/plans"><span data-icon="tag"></span>Plans &amp; pricing</a>
-      <div class="side-group">
-        <div class="side-label">Platform</div>
+      <a class="brand" href="/"><img class="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="">Shopilier<small>Admin</small></a>
+      <nav class="side-nav">
+        <a class="nav-item" data-route="overview" href="#/overview"><span data-icon="home"></span>Overview</a>
+        <a class="nav-item" data-route="users" href="#/users"><span data-icon="customers"></span>Users<span class="count" id="count-users"></span></a>
+        <a class="nav-item" data-route="templates" href="#/templates"><span data-icon="layout"></span>Templates<span class="count" id="count-templates"></span></a>
+        <a class="nav-item" data-route="payments" href="#/payments"><span data-icon="money"></span>Payments<span class="count" id="count-due"></span></a>
+        <a class="nav-item" data-route="plans" href="#/plans"><span data-icon="tag"></span>Plans &amp; pricing</a>
         <a class="nav-item" data-route="activity" href="#/activity"><span data-icon="clock"></span>Activity</a>
-        <a class="nav-item" data-route="settings" href="#/settings"><span data-icon="settings"></span>Settings</a>
-      </div>
+      </nav>
       <div class="side-group">
-        <div class="side-label">Shortcuts</div>
-        <a class="nav-item" href="../index.html"><span data-icon="external"></span>Public website</a>
-        <a class="nav-item" href="../admin/"><span data-icon="store"></span>User dashboard</a>
+        <div class="side-head">Shortcuts</div>
+        <a class="nav-item" href="/"><span data-icon="globe"></span>Public website</a>
+        <a class="nav-item" href="/admin/"><span data-icon="store"></span>User dashboard</a>
       </div>
       <div class="side-foot">
-        <div class="me"><span class="avatar" style="background:#111827">SA</span><div><b>Shopilier Admin</b><span>Owner</span></div></div>
+        <a class="nav-item" data-route="settings" href="#/settings"><span data-icon="settings"></span>Settings</a>
       </div>
     </aside>
     <div class="main">
       <header class="topbar">
         <button class="top-icon menu-btn" type="button" aria-label="Open menu"><span data-icon="menu"></span></button>
-        <div class="crumbs"><span>Shopilier HQ</span><span class="sep">/</span><b id="crumb">Overview</b></div>
-        <label class="top-search"><span data-icon="search"></span><input id="top-search" type="search" placeholder="Search users…" aria-label="Search users"></label>
-        <span class="demo-badge" title="Data is saved in this browser until the backend is connected">Saved in this browser</span>
-        <a class="top-icon" href="#/payments" id="bell" aria-label="Unpaid invoices" title="Unpaid invoices"><span data-icon="bell"></span></a>
+        <label class="top-search"><span data-icon="search"></span><input id="top-search" type="search" placeholder="Search users, businesses, emails…" aria-label="Search users"></label>
+        <span class="demo-badge" title="Master dashboard data is kept in this browser for now">Saved in this browser</span>
+        <a class="top-bell" href="#/payments" id="bell" aria-label="Unpaid invoices" title="Unpaid invoices"><span data-icon="bell"></span><span class="badge" id="bell-count"></span></a>
+        <div class="profile">
+          <button class="profile-btn" type="button" id="profile-btn" aria-haspopup="menu" aria-expanded="false">
+            <span class="profile-avatar"><span class="avatar">SA</span></span>
+            <span class="profile-text"><b>Shopilier Admin</b><span>Owner · master admin</span></span>
+            <span data-icon="chevronDown"></span>
+          </button>
+          <div class="profile-menu" id="profile-menu" role="menu" hidden>
+            <div class="profile-menu-head"><b>Shopilier Admin</b><span>Protected with Cloudflare Access</span></div>
+            <a role="menuitem" href="#/settings"><span data-icon="settings"></span>Settings</a>
+            <a role="menuitem" href="/"><span data-icon="external"></span>Public website</a>
+            <a role="menuitem" href="/admin/"><span data-icon="store"></span>User dashboard</a>
+          </div>
+        </div>
       </header>
       <div class="scroll"><div id="view"></div></div>
     </div>

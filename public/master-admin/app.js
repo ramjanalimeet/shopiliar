@@ -70,10 +70,15 @@
     document.getElementById("count-templates").textContent = db.templates.length;
     const due = db.payments.filter((p) => p.status !== "Paid").length;
     document.getElementById("count-due").textContent = due || "";
-    const bell = document.getElementById("bell");
-    bell.querySelector(".dot")?.remove();
-    if (due) bell.insertAdjacentHTML("beforeend", '<span class="dot"></span>');
+    document.getElementById("bell-count").textContent = due ? (due > 9 ? "9+" : due) : "";
   };
+  // Profile menu in the top bar
+  const profileBtn = document.getElementById("profile-btn");
+  const profileMenu = document.getElementById("profile-menu");
+  const toggleMenu = (open) => { profileMenu.hidden = !open; profileBtn.setAttribute("aria-expanded", String(open)); };
+  profileBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMenu(profileMenu.hidden); });
+  document.addEventListener("click", (e) => { if (!profileMenu.hidden && !e.target.closest(".profile")) toggleMenu(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !profileMenu.hidden) { toggleMenu(false); profileBtn.focus(); } });
 
   // ---------- Helpers ----------
   const PLAN_COLOR = { starter: "gray", business: "blue", pro: "purple" };
@@ -92,46 +97,60 @@
   };
 
   let userTab = "All", userSearch = "", tplTab = "All", payTab = "All";
+  let range = 30; // days shown on Overview
+  const inPeriod = (list, key, from, to) => list.filter((x) => { const t = new Date(x[key]).getTime(); return t >= from && t < to; });
+  const paid = (list) => list.filter((p) => p.status === "Paid").reduce((s, p) => s + p.amount, 0);
+  const statusPill = (u) => u.status === "active" ? '<span class="pill Paid">Active</span>' : '<span class="pill Cancelled">Suspended</span>';
 
   // ---------- Views ----------
   const routes = {
     overview: {
       title: "Overview",
       render: () => {
+        const now = Date.now(), span = range * 864e5;
+        const vs = `<span class="muted">vs. previous ${range} days</span>`;
+        const stat = (label, value, ico, color, d) => `<div class="stat"><div class="stat-top"><span class="stat-label">${label}</span><span class="stat-ico ${color}">${icon(ico)}</span></div><div class="stat-value">${value}</div><div class="stat-delta">${d}</div></div>`;
+        const curPay = inPeriod(db.payments, "date", now - span, now), prevPay = inPeriod(db.payments, "date", now - 2 * span, now - span);
+        const curUsers = inPeriod(db.users, "joined", now - span, now).length, prevUsers = inPeriod(db.users, "joined", now - 2 * span, now - span).length;
         const active = db.users.filter((u) => u.status === "active");
-        const newThisMonth = db.users.filter((u) => Date.now() - new Date(u.joined) < 30 * 864e5).length;
-        const months = Array.from({ length: 6 }, (_, i) => {
-          const d = new Date(); d.setMonth(d.getMonth() - (5 - i), 1);
-          const v = db.payments.filter((p) => p.status === "Paid" && new Date(p.date).getMonth() === d.getMonth() && new Date(p.date).getFullYear() === d.getFullYear()).reduce((s, p) => s + p.amount, 0);
-          return { label: d.toLocaleDateString("en-GB", { month: "short" }), v, text: taka(v) };
-        });
-        const byPlan = Object.keys(db.plans).map((id) => [id, db.users.filter((u) => u.plan === id).length]);
-        const topTpl = [...db.templates].sort((a, b) => b.uses - a.uses).slice(0, 5);
+        const live = active.filter((u) => u.published).length;
         const due = db.payments.filter((p) => p.status !== "Paid");
-        return `${head("Overview", "Your whole business at a glance.", `<a class="btn" href="#/templates">${icon("layout")}Templates</a><button class="btn btn-primary" data-action="add-user">${icon("plus")}Add user</button>`)}
-          ${due.length ? `<div class="callout yellow"><span class="ico">${icon("alert")}</span><div><b>${due.length} invoice${due.length > 1 ? "s" : ""} need attention</b> · ${taka(due.reduce((s, p) => s + p.amount, 0))} unpaid</div><a class="btn btn-sm" href="#/payments">Review</a></div>` : ""}
+        const byPlan = Object.keys(db.plans).map((id) => [id, db.users.filter((u) => u.plan === id).length]);
+        const topTpl = [...db.templates].sort((a, b) => b.uses - a.uses).slice(0, 4);
+        return `${head("Welcome back, Admin", "Here's how Shopilier is doing.",
+          `<label class="range">${icon("calendar")}<select data-action="range" aria-label="Date range">${[7, 30, 90].map((d) => `<option value="${d}"${d === range ? " selected" : ""}>Last ${d} days</option>`).join("")}</select>${icon("chevronDown")}</label>
+           <button class="btn btn-primary" data-action="add-user">${icon("plus")}Add user</button>`)}
+          ${due.length ? `<div class="callout yellow"><span class="ico">${icon("alert")}</span><div><b>${due.length} invoice${due.length > 1 ? "s" : ""} need attention</b> · ${taka(due.reduce((s, p) => s + p.amount, 0))} unpaid</div><a class="btn btn-sm btn-dark" href="#/payments">Review</a></div>` : ""}
           <div class="stats">
-            <div class="stat"><div class="stat-top"><span class="stat-label">Monthly revenue</span><span class="stat-ico c1">${icon("money")}</span></div><div class="stat-value">${taka(mrr())}</div><div class="stat-delta up">${taka(mrr() * 12)} per year</div></div>
-            <div class="stat"><div class="stat-top"><span class="stat-label">Total users</span><span class="stat-ico c2">${icon("customers")}</span></div><div class="stat-value">${db.users.length}</div><div class="stat-delta up">+${newThisMonth} this month</div></div>
-            <div class="stat"><div class="stat-top"><span class="stat-label">Live websites</span><span class="stat-ico c3">${icon("globe")}</span></div><div class="stat-value">${db.users.filter((u) => u.published && u.status === "active").length}</div><div class="stat-delta">${active.length} active accounts</div></div>
-            <div class="stat"><div class="stat-top"><span class="stat-label">Templates</span><span class="stat-ico c4">${icon("layout")}</span></div><div class="stat-value">${db.templates.length}</div><div class="stat-delta">${db.templates.filter((t) => t.status === "published").length} published</div></div>
+            ${stat("Revenue collected", taka(paid(curPay)), "money", "c1", Dash.delta(paid(curPay), paid(prevPay)) + vs)}
+            ${stat("New users", curUsers, "customers", "c2", Dash.delta(curUsers, prevUsers) + vs)}
+            ${stat("Monthly recurring", taka(mrr()), "barchart", "c3", `<span class="muted">${taka(mrr() * 12)} a year</span>`)}
+            ${stat("Live websites", live, "globe", "c4", `<span class="muted">${active.length} active accounts</span>`)}
           </div>
-          <div class="grid-3-1" style="margin-top:18px">
-            <div class="card"><div class="card-head"><span class="card-title">Revenue collected<small>last 6 months</small></span><span class="muted">${taka(months.reduce((s, m) => s + m.v, 0))}</span></div><div class="card-body">${bars(months)}</div></div>
-            <div class="card"><div class="card-head"><span class="card-title">Users by plan</span></div><div class="card-body">
-              ${byPlan.map(([id, n]) => `<div class="meter"><div class="meter-top"><span>${planTag(id)}</span><span class="muted">${n} users · ${taka(n * db.plans[id].price)}/mo</span></div><div class="progress"><i style="width:${(n / Math.max(1, db.users.length)) * 100}%"></i></div></div>`).join("")}
-            </div></div>
+          <div class="home-grid">
+            <div class="home-main">
+              <div class="card"><div class="card-head"><span class="card-title">Revenue</span><a class="btn" href="#/payments">View payments</a></div>
+                <div class="card-body">
+                  <div class="sales-top"><span class="sales-total">${taka(paid(curPay))}</span><span class="stat-delta" style="margin:0">${Dash.delta(paid(curPay), paid(prevPay))}${vs}</span>
+                    <span class="legend"><span><i></i>This period</span><span><i class="prev"></i>Previous period</span></span></div>
+                  ${Dash.lineChart(range, now, span, (from, to) => paid(inPeriod(db.payments, "date", from, to)))}
+                </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Newest users</span><a class="link" href="#/users">View all</a></div>
+                <div class="table-wrap"><table class="orders-mini">
+                  <thead><tr><th>Business</th><th>Owner</th><th>Plan</th><th>Status</th><th>Joined</th></tr></thead>
+                  <tbody>${[...db.users].sort((a, b) => new Date(b.joined) - new Date(a.joined)).slice(0, 6).map((u) => `<tr>
+                    <td><button class="ord" data-action="open-user" data-id="${u.id}">${esc(u.business)}</button></td><td>${esc(u.name)}</td><td>${planTag(u.plan)}</td><td>${statusPill(u)}</td><td>${day(u.joined)}</td></tr>`).join("")}</tbody>
+                </table></div></div>
+            </div>
+            <div class="home-side">
+              <div class="card"><div class="card-head"><span class="card-title">Users by plan</span><a class="link" href="#/plans">Plans</a></div>
+                <div class="card-body">${byPlan.map(([id, n]) => `<div class="meter"><div class="meter-top"><span>${planTag(id)}</span><span class="muted">${n} users · ${taka(n * db.plans[id].price)}/mo</span></div><div class="progress"><i style="width:${(n / Math.max(1, db.users.length)) * 100}%"></i></div></div>`).join("")}</div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Most used templates</span><a class="link" href="#/templates">Manage</a></div>
+                <div class="card-body"><ul class="top-list">${topTpl.map((t) => `<li><span class="top-img" style="background:linear-gradient(135deg,${esc(t.bg)} 50%,${esc(t.accent)} 50%)"></span><span class="t"><b>${esc(t.name)}</b><span>${esc(t.category)}</span></span><span class="v">${t.uses} sites</span></li>`).join("")}</ul></div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Recent activity</span><a class="link" href="#/activity">All</a></div>
+                <div class="card-body" style="padding-top:4px;padding-bottom:8px"><ul class="feed">${db.activity.slice(0, 5).map((a) => `<li><span class="fdot"></span><span>${esc(a.text)}</span><time>${ago(a.date)}</time></li>`).join("")}</ul></div></div>
+            </div>
           </div>
-          <div class="grid-3-1" style="margin-top:18px">
-            <div class="card"><div class="card-head"><span class="card-title">Newest users</span><a class="btn btn-sm" href="#/users">View all</a></div>
-              <div class="table-wrap"><table class="table" style="min-width:520px"><thead><tr><th>Business</th><th>Plan</th><th>Status</th><th class="t-right">Joined</th></tr></thead><tbody>${[...db.users].sort((a, b) => new Date(b.joined) - new Date(a.joined)).slice(0, 6).map((u) => `
-                <tr><td><button class="t-title" data-action="open-user" data-id="${u.id}">${avatar(u.business, "sm")}${esc(u.business)}</button></td><td>${planTag(u.plan)}</td><td>${u.status === "active" ? '<span class="tag dot green">Active</span>' : '<span class="tag dot red">Suspended</span>'}</td><td class="muted t-right">${day(u.joined)}</td></tr>`).join("")}</tbody></table></div></div>
-            <div class="card"><div class="card-head"><span class="card-title">Recent activity</span><a class="btn btn-sm" href="#/activity">All</a></div><div class="card-body" style="padding-top:4px;padding-bottom:4px">
-              <ul class="feed">${db.activity.slice(0, 6).map((a) => `<li><span class="fdot"></span><span>${esc(a.text)}</span><time>${ago(a.date)}</time></li>`).join("")}</ul></div></div>
-          </div>
-          <div class="card" style="margin-top:18px"><div class="card-head"><span class="card-title">Most used templates</span><a class="btn btn-sm" href="#/templates">Manage</a></div>
-            <div class="table-wrap"><table class="table"><thead><tr><th>Template</th><th>Category</th><th>Status</th><th class="t-right">Websites</th></tr></thead><tbody>${topTpl.map((t) => `
-              <tr><td><span class="t-title"><span class="thumb" style="background:linear-gradient(135deg,${esc(t.bg)} 50%,${esc(t.accent)} 50%)"></span>${esc(t.name)}</span></td><td>${tag(t.category, "brown")}</td><td>${t.status === "published" ? '<span class="tag dot green">Published</span>' : '<span class="tag dot gray">Draft</span>'}</td><td class="t-right">${t.uses}</td></tr>`).join("")}</tbody></table></div></div>
         </div>`;
       },
     },
@@ -438,6 +457,9 @@
     if (!el || el.tagName === "INPUT") return;
     const fn = actions[el.dataset.action];
     if (fn) { e.preventDefault(); fn(el); }
+  });
+  view.addEventListener("change", (e) => {
+    if (e.target.dataset.action === "range") { range = Number(e.target.value); go(); }
   });
   view.addEventListener("input", (e) => {
     if (e.target.dataset.action !== "user-search") return;
