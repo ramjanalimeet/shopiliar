@@ -1,7 +1,9 @@
-/* Website editor (/admin#/website): full screen over the dashboard */
-.ed { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; background: #eef0f3; color: var(--text); }
-@media (min-width: 1024px) { .ed { width: 125vw; height: 125vh; } }
-body.editor-open .side, body.editor-open .topbar { visibility: hidden; }
+/* Website editor (/admin#/website): fills the dashboard's main area, beside the sidebar */
+body.editor-open .topbar { display: none; }
+body.editor-open .scroll { display: flex; overflow: hidden; }
+body.editor-open #view, body.editor-open .ed-root { flex: 1; min-width: 0; min-height: 0; display: flex; }
+body.ed-side-hidden .side { display: none; }
+.ed { flex: 1; min-width: 0; display: flex; flex-direction: column; background: #eef0f3; color: var(--text); }
 
 /* Top bar */
 .ed-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 64px; padding: 0 14px; background: #fff; border-bottom: 1px solid var(--border); flex: none; }

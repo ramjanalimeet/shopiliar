@@ -1,4 +1,4 @@
-// Shopilier website editor (/admin#/website): a full-screen visual editor.
+// Shopilier website editor (/admin#/website): a visual editor beside the dashboard sidebar.
 // The website renders in an iframe at desktop, tablet or phone width. Click a
 // section to edit its content, style and settings in the right-hand panel.
 window.SiteEditor = (() => {
@@ -116,11 +116,31 @@ window.SiteEditor = (() => {
 
     // ---------- Layout ----------
     document.body.classList.add("editor-open");
+    // The dashboard sidebar stays beside the editor; the first top-bar button hides or shows it (remembered)
+    const narrow = () => matchMedia("(max-width: 900px)").matches;
+    let sideHidden = false;
+    try { sideHidden = localStorage.getItem("shopilier.editorSidebar") === "hidden"; } catch (e) { /* storage blocked */ }
+    const paintSide = () => {
+      const app = document.querySelector(".app");
+      const shown = narrow() ? app.classList.contains("nav-open") : !sideHidden;
+      document.body.classList.toggle("ed-side-hidden", !narrow() && sideHidden);
+      const b = root.querySelector("#ed-side");
+      b.setAttribute("aria-expanded", String(shown));
+      b.setAttribute("aria-label", shown ? "Hide sidebar" : "Show sidebar");
+      b.title = shown ? "Hide sidebar" : "Show sidebar";
+    };
+    const toggleSide = () => {
+      if (narrow()) document.querySelector(".app").classList.toggle("nav-open");
+      else {
+        sideHidden = !sideHidden;
+        try { localStorage.setItem("shopilier.editorSidebar", sideHidden ? "hidden" : "shown"); } catch (e) { /* storage blocked */ }
+      }
+      paintSide();
+    };
     root.innerHTML = `<div class="ed">
       <header class="ed-top">
         <div class="ed-group">
-          <a class="ed-btn ed-icon" href="#/themes" title="Exit editor" aria-label="Exit editor">${icon("arrowLeft")}</a>
-          <button class="ed-btn" type="button" data-mode="templates">${icon("grid")}<span class="ed-label">Templates</span></button>
+          <button class="ed-btn ed-icon" type="button" id="ed-side" aria-controls="dashboard-nav">${icon("sidebar")}</button>
         </div>
         <div class="ed-devices" role="group" aria-label="Preview size">${Object.entries(DEVICES).map(([k, v]) => `<button type="button" data-device="${k}">${icon(v.icon)}<span class="ed-label">${v.label}</span></button>`).join("")}</div>
         <div class="ed-group">
@@ -295,14 +315,6 @@ window.SiteEditor = (() => {
         </div>`;
     };
 
-    const templatesPanel = () => {
-      const list = d.catalog.filter((t) => t.status === "published");
-      return `<div class="ed-panel-head"><b>Templates</b><button class="ed-icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
-        <div class="ed-panel-body"><p class="ed-note" style="margin-top:0">Switching changes colors, fonts and layout. Your text, images and sections stay.</p>
-        <div class="ed-templates">${list.map((t) => `<button type="button" class="ed-tpl ${t.id === store.site.template ? "on" : ""}" data-template="${t.id}">
-          <span class="ed-tpl-thumb" style="background:${esc(t.bg)};color:${esc(t.text)}"><i style="background:${esc(t.accent)}"></i><b style="font-family:${esc(K.FONTS[K.TEMPLATE_FONTS[t.id] || "modern"].css)}">${esc(t.headline)}</b></span>
-          <span class="ed-tpl-name">${esc(t.name)}${t.id === store.site.template ? '<span class="tag green">Current</span>' : ""}</span><span class="muted small">${esc(t.category)}</span></button>`).join("")}</div></div>`;
-    };
     const pagesPanel = () => `<div class="ed-panel-head"><b>Pages</b><button class="ed-icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
       <div class="ed-panel-body"><div class="ed-outline">${store.pages.map((p) => `<div class="ed-row ${p.id === state.pageId ? "on" : ""}" data-page="${p.id}"><span class="ed-row-ico">${icon("pages")}</span><span class="ed-row-label">${esc(p.title)}<small>/${esc(p.slug)}</small></span>${p.inNav ? "" : '<span class="tag">Not in menu</span>'}</div>`).join("")}</div>
       <button type="button" class="btn btn-sm ed-add" data-add-page>${icon("plus")}Add page</button>
@@ -312,8 +324,7 @@ window.SiteEditor = (() => {
       // Keep open list items open across repaints
       panel.querySelectorAll("details[data-key]").forEach((el) => (el.open ? openItems.add(el.dataset.key) : openItems.delete(el.dataset.key)));
       const scrollTop = panel.querySelector(".ed-panel-body")?.scrollTop || 0;
-      if (state.mode === "templates") panel.innerHTML = templatesPanel();
-      else if (state.mode === "pages") panel.innerHTML = pagesPanel();
+      if (state.mode === "pages") panel.innerHTML = pagesPanel();
       else {
         const t = target();
         const tabs = [["content", "Content", "edit"], ["style", "Style", "palette"], ["settings", "Settings", "settings"]];
@@ -415,13 +426,6 @@ window.SiteEditor = (() => {
         else if (b.dataset.block === "down" && i < arr.length - 1) [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
         changed({ panel: true }); return;
       }
-      if (b.dataset.template) {
-        const t = d.catalog.find((x) => x.id === b.dataset.template);
-        if (t.id === store.site.template) return;
-        if (!(await confirm(`Switch to ${t.name}?`, "Colors, fonts and layout will change. Your text, images and sections stay the same. You can undo this.", "Switch template"))) return;
-        K.applyTemplate(store.site, store.pages, t); d.account.template = t.id;
-        changed({ panel: true }); toast("Template changed to " + t.name); return;
-      }
       if (b.hasAttribute("data-add-page")) {
         if (!d.canAddPage()) { toast("Your plan's page limit is reached — upgrade to add more"); return; }
         dialog({
@@ -443,6 +447,8 @@ window.SiteEditor = (() => {
     root.querySelector(".ed-top").addEventListener("click", async (e) => {
       const b = e.target.closest("button");
       if (!b) return;
+      // Stop here: a click reaching the page area would close the phone menu again
+      if (b.id === "ed-side") { e.stopPropagation(); toggleSide(); return; }
       if (b.dataset.device) { state.device = b.dataset.device; paintTop(); return; }
       if (b.dataset.mode) {
         const same = state.mode === b.dataset.mode && state.panelOpen;
@@ -471,12 +477,13 @@ window.SiteEditor = (() => {
     const cleanup = () => {
       if (root.isConnected && root.querySelector(".ed")) return;
       removeEventListener("keydown", onKey); removeEventListener("hashchange", cleanup);
-      document.body.classList.remove("editor-open");
+      document.body.classList.remove("editor-open", "ed-side-hidden");
       if (recordTimer) record();
     };
     addEventListener("hashchange", cleanup);
 
     paintAll();
+    paintSide();
   };
 
   return { mount };
