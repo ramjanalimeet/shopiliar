@@ -91,6 +91,7 @@ svg { display: block; }
 .page-head h1 { font-size: 24px; font-weight: 700; color: var(--ink); letter-spacing: -.02em; line-height: 1.25; }
 .page-head p { color: var(--muted); margin-top: 4px; }
 .page-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.page-actions:only-child { margin-left: auto; }
 
 /* ---------- Cards ---------- */
 .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }

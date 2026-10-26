@@ -164,7 +164,7 @@
   const sales = (orders) => orders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
   const siteUrl = () => store.settings.domain && store.settings.domainStatus === "connected" ? store.settings.domain : store.settings.subdomain + ".shopilier.com";
   const orderNo = (o) => "#" + o.number;
-  const head = (title, desc, actions = "") => `<div class="page"><div class="page-head"><div><h1>${title}</h1><p>${desc}</p></div><div class="page-actions">${actions}</div></div>`;
+  const head = (title, desc, actions = "") => `<div class="page"><div class="page-head">${title ? `<div><h1>${title}</h1><p>${desc}</p></div>` : ""}<div class="page-actions">${actions}</div></div>`;
   const statusTag = (s) => `<span class="tag dot ${ORDER_STATUS[s]}">${esc(s)}</span>`;
   const searchBox = (action, value, label) => `<label class="box-search">${icon("search")}<input data-action="${action}" value="${esc(value)}" placeholder="${label}" aria-label="${label}"></label>`;
   const limitCallout = (kind, used, limit) => limit == null ? "" : used >= limit
@@ -235,7 +235,7 @@
         const stat = (label, value, ico, color, d) => `<div class="stat"><div class="stat-top"><span class="stat-label">${label}</span><span class="stat-ico ${color}">${icon(ico)}</span></div><div class="stat-value">${value}</div><div class="stat-delta">${d}</div></div>`;
         const curSales = sales(cur), prevSales = sales(prev);
         const ret = returning(cur, now - span), retPrev = returning(prev, now - 2 * span);
-        return `${head(`Welcome back, ${esc(account.name.split(" ")[0])}`, "Here's what's happening with your store today.",
+        return `${head("", "",
           `<label class="range">${icon("calendar")}<select data-action="range" aria-label="Date range">${[7, 30, 90].map((d) => `<option value="${d}"${d === range ? " selected" : ""}>Last ${d} days</option>`).join("")}</select>${icon("chevronDown")}</label>`)}
           ${store.published ? "" : `<div class="callout yellow"><span class="ico">${icon("rocket")}</span><div><b>Your website isn't live yet.</b> Customize it, then publish when you're ready.</div><a class="btn btn-sm btn-dark" href="#/website">Customize &amp; publish</a></div>`}
           <div class="stats">
