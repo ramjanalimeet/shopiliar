@@ -204,25 +204,168 @@ document.querySelectorAll("form[data-auth]").forEach((form) => {
   });
 });
 
-// Watch video: open the YouTube video in a popup; the player loads only on click
+// Watch video: a branded player in a popup. The YouTube video plays behind our own
+// controls with its title, logo and suggestions cropped out of view. The player loads
+// quietly after the page, so the popup opens straight into the video.
 const videoModal = document.querySelector(".video-modal");
 if (videoModal) {
   const frame = videoModal.querySelector(".video-frame");
-  document.querySelectorAll(".watch-btn, .watch-btn-card").forEach((btn) => {
+  const triggers = [...document.querySelectorAll(".watch-btn, .watch-btn-card")];
+  const videoId = triggers[0]?.dataset.video;
+  const icon = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${d}"/></svg>`;
+  const PLAY = "M7 4.6v14.8a1.3 1.3 0 0 0 2 1.1l11.6-7.4a1.3 1.3 0 0 0 0-2.2L9 3.5a1.3 1.3 0 0 0-2 1.1z";
+  const PAUSE = "M6 4h4v16H6zM14 4h4v16h-4z";
+  const REPLAY = "M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z";
+  const SOUND = "M4 9v6h4l5 4V5L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z";
+  const MUTED = "M4 9v6h4l5 4V5L8 9H4zm16.6 3 2.1-2.1-1.4-1.4-2.1 2.1-2.1-2.1-1.4 1.4 2.1 2.1-2.1 2.1 1.4 1.4 2.1-2.1 2.1 2.1 1.4-1.4z";
+  const FULL = "M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z";
+
+  frame.innerHTML = `
+    <div class="vp-stage"><div id="vp-yt"></div></div>
+    <div class="vp-shield"></div>
+    <div class="vp-cover">
+      <img class="vp-poster" src="https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg" alt="" onerror="this.onerror=null;this.src=this.src.replace('maxresdefault','hqdefault')">
+      <span class="vp-spinner" aria-hidden="true"></span>
+      <button class="vp-big" type="button" aria-label="Play">${icon(PLAY)}</button>
+    </div>
+    <button class="vp-unmute" type="button" hidden>${icon(MUTED)}Tap for sound</button>
+    <div class="vp-bar">
+      <button class="vp-btn vp-toggle" type="button" aria-label="Play">${icon(PLAY)}</button>
+      <div class="vp-track" role="slider" aria-label="Seek" tabindex="0"><div class="vp-fill"></div></div>
+      <span class="vp-time">0:00 / 0:00</span>
+      <button class="vp-btn vp-mute" type="button" aria-label="Mute">${icon(SOUND)}</button>
+      <button class="vp-btn vp-full" type="button" aria-label="Full screen">${icon(FULL)}</button>
+    </div>`;
+  const $ = (sel) => frame.querySelector(sel);
+  const cover = $(".vp-cover"), big = $(".vp-big"), toggle = $(".vp-toggle"), track = $(".vp-track"),
+    fill = $(".vp-fill"), time = $(".vp-time"), muteBtn = $(".vp-mute"), fullBtn = $(".vp-full"), unmute = $(".vp-unmute");
+  if (!document.fullscreenEnabled) fullBtn.hidden = true;
+
+  let player = null, ready = false, ended = false, tick = 0, idle = 0, wantPlay = false;
+  const fmt = (t) => { t = Math.max(0, Math.floor(t || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+  const setState = (st) => { frame.dataset.state = st; };
+  const setPlaying = (on) => {
+    toggle.innerHTML = icon(on ? PAUSE : PLAY);
+    toggle.setAttribute("aria-label", on ? "Pause" : "Play");
+  };
+  const setMuted = (m) => {
+    muteBtn.innerHTML = icon(m ? MUTED : SOUND);
+    muteBtn.setAttribute("aria-label", m ? "Unmute" : "Mute");
+    if (!m) unmute.hidden = true;
+  };
+  const update = () => {
+    if (!ready) return;
+    const d = player.getDuration() || 0, c = player.getCurrentTime() || 0;
+    fill.style.width = d ? `${(c / d) * 100}%` : "0";
+    time.textContent = `${fmt(c)} / ${fmt(d)}`;
+    track.setAttribute("aria-valuenow", Math.round(d ? (c / d) * 100 : 0));
+  };
+  // Controls fade out while the video plays and nobody moves the mouse
+  const wake = () => {
+    frame.classList.add("vp-awake");
+    clearTimeout(idle);
+    idle = setTimeout(() => { if (frame.dataset.state === "playing") frame.classList.remove("vp-awake"); }, 2600);
+  };
+
+  const play = () => {
+    if (!ready) { wantPlay = true; setState("loading"); return; }
+    if (ended) { player.seekTo(0, true); ended = false; }
+    if (frame.dataset.state !== "playing") setState("loading");
+    player.playVideo();
+    // Browsers that block sound without a direct tap (mostly phones): play muted and offer sound
+    setTimeout(() => {
+      if (videoModal.open && ready && player.getPlayerState() !== YT.PlayerState.PLAYING && player.getPlayerState() !== YT.PlayerState.BUFFERING) {
+        player.mute(); setMuted(true); unmute.hidden = false; player.playVideo();
+        // Still not playing: show the big play button so a tap can start it
+        setTimeout(() => { if (frame.dataset.state === "loading") setState("paused"); }, 1500);
+      }
+    }, 1500);
+  };
+  const pause = () => { if (ready) player.pauseVideo(); };
+  const togglePlay = () => (frame.dataset.state === "playing" ? pause() : play());
+
+  const onState = (e) => {
+    const S = YT.PlayerState;
+    if (e.data === S.PLAYING) { setState("playing"); setPlaying(true); ended = false; clearInterval(tick); tick = setInterval(update, 250); wake(); }
+    else if (e.data === S.BUFFERING) { if (frame.dataset.state !== "playing") setState("loading"); }
+    else if (e.data === S.PAUSED) { setState("paused"); setPlaying(false); clearInterval(tick); update(); frame.classList.add("vp-awake"); }
+    else if (e.data === S.ENDED) { ended = true; setState("ended"); setPlaying(false); clearInterval(tick); fill.style.width = "100%"; big.innerHTML = icon(REPLAY); big.setAttribute("aria-label", "Replay"); }
+    if (e.data !== S.ENDED) { big.innerHTML = icon(PLAY); big.setAttribute("aria-label", "Play"); }
+  };
+
+  const load = () => {
+    if (player || !videoId) return;
+    player = true; // loading
+    const create = () => {
+      player = new YT.Player("vp-yt", {
+        host: "https://www.youtube-nocookie.com",
+        videoId,
+        playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, iv_load_policy: 3, modestbranding: 1, origin: location.origin },
+        events: {
+          onReady: () => { ready = true; update(); if (wantPlay && videoModal.open) { wantPlay = false; play(); } else if (frame.dataset.state === "loading") setState("idle"); },
+          onStateChange: onState,
+        },
+      });
+    };
+    if (window.YT && YT.Player) return create();
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { if (prev) prev(); create(); };
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.append(tag);
+  };
+
+  setState("idle");
+  // Warm up the player shortly after the page loads, or as soon as someone reaches for the button
+  addEventListener("load", () => setTimeout(load, 1500));
+  triggers.forEach((btn) => {
+    ["pointerenter", "touchstart", "focus"].forEach((ev) => btn.addEventListener(ev, load, { once: true, passive: true }));
     btn.addEventListener("click", () => {
-      const iframe = document.createElement("iframe");
-      iframe.src = `https://www.youtube-nocookie.com/embed/${btn.dataset.video}?autoplay=1&rel=0&modestbranding=1`;
-      iframe.title = "How to start with Shopilier";
-      iframe.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
-      iframe.allowFullscreen = true;
-      frame.replaceChildren(iframe);
+      load();
       videoModal.showModal();
+      play();
     });
   });
+
+  big.addEventListener("click", play);
+  $(".vp-shield").addEventListener("click", () => { togglePlay(); wake(); });
+  toggle.addEventListener("click", togglePlay);
+  muteBtn.addEventListener("click", () => {
+    if (!ready) return;
+    if (player.isMuted()) { player.unMute(); setMuted(false); } else { player.mute(); setMuted(true); }
+  });
+  unmute.addEventListener("click", () => { if (ready) { player.unMute(); setMuted(false); } });
+  fullBtn.addEventListener("click", () => (document.fullscreenElement ? document.exitFullscreen() : frame.requestFullscreen()));
+  frame.addEventListener("pointermove", wake);
+
+  // Seek by clicking or dragging along the progress bar
+  const seekTo = (x) => {
+    if (!ready) return;
+    const r = track.getBoundingClientRect();
+    const f = Math.min(1, Math.max(0, (x - r.left) / r.width));
+    player.seekTo(f * player.getDuration(), true);
+    fill.style.width = `${f * 100}%`;
+  };
+  track.addEventListener("pointerdown", (e) => { track.setPointerCapture(e.pointerId); seekTo(e.clientX); });
+  track.addEventListener("pointermove", (e) => { if (track.hasPointerCapture(e.pointerId)) seekTo(e.clientX); });
+  track.addEventListener("keydown", (e) => {
+    if (!ready || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+    e.preventDefault();
+    player.seekTo(player.getCurrentTime() + (e.key === "ArrowRight" ? 5 : -5), true);
+    update();
+  });
+  videoModal.addEventListener("keydown", (e) => {
+    if (e.target.closest("button, .vp-track")) return;
+    if (e.key === " " || e.key === "k") { e.preventDefault(); togglePlay(); }
+    else if (e.key === "m") muteBtn.click();
+    else if (e.key === "f" && !fullBtn.hidden) fullBtn.click();
+  });
+
   videoModal.querySelector(".video-close").addEventListener("click", () => videoModal.close());
   // Click outside the video closes it
   videoModal.addEventListener("click", (e) => { if (e.target === videoModal) videoModal.close(); });
-  videoModal.addEventListener("close", () => frame.replaceChildren());
+  // Closing pauses; opening again carries on from the same spot
+  videoModal.addEventListener("close", () => { wantPlay = false; pause(); if (document.fullscreenElement) document.exitFullscreen(); });
 }
 
 // Contact form: open the visitor's email app with the message filled in
