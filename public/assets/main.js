@@ -203,3 +203,36 @@ document.querySelectorAll("form[data-auth]").forEach((form) => {
     }
   });
 });
+
+// Watch video: open the YouTube video in a popup; the player loads only on click
+const videoModal = document.querySelector(".video-modal");
+if (videoModal) {
+  const frame = videoModal.querySelector(".video-frame");
+  document.querySelectorAll(".watch-btn, .watch-btn-card").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const iframe = document.createElement("iframe");
+      iframe.src = `https://www.youtube-nocookie.com/embed/${btn.dataset.video}?autoplay=1&rel=0&modestbranding=1`;
+      iframe.title = "How to start with Shopilier";
+      iframe.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+      iframe.allowFullscreen = true;
+      frame.replaceChildren(iframe);
+      videoModal.showModal();
+    });
+  });
+  videoModal.querySelector(".video-close").addEventListener("click", () => videoModal.close());
+  // Click outside the video closes it
+  videoModal.addEventListener("click", (e) => { if (e.target === videoModal) videoModal.close(); });
+  videoModal.addEventListener("close", () => frame.replaceChildren());
+}
+
+// Contact form: open the visitor's email app with the message filled in
+const contactForm = document.getElementById("contact-form");
+if (contactForm) {
+  contactForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const f = new FormData(contactForm);
+    const subject = `Message from ${f.get("name")}`;
+    const body = `${f.get("message")}\n\n${f.get("name")}\n${f.get("email")}`;
+    location.href = `mailto:support@shopilier.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  });
+}

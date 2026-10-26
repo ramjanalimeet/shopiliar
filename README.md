@@ -14,6 +14,9 @@ python3 -m http.server 8000 -d public
 - `pricing.html` — Pricing (monthly / yearly toggle, FAQ)
 - `signin.html` — Sign in
 - `signup.html` — Get started: the step-by-step sign-up (see below)
+- `resources.html` — Resources: guide video and blog
+- `contact.html` — Contact Us (the form opens the visitor's email app)
+- `privacy.html` — Privacy Policy
 
 Shared styles live in `public/assets/styles.css`, shared behaviour in `public/assets/main.js`. Deployed to Cloudflare Workers with `npx wrangler deploy` (see `wrangler.jsonc`).
 
