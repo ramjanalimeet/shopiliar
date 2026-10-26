@@ -26,8 +26,6 @@ body.ed-side-hidden .side { display: none; }
 .ed-body { flex: 1; min-height: 0; display: flex; }
 .ed-canvas { flex: 1; min-width: 0; overflow: auto; padding: 18px; display: flex; justify-content: center; }
 .ed-frame-wrap { height: 100%; max-width: 100%; transition: width .25s; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(16, 24, 40, .08), 0 8px 24px rgba(16, 24, 40, .06); }
-.ed-frame-wrap[data-device="mobile"] { border-radius: 22px; border: 6px solid #1f2328; }
-.ed-frame-wrap[data-device="tablet"] { border-radius: 18px; border: 6px solid #1f2328; }
 .ed-frame { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
 .ed-panel { width: 360px; flex: none; display: flex; flex-direction: column; min-height: 0; background: #fff; border-left: 1px solid var(--border); }
 .ed-tabs { display: flex; justify-content: center; border-bottom: 1px solid var(--border); flex: none; padding: 0 16px; }
