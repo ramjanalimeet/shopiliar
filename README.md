@@ -55,5 +55,17 @@ rules when AI isn't available. Online payment isn't connected yet; the plan star
 
 Shared files: `public/assets/dash.css` and `public/assets/dash.js`.
 
+## Website editor
+Online Store → Themes → **Customize** opens the full-screen editor (`admin/editor.js`, `assets/editor.css`).
+Each page is a list of sections (hero, products, featured, categories, about, testimonials, blog,
+newsletter, contact, FAQ, image banner, custom); every section can also hold extra elements
+(heading, text, button, image, spacer, divider). The header and footer are shared by all pages.
+The website itself is rendered by `assets/site.js` with `assets/site.css`, in an iframe at desktop,
+tablet or phone width, and the same renderer powers the Themes previews and "View your store".
+
+Images uploaded in the editor go to `POST /api/upload` (signed in, JPG/PNG/WebP/GIF up to 1.5 MB,
+300 per account; the browser shrinks photos to 1600px first). They're stored in the D1 `media`
+table, which the Worker creates on first upload, and served from `/media/<id>`.
+
 The store dashboard (`/admin`) is saved to the signed-in account. The master dashboard still keeps
 its data in the browser (`localStorage`) and is protected with Cloudflare Access.

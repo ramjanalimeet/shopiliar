@@ -340,7 +340,7 @@
 .th-screen { position: relative; overflow: hidden; background: #fff; }
 .th-desktop .th-screen { aspect-ratio: 16 / 9.4; border-radius: 4px 4px 0 0; }
 .th-phone .th-screen { aspect-ratio: 9 / 15; border-radius: 12px 12px 0 0; }
-.th-canvas { position: absolute; left: 0; top: 0; transform-origin: top left; border: 0; border-radius: 0; pointer-events: none; }
+.th-canvas { position: absolute; left: 0; top: 0; transform-origin: top left; border: 0; border-radius: 0; pointer-events: none; background: #fff; }
 .theme-info { display: flex; align-items: center; gap: 16px; padding: 18px 22px; border-top: 1px solid var(--border); }
 .theme-thumb { width: 72px; height: 48px; flex: none; border-radius: 8px; border: 1px solid var(--border); }
 .theme-meta { flex: 1; min-width: 0; display: grid; gap: 4px; }

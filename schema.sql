@@ -53,3 +53,14 @@ CREATE TABLE IF NOT EXISTS messages (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS messages_conversation ON messages(conversation_id, created_at);
+
+-- Images uploaded in the website editor. The Worker also creates this table on first upload.
+CREATE TABLE IF NOT EXISTS media (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,                      -- image/webp, image/jpeg, image/png or image/gif
+  data BLOB NOT NULL,
+  size INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS media_user ON media(user_id);
