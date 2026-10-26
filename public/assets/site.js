@@ -297,18 +297,18 @@ window.SiteKit = (() => {
     const page = opts.page || pages[0];
     const ed = !!opts.ed;
     const sections = (page.sections || []).filter((s) => ed || !s.hidden);
-    const label = (s) => ed && opts.selected === s.id ? `<div class="ed-chip"><b>${esc((TYPES[s.type] || {}).label || s.type)}</b><button data-ed="up" title="Move up">↑</button><button data-ed="down" title="Move down">↓</button><button data-ed="duplicate" title="Duplicate">⧉</button><button data-ed="delete" title="Delete">✕</button></div>` : "";
+    const label = (s) => ed && opts.selected === s.id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${esc((TYPES[s.type] || {}).label || s.type)}</b><button data-ed="up" title="Move up">↑</button><button data-ed="down" title="Move down">↓</button><button data-ed="duplicate" title="Duplicate">⧉</button><button data-ed="delete" title="Delete">✕</button></div></div>` : "";
     const sel = (id) => (ed && opts.selected === id ? " is-selected" : "");
-    const fixedLabel = (id, name) => ed && opts.selected === id ? `<div class="ed-chip"><b>${name}</b></div>` : "";
+    const fixedLabel = (id, name) => ed && opts.selected === id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${name}</b></div></div>` : "";
     return `<div class="site" style="${esc(rootStyle(site))}">
-      ${renderHeader(site, pages, { page }).replace('class="s-header"', `class="s-header${sel("header")}"`).replace("</header>", `${fixedLabel("header", "Header")}</header>`)}
+      ${renderHeader(site, pages, { page }).replace('class="s-header"', `class="s-header${sel("header")}"`).replace(/(<header[^>]*>)/, `$1${fixedLabel("header", "Header")}`)}
       <main>${sections.map((s) => {
         const R = RENDER[s.type];
         if (!R) return "";
         const st = s.style || {};
         return `<section class="s s-${esc(s.type)} pad-${esc(st.padding || "m")} align-${esc(st.align || "left")}${s.hidden ? " is-hidden" : ""}${sel(s.id)}" data-sid="${esc(s.id)}" style="${sectionStyle(st)}">${label(s)}${R(s.content || {}, st, { products: opts.products, ed, blocks: renderBlocks(s.blocks, ed) })}</section>`;
       }).join("") || (ed ? '<section class="s pad-l align-center"><div class="wrap"><p class="empty">This page has no sections yet. Add one from the panel.</p></div></section>' : "")}</main>
-      ${renderFooter(site, pages).replace('class="s-footer"', `class="s-footer${sel("footer")}"`).replace("</footer>", `${fixedLabel("footer", "Footer")}</footer>`)}
+      ${renderFooter(site, pages).replace('class="s-footer"', `class="s-footer${sel("footer")}"`).replace(/(<footer[^>]*>)/, `$1${fixedLabel("footer", "Footer")}`)}
     </div>`;
   };
 

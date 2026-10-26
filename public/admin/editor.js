@@ -1,16 +1,11 @@
 // Shopilier website editor (/admin#/website): a visual editor beside the dashboard sidebar.
 // The website renders in an iframe at desktop, tablet or phone width. Click a
-// section to edit its content, style and settings in the right-hand panel.
+// section to edit its content in the right-hand panel.
 window.SiteEditor = (() => {
   const K = SiteKit;
   const { esc } = K;
 
   const DEVICES = { desktop: { label: "Desktop", icon: "monitor", width: "100%" }, tablet: { label: "Tablet", icon: "tablet", width: "820px" }, mobile: { label: "Mobile", icon: "phone", width: "390px" } };
-  const PALETTES = [
-    ["Classic", "#ffffff", "#111111", "#111111"], ["Sand", "#f7f4f0", "#2b211a", "#8a5a3b"], ["Ocean", "#eef6fb", "#0b2a3f", "#0b6e99"],
-    ["Forest", "#f3f7f1", "#1c3326", "#2f6b2a"], ["Berry", "#fdf3f6", "#3d1527", "#ad1a72"], ["Night", "#14141c", "#ffffff", "#ff7a59"],
-  ];
-
   // What each section type can edit. [type, path, label, options]
   const L = (path, label, item, opts = {}) => ["list", path, label, { item, ...opts }];
   const CONTENT = {
@@ -37,14 +32,6 @@ window.SiteEditor = (() => {
     footer: [["textarea", "text", "About text"], ["toggle", "showMenu", "Show pages"], ["toggle", "showContact", "Show contact details"], ["toggle", "showSocial", "Show social links"], ["text", "copyright", "Copyright line", { placeholder: "© 2026 Your store. All rights reserved." }],
       ["note", "", 'Social links come from <a href="#/preferences">Preferences</a>.']],
   };
-  const EXTRA_STYLE = {
-    hero: [["seg", "layout", "Layout", [["split", "Image right"], ["center", "Centered"], ["bleed", "Full image"]]]],
-    products: [["seg", "columns", "Columns", [["2", "2"], ["3", "3"], ["4", "4"]]]],
-    featured: [["seg", "imageSide", "Image", [["left", "Left"], ["right", "Right"]]]],
-    about: [["seg", "imageSide", "Image", [["left", "Left"], ["right", "Right"]]]],
-    banner: [["seg", "height", "Height", [["s", "Short"], ["m", "Medium"], ["l", "Tall"]]]],
-  };
-
   const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
   const set = (o, path, v) => { const ks = path.split("."); const last = ks.pop(); const t = ks.reduce((a, k) => (a[k] ??= {}), o); t[last] = v; };
 
@@ -75,7 +62,7 @@ window.SiteEditor = (() => {
     const ctx = () => ({ site: store.site, products: store.products });
     K.ensure(store.site, store.pages, ctx());
 
-    const state = { mode: "sections", tab: "content", selected: null, pageId: store.pages[0].id, device: innerWidth < 900 ? "mobile" : "desktop", panelOpen: innerWidth >= 900 };
+    const state = { mode: "sections", selected: null, pageId: store.pages[0].id, device: innerWidth < 900 ? "mobile" : "desktop", panelOpen: innerWidth >= 900 };
     const page = () => store.pages.find((p) => p.id === state.pageId) || store.pages[0];
     const sectionById = (id) => page().sections.find((s) => s.id === id);
     const target = () => {
@@ -248,8 +235,6 @@ window.SiteEditor = (() => {
     };
 
     const seg = (scope, path, label, options, val) => `<div class="ed-field"><label>${esc(label)}</label><div class="ed-seg">${options.map(([v, l]) => `<button type="button" class="${String(val) === v ? "on" : ""}" data-set="${v}" data-scope="${scope}" data-path="${path}">${esc(l)}</button>`).join("")}</div></div>`;
-    const colorField = (scope, path, label, val, fallback) => `<div class="ed-field"><label>${esc(label)}</label><div class="ed-color"><input type="color" value="${esc(val || fallback)}" data-scope="${scope}" data-path="${path}" aria-label="${esc(label)}"><span>${esc(val || "Theme default")}</span>${val && fallback !== undefined && scope === "style" ? `<button type="button" class="link small" data-set="" data-scope="${scope}" data-path="${path}">Use theme</button>` : ""}</div></div>`;
-
     const addSectionGrid = () => `<div class="ed-sub">Add section</div><div class="ed-add-grid">${Object.entries(K.TYPES).map(([k, v]) => `<button type="button" data-add-section="${k}">${icon(v.icon)}<span>${esc(v.label)}</span></button>`).join("")}</div>`;
 
     const outline = () => {
@@ -282,39 +267,6 @@ window.SiteEditor = (() => {
       if (!t) return outline();
       return `${(CONTENT[t.type] || []).map((f) => field(f, t.content, "content")).join("")}${elements(t)}${t.section ? addSectionGrid() : ""}`;
     };
-    const styleTab = (t) => {
-      const site = store.site;
-      if (!t) return `<div class="ed-sub">Colors</div>
-        <div class="ed-palettes">${PALETTES.map(([n, bg, tx, ac]) => `<button type="button" data-palette="${bg},${tx},${ac}" title="${n}"><i style="background:linear-gradient(135deg,${bg} 50%,${ac} 50%)"></i>${n}</button>`).join("")}</div>
-        ${colorField("site", "bg", "Background", site.bg)}${colorField("site", "text", "Text", site.text)}${colorField("site", "accent", "Buttons & accents", site.accent)}
-        <div class="ed-sub">Fonts</div>
-        ${seg("site", "headingFont", "Headings", Object.entries(K.FONTS).map(([k, v]) => [k, v.label]), site.headingFont)}
-        ${seg("site", "bodyFont", "Body text", Object.entries(K.FONTS).filter(([k]) => k !== "elegant").map(([k, v]) => [k, v.label]), site.bodyFont)}
-        <div class="ed-sub">Buttons</div>
-        ${seg("site", "radius", "Corners", [["sharp", "Square"], ["soft", "Soft"], ["round", "Round"]], site.radius)}`;
-      const st = t.style;
-      return `${colorField("style", "bg", "Background", st.bg, site.bg)}${colorField("style", "text", "Text color", st.text, site.text)}
-        ${t.section ? seg("style", "padding", "Spacing", [["s", "Small"], ["m", "Medium"], ["l", "Large"]], st.padding || "m") : ""}
-        ${t.section && t.type !== "hero" ? seg("style", "align", "Alignment", [["left", "Left"], ["center", "Center"]], st.align || "left") : ""}
-        ${(EXTRA_STYLE[t.type] || []).map(([, path, label, opts]) => seg("style", path, label, opts, st[path] ?? "")).join("")}
-        <p class="ed-note">Fonts and button style are set for the whole website. Click outside a section, or close it, to change them.</p>`;
-    };
-    const settingsTab = (t) => {
-      const p = page();
-      if (!t) return `<div class="ed-field"><label for="pg-title">Page title</label><input class="input" id="pg-title" data-scope="page" data-path="title" value="${esc(p.title)}" maxlength="40"></div>
-        <div class="ed-toggle"><span>Show in menu</span><label class="switch"><input type="checkbox" data-scope="page" data-path="inNav" data-rerender ${p.inNav ? "checked" : ""} aria-label="Show in menu"><i></i></label></div>
-        <p class="ed-note">Address: /${esc(p.slug)}. Search engine title and description are in <a href="#/preferences">Preferences</a>.</p>`;
-      if (!t.section) return `<p class="ed-note">The ${t.label.toLowerCase()} appears on every page of your website.</p>`;
-      const s = t.section, list = page().sections, i = list.indexOf(s);
-      return `<div class="ed-toggle"><span>Show this section</span><label class="switch"><input type="checkbox" data-hidden-toggle ${s.hidden ? "" : "checked"} aria-label="Show this section"><i></i></label></div>
-        <div class="ed-actions">
-          <button type="button" class="btn" data-sec="up" ${i ? "" : "disabled"}>${icon("up")}Move up</button>
-          <button type="button" class="btn" data-sec="down" ${i < list.length - 1 ? "" : "disabled"}>${icon("down")}Move down</button>
-          <button type="button" class="btn" data-sec="duplicate">${icon("copy")}Duplicate</button>
-          <button type="button" class="btn btn-danger-soft" data-sec="delete">${icon("trash")}Delete section</button>
-        </div>`;
-    };
-
     const pagesPanel = () => `<div class="ed-panel-head"><b>Pages</b><button class="ed-icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
       <div class="ed-panel-body"><div class="ed-outline">${store.pages.map((p) => `<div class="ed-row ${p.id === state.pageId ? "on" : ""}" data-page="${p.id}"><span class="ed-row-ico">${icon("pages")}</span><span class="ed-row-label">${esc(p.title)}<small>/${esc(p.slug)}</small></span>${p.inNav ? "" : '<span class="tag">Not in menu</span>'}</div>`).join("")}</div>
       <button type="button" class="btn btn-sm ed-add" data-add-page>${icon("plus")}Add page</button>
@@ -327,10 +279,9 @@ window.SiteEditor = (() => {
       if (state.mode === "pages") panel.innerHTML = pagesPanel();
       else {
         const t = target();
-        const tabs = [["content", "Content", "edit"], ["style", "Style", "palette"], ["settings", "Settings", "settings"]];
-        panel.innerHTML = `<div class="ed-tabs" role="tablist">${tabs.map(([k, l, ic]) => `<button type="button" role="tab" aria-selected="${state.tab === k}" class="${state.tab === k ? "on" : ""}" data-tab="${k}">${icon(ic)}${l}</button>`).join("")}</div>
+        panel.innerHTML = `<div class="ed-tabs"><span class="on">${icon("edit")}Content</span></div>
           <div class="ed-panel-head">${t ? `<button class="ed-icon-btn" data-deselect aria-label="Back to all sections" title="All sections">${icon("arrowLeft")}</button>` : ""}<b>${esc(t ? t.label : page().title + " page")}</b><button class="ed-icon-btn ed-only-sm" data-close aria-label="Close panel">${icon("x")}</button></div>
-          <div class="ed-panel-body">${state.tab === "content" ? contentTab(t) : state.tab === "style" ? styleTab(t) : settingsTab(t)}</div>`;
+          <div class="ed-panel-body">${contentTab(t)}</div>`;
       }
       const b = panel.querySelector(".ed-panel-body");
       if (b) b.scrollTop = scrollTop;
@@ -340,7 +291,6 @@ window.SiteEditor = (() => {
 
     const select = (id, scroll = true) => {
       state.selected = id; state.mode = "sections"; state.panelOpen = true;
-      if (id && state.tab === "settings" && ["header", "footer"].includes(id)) state.tab = "content";
       paintCanvas(); paintPanel();
       if (scroll) scrollToSelected();
     };
@@ -365,7 +315,7 @@ window.SiteEditor = (() => {
       const list = page().sections;
       const at = state.selected && sectionById(state.selected) ? list.indexOf(sectionById(state.selected)) + 1 : list.length;
       list.splice(at, 0, s);
-      state.selected = s.id; state.tab = "content";
+      state.selected = s.id;
       changed({ panel: true });
       setTimeout(scrollToSelected, 50);
       toast((K.TYPES[type] || {}).label + " section added");
@@ -384,7 +334,6 @@ window.SiteEditor = (() => {
     panel.addEventListener("input", (e) => { const el = e.target; if (el.dataset.scope && el.type !== "file" && el.type !== "checkbox") write(el); });
     panel.addEventListener("change", async (e) => {
       const el = e.target;
-      if (el.dataset.hiddenToggle !== undefined) { target().section.hidden = !el.checked; changed({ panel: true }); return; }
       if (el.type === "checkbox" && el.dataset.scope) { write(el); return; }
       if (el.type === "file" && el.files[0]) {
         const lab = el.closest(".ed-upload");
@@ -396,16 +345,13 @@ window.SiteEditor = (() => {
     panel.addEventListener("click", async (e) => {
       const b = e.target.closest("button, [data-select], [data-page]");
       if (!b) return;
-      if (b.dataset.tab) { state.tab = b.dataset.tab; paintPanel(); return; }
       if (b.hasAttribute("data-close")) { if (state.mode !== "sections" && innerWidth >= 900) state.mode = "sections"; else state.panelOpen = false; paintPanel(); return; }
       if (b.hasAttribute("data-deselect")) { select(null, false); return; }
       if (b.dataset.row === "hide") { e.stopPropagation(); const s = sectionById(b.dataset.id); s.hidden = !s.hidden; changed({ panel: true }); return; }
       if (b.dataset.select) { select(b.dataset.select); return; }
       if (b.dataset.page) { state.pageId = b.dataset.page; state.selected = null; state.mode = "sections"; frame.contentWindow && frame.contentWindow.scrollTo(0, 0); paintAll(); return; }
       if (b.dataset.addSection) { addSection(b.dataset.addSection); return; }
-      if (b.dataset.sec) { sectionAction(b.dataset.sec, state.selected); return; }
       if (b.dataset.set !== undefined) { set(scopeObj(b.dataset.scope), b.dataset.path, b.dataset.set); changed({ panel: true }); return; }
-      if (b.dataset.palette) { const [bg, tx, ac] = b.dataset.palette.split(","); Object.assign(store.site, { bg, text: tx, accent: ac }); changed({ panel: true }); return; }
       if (b.hasAttribute("data-clear")) { set(scopeObj(b.dataset.scope), b.dataset.path, ""); changed({ panel: true }); return; }
       if (b.dataset.list) {
         e.preventDefault();
