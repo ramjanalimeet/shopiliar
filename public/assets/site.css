@@ -200,7 +200,14 @@ figcaption span { font-size: 14px; opacity: .7; }
 .editing .is-selected, .editing .is-selected:hover { outline: 2px solid #2563eb; outline-offset: -2px; }
 .editing .is-hidden { opacity: .35; }
 .editing a, .editing button, .editing input, .editing textarea, .editing summary { pointer-events: none; }
-.ed-chip { position: absolute; left: 8px; top: 8px; z-index: 5; display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 8px; background: #2563eb; color: #fff; font: 600 12px/1 "Inter", system-ui, sans-serif; box-shadow: 0 4px 12px rgba(37,99,235,.35); }
+/* The label stays in view while scrolling through a tall section; height 0 keeps it out of the layout */
+.ed-chip { position: sticky; top: 8px; z-index: 6; height: 0; }
+/* Pull the label up over the section's top padding (and give the space back below) */
+.pad-s > .ed-chip { margin: -36px 0 36px; } .pad-m > .ed-chip { margin: -72px 0 72px; } .pad-l > .ed-chip { margin: -112px 0 112px; }
+.s-hero > .ed-chip, .s-banner > .ed-chip, .s-header > .ed-chip { margin: 0; }
+.s-footer > .ed-chip { margin: -56px 0 56px; }
+@media (max-width: 760px) { .pad-m > .ed-chip { margin: -52px 0 52px; } .pad-l > .ed-chip { margin: -72px 0 72px; } }
+.ed-chip-in { position: absolute; left: 8px; top: 8px; display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 8px; background: #2563eb; color: #fff; font: 600 12px/1 "Inter", system-ui, sans-serif; box-shadow: 0 4px 12px rgba(37,99,235,.35); }
 .ed-chip b { padding: 5px 8px; }
 .ed-chip button { pointer-events: auto; width: 26px; height: 24px; border: 0; border-radius: 6px; background: rgba(255,255,255,.15); color: #fff; cursor: pointer; font-size: 13px; }
 .ed-chip button:hover { background: rgba(255,255,255,.3); }

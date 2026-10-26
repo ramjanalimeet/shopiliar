@@ -30,10 +30,9 @@ body.ed-side-hidden .side { display: none; }
 .ed-frame-wrap[data-device="tablet"] { border-radius: 18px; border: 6px solid #1f2328; }
 .ed-frame { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
 .ed-panel { width: 360px; flex: none; display: flex; flex-direction: column; min-height: 0; background: #fff; border-left: 1px solid var(--border); }
-.ed-tabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--border); flex: none; }
-.ed-tabs button { display: grid; justify-items: center; gap: 4px; padding: 12px 6px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; }
-.ed-tabs button .i { width: 20px; height: 20px; }
-.ed-tabs button.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.ed-tabs { display: flex; border-bottom: 1px solid var(--border); flex: none; padding: 0 16px; }
+.ed-tabs span { display: inline-flex; align-items: center; gap: 8px; padding: 14px 2px 12px; border-bottom: 2px solid var(--accent); color: var(--accent); font-size: 14px; font-weight: 600; }
+.ed-tabs .i { width: 18px; height: 18px; }
 .ed-panel-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px; flex: none; }
 .ed-panel-head b { flex: 1; font-size: 16px; color: var(--ink); }
 .ed-icon-btn { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
@@ -63,12 +62,6 @@ body.ed-side-hidden .side { display: none; }
 .ed-seg { display: flex; flex-wrap: wrap; gap: 6px; }
 .ed-seg button { flex: 1; min-width: 64px; height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 13px; color: var(--text); cursor: pointer; }
 .ed-seg button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-.ed-color { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
-.ed-color input[type=color] { width: 40px; height: 34px; padding: 2px; border: 1px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; }
-.ed-color .link { margin-left: auto; color: var(--accent); background: none; border: 0; cursor: pointer; font-weight: 600; }
-.ed-palettes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
-.ed-palettes button { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 12.5px; cursor: pointer; }
-.ed-palettes i { width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(0,0,0,.15); flex: none; }
 
 /* Lists (features, reviews…) and elements */
 .ed-list { margin: 4px 0 16px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #fafbfc; }
@@ -86,8 +79,6 @@ body.ed-side-hidden .side { display: none; }
 .ed-item-body .ed-field:first-child { margin-top: 10px; }
 .ed-add { width: 100%; justify-content: center; margin-top: 4px; }
 .ed-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.ed-actions { display: grid; gap: 8px; margin-top: 12px; }
-.ed-actions .btn { justify-content: flex-start; }
 
 /* Section outline */
 .ed-outline { display: grid; gap: 4px; }
