@@ -41,9 +41,6 @@
       </div>
       <div class="side-foot">
         <button class="nav-item" type="button" data-settings="general"><span data-icon="settings"></span>Settings</button>
-        <button class="nav-item" type="button" data-settings="billing"><span data-icon="billing"></span>Billing</button>
-        <a class="nav-item" data-route="messages" href="#/messages"><span data-icon="mail"></span>Messages<span class="count" id="msg-count"></span></a>
-        <a class="nav-item" data-route="help" href="#/help"><span data-icon="help"></span>Help Center</a>
       </div>
     </aside>
     <div class="main">
@@ -69,6 +66,17 @@
       <div class="scroll"><div id="view"></div></div>
     </div>
   </div>
+  <!-- Chat with the Shopilier team: a button at the bottom right opens the conversation panel -->
+  <button class="chat-fab" type="button" id="chat-fab" aria-label="Chat with the Shopilier team" aria-controls="chat-panel" aria-expanded="false"><span data-icon="chat"></span><span class="chat-badge" id="msg-count"></span></button>
+  <aside class="chat-panel" id="chat-panel" aria-label="Chat with the Shopilier team" hidden>
+    <header class="chat-head">
+      <span class="chat-logo"><img src="/assets/logo.webp" width="34" height="34" alt=""></span>
+      <div class="chat-title"><b>Chat with Shopilier</b><span>Questions, problems or help with your website</span></div>
+      <button class="chat-icon-btn" type="button" id="chat-new" title="New message" aria-label="New message"><span data-icon="plus"></span></button>
+      <button class="chat-icon-btn" type="button" id="chat-close" title="Close" aria-label="Close chat"><span data-icon="x"></span></button>
+    </header>
+    <div class="chat-body" id="chat-root"></div>
+  </aside>
   <script src="../assets/dash.js"></script>
   <script src="../assets/password.js"></script>
   <script src="../assets/inbox.js"></script>
