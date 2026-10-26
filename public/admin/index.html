@@ -30,8 +30,13 @@
       </nav>
       <div class="side-group">
         <div class="side-head">Sales channel</div>
-        <a class="nav-item" data-route="website" href="#/website"><span data-icon="store"></span>Online Store</a>
-        <a class="nav-item sub" data-route="pages" href="#/pages">Pages<span class="count" id="count-pages"></span></a>
+        <button class="nav-item store-toggle" type="button" id="store-toggle" aria-expanded="false" aria-controls="store-sub"><span data-icon="store"></span>Online Store<span class="caret" data-icon="chevronDown"></span></button>
+        <div class="store-sub" id="store-sub" hidden>
+          <a class="nav-item sub" data-route="themes" href="#/themes">Themes</a>
+          <a class="nav-item sub" data-route="pages" href="#/pages">Pages<span class="count" id="count-pages"></span></a>
+          <a class="nav-item sub" data-route="navigation" href="#/navigation">Navigation</a>
+          <a class="nav-item sub" data-route="preferences" href="#/preferences">Preferences</a>
+        </div>
       </div>
       <div class="side-foot">
         <button class="nav-item" type="button" data-settings="general"><span data-icon="settings"></span>Settings</button>
@@ -53,7 +58,7 @@
           </button>
           <div class="profile-menu" id="profile-menu" role="menu" hidden>
             <div class="profile-menu-head"><b id="menu-name"></b><span id="me-email"></span><span class="tag green" id="me-plan"></span></div>
-            <a role="menuitem" href="#/website"><span data-icon="external"></span>My website</a>
+            <a role="menuitem" href="#/themes"><span data-icon="external"></span>My website</a>
             <button role="menuitem" type="button" data-settings="general"><span data-icon="settings"></span>Settings</button>
             <button role="menuitem" type="button" data-settings="billing"><span data-icon="billing"></span>Plan &amp; billing</button>
             <button role="menuitem" type="button" id="logout"><span data-icon="logout"></span>Log out</button>

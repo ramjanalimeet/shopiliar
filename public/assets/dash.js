@@ -167,6 +167,8 @@ const Dash = (() => {
     sparkle: '<path d="M12 3l1.8 4.9L19 9.7l-5.2 1.8L12 16.4l-1.8-4.9L5 9.7l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
     lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     bellRing: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+    history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+    archive: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',
     arrowUp: '<path d="M12 19V5M5 12l7-7 7 7"/>',
     arrowDown: '<path d="M12 5v14M19 12l-7 7-7-7"/>',
     store: '<path d="M3 9 4.5 4h15L21 9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v9h14v-9M10 21v-5h4v5"/>',
@@ -309,10 +311,12 @@ const Dash = (() => {
     friendly: '"Trebuchet MS", "Segoe UI", Verdana, sans-serif',
   };
   // products: { name, price, color, status }
+  const SOCIAL_NAMES = { facebook: "Facebook", instagram: "Instagram", youtube: "YouTube", tiktok: "TikTok" };
   const siteHTML = (site, products = [], pages = []) => {
     const navPages = (pages.length ? pages.filter((p) => p.inNav).map((p) => p.title) : ["Home", "Shop", "About", "Contact"]).slice(0, 5);
     const prods = products.filter((p) => p.status !== "draft").slice(0, 6);
     const dark = isDark(site.bg);
+    const socials = Object.entries(site.social || {}).filter(([k, v]) => v && SOCIAL_NAMES[k]);
     return `<div class="sp sp-${esc(site.layout || "split")}" style="--sp-bg:${esc(site.bg)};--sp-text:${esc(site.text)};--sp-accent:${esc(site.accent)};--sp-font:${FONTS[site.font] || FONTS.modern};--sp-soft:${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)"}">
       <header class="sp-nav"><b>${esc(site.name || "My Store")}</b><nav>${navPages.map((p) => `<span>${esc(p)}</span>`).join("")}</nav><span class="sp-burger">☰</span></header>
       <section class="sp-hero">
@@ -322,7 +326,7 @@ const Dash = (() => {
       ${site.showProducts !== false ? `<section class="sp-sec"><h2>Products</h2>${prods.length ? `<div class="sp-grid">${prods.map((p) => `<div class="sp-item"><span class="sp-img" style="background:${esc(p.color || "#ddd")}"></span><b>${esc(p.name)}</b><em>${taka(p.price)}</em></div>`).join("")}</div>` : `<p class="sp-empty">Your products will appear here.</p>`}</section>` : ""}
       ${site.showAbout !== false ? `<section class="sp-sec sp-about"><h2>About us</h2><p>${esc(site.about || "Tell customers your story.")}</p></section>` : ""}
       ${site.showContact !== false ? `<section class="sp-sec sp-contact"><h2>Contact</h2><p>${[site.phone, site.email, site.address].filter(Boolean).map(esc).join(" · ") || "Add your phone, email and address."}</p></section>` : ""}
-      <footer class="sp-foot">© ${new Date().getFullYear()} ${esc(site.name || "My Store")} · Made with Shopilier</footer>
+      <footer class="sp-foot">${socials.length ? `<span class="sp-social">${socials.map(([k]) => `<span>${SOCIAL_NAMES[k]}</span>`).join("")}</span>` : ""}© ${new Date().getFullYear()} ${esc(site.name || "My Store")} · Made with Shopilier</footer>
     </div>`;
   };
   const isDark = (hex) => {
