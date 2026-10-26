@@ -93,10 +93,6 @@ body.ed-side-hidden .side { display: none; }
 .ed-row-tools button:hover { background: #fff; color: var(--ink); }
 .ed-row-tools .i { width: 17px; height: 17px; }
 
-.ed-add-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.ed-add-grid button { display: grid; justify-items: center; gap: 6px; padding: 14px 6px 12px; border: 1px solid var(--border); border-radius: 10px; background: #fff; color: var(--text); font-size: 12.5px; cursor: pointer; }
-.ed-add-grid button:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-.ed-add-grid .i { width: 22px; height: 22px; }
 
 /* Templates panel */
 .ed-templates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
