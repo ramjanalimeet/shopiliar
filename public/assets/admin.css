@@ -394,3 +394,52 @@
   .version .tag { margin-left: auto; }
   .nav-preview span { display: none; }
 }
+
+/* ---------- Chat with the Shopilier team (bottom-right button + right-side panel) ---------- */
+.chat-fab {
+  position: fixed; right: 24px; bottom: 24px; z-index: 94; width: 60px; height: 60px; border: 0; border-radius: 50%;
+  display: grid; place-items: center; background: var(--accent); color: #fff; cursor: pointer;
+  box-shadow: 0 10px 28px rgba(14, 122, 75, .4); transition: transform .2s, background .2s;
+}
+.chat-fab:hover { transform: scale(1.06); background: #0b6a41; }
+.chat-fab:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 3px; }
+.chat-fab .i { width: 27px; height: 27px; }
+.chat-badge { position: absolute; top: -2px; right: -2px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: #e5484d; color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; border: 2px solid #fff; }
+.chat-badge:empty { display: none; }
+body.chat-open .chat-fab { transform: scale(.9); }
+body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
+
+.chat-panel {
+  position: fixed; top: 72px; right: 16px; bottom: 96px; z-index: 95; width: 420px; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; background: #fff; border-radius: 18px; overflow: hidden;
+  box-shadow: 0 24px 60px rgba(16, 24, 40, .22), 0 0 0 1px rgba(16, 24, 40, .06); animation: chat-in .22s ease-out;
+}
+.chat-panel[hidden] { display: none; }
+@keyframes chat-in { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+.chat-head { display: flex; align-items: center; gap: 12px; padding: 16px 14px 16px 18px; background: linear-gradient(135deg, #0e7a4b, #0b6a41); color: #fff; flex: none; }
+.chat-logo { width: 40px; height: 40px; border-radius: 12px; background: #fff; display: grid; place-items: center; flex: none; }
+.chat-logo img { width: 28px; height: 28px; }
+.chat-title { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.chat-title b { font-size: 16px; }
+.chat-title span { font-size: 12.5px; opacity: .85; }
+.chat-icon-btn { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 10px; background: rgba(255,255,255,.14); color: #fff; cursor: pointer; flex: none; }
+.chat-icon-btn:hover { background: rgba(255,255,255,.26); }
+.chat-icon-btn .i { width: 18px; height: 18px; }
+.chat-body { flex: 1; min-height: 0; display: flex; }
+.chat-body > .inbox { flex: 1; height: auto; min-height: 0; border: 0; border-radius: 0; grid-template-columns: 1fr; }
+/* One column: the conversation list, or the open conversation */
+.chat-body .inbox .inbox-thread { display: none; }
+.chat-body .inbox.show-thread .inbox-list { display: none; }
+.chat-body .inbox.show-thread .inbox-thread { display: flex; }
+.chat-body .inbox-list { border-right: 0; }
+.chat-body .thread-back { display: inline-grid; }
+
+.help-chat { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.help-chat .btn .i { width: 18px; height: 18px; }
+
+@media (min-width: 1024px) { .chat-panel { top: 84px; bottom: 112px; } }
+@media (max-width: 560px) {
+  .chat-fab { right: 16px; bottom: 16px; width: 56px; height: 56px; }
+  .chat-panel { inset: 0; width: auto; max-width: none; border-radius: 0; }
+  body.chat-open .chat-fab { display: none; }
+}

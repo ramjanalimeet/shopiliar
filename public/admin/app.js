@@ -384,29 +384,6 @@
         </table></div></div></div>`,
     },
 
-    messages: {
-      title: "Messages",
-      render: () => `${head("Messages", "Questions, complaints or help with your website — talk to the Shopilier team here.", `<button class="btn btn-primary" data-action="new-message">${icon("plus")}New message</button>`)}
-        <div id="inbox-root"></div></div>`,
-      mount: (view) => { inbox = ShopilierInbox(view.querySelector("#inbox-root"), { mode: "user", onUnread: setMsgBadge }); },
-    },
-
-    help: {
-      title: "Help Center",
-      render: () => `${head("Help Center", "Answers to common questions.")}
-        <div class="card"><div class="card-body help-list">
-          ${[
-            ["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."],
-            ["How do I change how my website looks?", "Open Online Store. Pick a template, change colors and text, and watch the live preview."],
-            ["How do I publish my website?", "In Online Store, click Publish. Your site goes live at your free shopilier.com address."],
-            ["Can I use my own domain?", "Yes. Go to Settings and add your domain. Yearly Business and Pro plans include a free domain."],
-            ["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."],
-            ["How do I change my plan?", "Open Billing and choose Switch next to the plan you want."],
-            ["How do I contact the Shopilier team?", "Open Messages in the sidebar and click New message. Pick what it's about (a question, a complaint, billing or a website problem) and we'll reply right there."],
-          ].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
-        </div></div></div>`,
-    },
-
     orders: {
       title: "Orders",
       render: () => {
@@ -721,15 +698,38 @@
   });
 
   const pixelById = (id) => PIXELS.find((p) => p.id === id);
-  // Support messages: unread replies show as a badge on Messages in the sidebar
+  // ---------- Chat with the Shopilier team ----------
+  // The chat button sits at the bottom right; unread replies show as a badge on it
   let inbox = null;
-  const setMsgBadge = (n) => { document.getElementById("msg-count").textContent = n || ""; };
+  const chatFab = document.getElementById("chat-fab"), chatPanel = document.getElementById("chat-panel"), chatRoot = document.getElementById("chat-root");
+  const setMsgBadge = (n) => { document.getElementById("msg-count").textContent = n ? (n > 9 ? "9+" : n) : ""; };
   const checkMessages = () => ShopilierInbox.unread("user").then(setMsgBadge);
   checkMessages();
-  setInterval(() => { if (location.hash !== "#/messages") checkMessages(); }, 60000);
+  setInterval(() => { if (chatPanel.hidden) checkMessages(); }, 60000);
+  const openChat = () => {
+    toggleMenu(false);
+    chatPanel.hidden = false;
+    chatFab.setAttribute("aria-expanded", "true");
+    document.body.classList.add("chat-open");
+    if (!inbox) inbox = ShopilierInbox(chatRoot, { mode: "user", onUnread: setMsgBadge });
+    chatPanel.querySelector("#chat-close").focus();
+  };
+  // Closing clears the inbox, which also stops it checking for new replies
+  const closeChat = () => {
+    chatPanel.hidden = true;
+    chatFab.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("chat-open");
+    chatRoot.innerHTML = ""; inbox = null;
+    checkMessages();
+    chatFab.focus();
+  };
+  chatFab.addEventListener("click", () => (chatPanel.hidden ? openChat() : closeChat()));
+  document.getElementById("chat-close").addEventListener("click", closeChat);
+  document.getElementById("chat-new").addEventListener("click", () => { if (!inbox) openChat(); inbox.newMessage(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !chatPanel.hidden && !document.querySelector(".overlay")) closeChat(); });
 
   const actions = {
-    "new-message": () => inbox && inbox.newMessage(),
+    "open-chat": () => { if (settingsEl) settingsEl.close(); openChat(); },
     "pixel-edit": (el) => {
       const p = pixelById(el.dataset.id), px = store.marketing.pixels[p.id];
       dialog({
@@ -918,6 +918,7 @@
     ["payments", "Payments", "money"],
     ["notifications", "Notifications", "bellRing"],
     ["security", "Account & security", "lock"],
+    ["help", "Help Center", "help"],
   ];
   const settingsTab = {
     general: () => `<form data-form="general">
@@ -995,6 +996,21 @@
       </div>`,
   };
 
+  settingsTab.help = () => `<h2>Help Center</h2><p class="muted">Answers to common questions.</p>
+      <div class="s-card help-list">
+        ${[
+          ["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."],
+          ["How do I change how my website looks?", "Open Online Store → Themes and click Customize. Click any part of your website to edit it, add sections, and preview it on desktop, tablet and mobile."],
+          ["How do I publish my website?", "In the website editor, click Publish website. Your site goes live at your free shopilier.com address."],
+          ["Can I go back to an earlier version of my website?", "Yes. Online Store → Themes → Versions & backups. Create a backup any time, and switch to any saved version. A copy is also saved every time you publish."],
+          ["Can I use my own domain?", "Yes. Open Settings → Domain and add your domain. Yearly Business and Pro plans include a free domain."],
+          ["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."],
+          ["How do I change my plan?", "Open Settings → Plan & billing and choose Switch next to the plan you want."],
+          ["How do I contact the Shopilier team?", "Click the green chat button at the bottom right of your dashboard. Pick what it's about (a question, a complaint, billing or a website problem) and we'll reply right there."],
+        ].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
+      </div>
+      <div class="s-card help-chat"><div><b>Still need help?</b><p class="muted small">Send a message to the Shopilier team.</p></div><button class="btn btn-primary" type="button" data-action="open-chat">${icon("chat")}Chat with us</button></div>`;
+
   let settingsEl = null;
   const openSettings = (tab = "general") => {
     if (!settingsTab[tab]) tab = "general";
@@ -1056,6 +1072,7 @@
       if (ok) toast("Settings saved");
     });
     wrap.refresh = () => show(tab);
+    wrap.close = close;
     document.body.appendChild(wrap);
     settingsEl = wrap;
     show(tab);
@@ -1069,11 +1086,13 @@
     openSettings(b.dataset.settings);
   });
   // Old links like #/settings or #/billing open the popup
+  // and #/help opens its Settings section; #/messages opens the chat
   const settingsFromHash = () => {
-    const m = /^#\/(settings|billing)$/.exec(location.hash);
+    const m = /^#\/(settings|billing|help|messages)$/.exec(location.hash);
     if (!m) return false;
     history.replaceState(null, "", "#/home");
-    openSettings(m[1] === "billing" ? "billing" : "general");
+    if (m[1] === "messages") openChat();
+    else openSettings(m[1] === "settings" ? "general" : m[1]);
     return true;
   };
   window.addEventListener("hashchange", settingsFromHash);
@@ -1144,6 +1163,8 @@
 
   hydrateIcons();
   refreshChrome();
-  if (/^#\/(settings|billing)$/.test(location.hash)) { const tab = location.hash.endsWith("billing") ? "billing" : "general"; history.replaceState(null, "", "#/home"); rerender = router(routes, "home", afterRender); openSettings(tab); }
-  else rerender = router(routes, "home", afterRender);
+  const startHash = /^#\/(settings|billing|help|messages)$/.exec(location.hash);
+  if (startHash) history.replaceState(null, "", "#/home");
+  rerender = router(routes, "home", afterRender);
+  if (startHash) { if (startHash[1] === "messages") openChat(); else openSettings(startHash[1] === "settings" ? "general" : startHash[1]); }
 })();
