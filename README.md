@@ -47,7 +47,9 @@ rules when AI isn't available. Online payment isn't connected yet; the plan star
 
 ## Dashboards
 - `/admin` — the store owner dashboard (`admin/app.js`): orders, products, customers, analytics,
-  the website customizer, pages, marketing, discounts and settings. Shopilier is for online stores only.
+  marketing, discounts and settings. Online Store opens Themes (desktop and phone preview, Customize,
+  versions & backups), Pages, Navigation (menu order) and Preferences (search listing, social links).
+  Shopilier is for online stores only.
 - `/master-admin` — business owner dashboard: overview, users, templates (add, customize,
   publish/unpublish, duplicate, delete), payments, plans & pricing, activity, settings.
 

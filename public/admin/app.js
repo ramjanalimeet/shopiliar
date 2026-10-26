@@ -88,6 +88,9 @@
   store.discounts ||= [];
   store.orders ||= []; store.products ||= []; store.customers ||= [];
   store.marketing ||= { pixels: {}, headCode: "", bodyCode: "" };
+  store.backups ||= [];
+  store.site.social ||= {};
+  store.site.seo ||= { title: "", description: "" };
   let saveTimer = null, saving = Promise.resolve();
   const saveNow = () => {
     clearTimeout(saveTimer);
@@ -164,7 +167,7 @@
   const sales = (orders) => orders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
   const siteUrl = () => store.settings.domain && store.settings.domainStatus === "connected" ? store.settings.domain : store.settings.subdomain + ".shopilier.com";
   const orderNo = (o) => "#" + o.number;
-  const head = (title, desc, actions = "") => `<div class="page"><div class="page-head">${title ? `<div><h1>${title}</h1><p>${desc}</p></div>` : ""}<div class="page-actions">${actions}</div></div>`;
+  const head = (title, desc, actions = "") => `<div class="page"><div class="page-head">${title ? `<div><h1>${title}</h1>${desc ? `<p>${desc}</p>` : ""}</div>` : ""}<div class="page-actions">${actions}</div></div>`;
   const statusTag = (s) => `<span class="tag dot ${ORDER_STATUS[s]}">${esc(s)}</span>`;
   const searchBox = (action, value, label) => `<label class="box-search">${icon("search")}<input data-action="${action}" value="${esc(value)}" placeholder="${label}" aria-label="${label}"></label>`;
   const limitCallout = (kind, used, limit) => limit == null ? "" : used >= limit
@@ -189,6 +192,39 @@
   const lineChart = (now, span, valueFor, money = true) => Dash.lineChart(range, now, span, valueFor, money);
   // Website preview with the store's products
   const previewHTML = (site) => siteHTML(site, store.products, store.pages);
+  const stamp = (d) => d ? new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "Not yet";
+  // Any change to the website itself (design, text, pages, menu, preferences)
+  const touchSite = () => { store.siteSavedAt = new Date().toISOString(); };
+
+  // ---------- Versions & backups of the website ----------
+  const MAX_BACKUPS = 20;
+  const snapshot = () => JSON.parse(JSON.stringify({ site: store.site, pages: store.pages }));
+  const addBackup = (name, kind) => {
+    store.backups.unshift({ id: uid("v"), name, kind, at: new Date().toISOString(), template: store.site.template, data: snapshot() });
+    // Over the limit: drop the oldest automatic copy first, then the oldest backup
+    while (store.backups.length > MAX_BACKUPS) {
+      const i = store.backups.map((b) => b.kind).lastIndexOf("auto");
+      store.backups.splice(i >= 0 ? i : store.backups.length - 1, 1);
+    }
+  };
+  const KIND = { manual: ["Backup", "blue"], publish: ["Published", "green"], auto: ["Automatic", "gray"] };
+  // Full-size and phone previews scale a real-width page down to fit their frame
+  const fitPreviews = (root) => {
+    const screens = root.querySelectorAll(".th-screen");
+    const fit = () => screens.forEach((sc) => { sc.firstElementChild.style.transform = `scale(${sc.clientWidth / Number(sc.dataset.w)})`; });
+    fit();
+    const ro = new ResizeObserver(fit);
+    screens.forEach((sc) => ro.observe(sc));
+    return ro;
+  };
+  let previewObserver = null;
+  const devicePreviews = (site, pages) => {
+    const html = siteHTML(site, store.products, pages);
+    return `<div class="theme-stage">
+      <div class="th-desktop"><div class="th-bar"><i></i><i></i><i></i><span>${esc(siteUrl())}</span></div><div class="th-screen" data-w="1280"><div class="sp-frame th-canvas" style="width:1280px">${html}</div></div></div>
+      <div class="th-phone"><div class="th-screen" data-w="390"><div class="sp-frame th-canvas" style="width:390px">${html}</div></div></div>
+    </div>`;
+  };
   const salesChart = (now, span) => lineChart(now, span, (from, to) => sales(inPeriod(store.orders, from, to)));
   const topProducts = (orders) => {
     if (!store.products.length) return `<p class="empty-note">No products yet. <a class="link" href="#/products" data-action="add-product">Add your first product</a></p>`;
@@ -474,6 +510,118 @@
       },
     },
 
+    themes: {
+      title: "Themes",
+      render: () => {
+        const t = findTemplate(store.site.template);
+        const s = store.site;
+        return `${head("Themes", "", `<button class="btn" data-action="view-store">${icon("eye")}View your store</button>`)}
+          <div class="card theme-card">
+            ${devicePreviews(s, store.pages)}
+            <div class="theme-info">
+              <span class="theme-thumb" style="background:linear-gradient(135deg,${esc(s.bg)} 55%,${esc(s.accent)})"></span>
+              <div class="theme-meta">
+                <div class="theme-name"><b>${esc(t.name)}</b><span class="tag green">Current theme</span>${store.published ? "" : '<span class="tag dot yellow">Not published</span>'}</div>
+                <span class="muted small">Last saved: ${stamp(store.siteSavedAt || store.publishedAt)}</span>
+              </div>
+              <a class="btn btn-dark" href="#/website">${icon("brush")}Customize</a>
+            </div>
+          </div>
+
+          <div class="card versions-card">
+            <div class="card-head"><span class="card-title">Versions &amp; backups</span><span class="muted small versions-hint">Save a backup before big changes. You can switch to any version later.</span>
+              <button class="btn" data-action="create-backup">${icon("archive")}Create backup</button></div>
+            <div class="versions">
+              <div class="version current">
+                <span class="v-ico">${icon("check")}</span>
+                <div class="v-text"><b>Current version</b><span class="muted small">${esc(t.name)} · Last saved ${stamp(store.siteSavedAt || store.publishedAt)}</span></div>
+                <span class="tag green">Current</span>
+              </div>
+              ${store.backups.map((b) => `
+              <div class="version">
+                <span class="v-ico">${icon(b.kind === "publish" ? "rocket" : "history")}</span>
+                <div class="v-text"><b>${esc(b.name)}</b><span class="muted small">${esc(findTemplate(b.template).name)} · ${stamp(b.at)}</span></div>
+                <span class="tag ${KIND[b.kind][1]}">${KIND[b.kind][0]}</span>
+                <div class="v-actions">
+                  <button class="icon-btn" data-action="preview-version" data-id="${b.id}" aria-label="Preview ${esc(b.name)}" title="Preview">${icon("eye")}</button>
+                  <button class="btn btn-sm" data-action="restore-version" data-id="${b.id}">Switch to this</button>
+                  <button class="icon-btn danger" data-action="delete-version" data-id="${b.id}" aria-label="Delete ${esc(b.name)}" title="Delete">${icon("trash")}</button>
+                </div>
+              </div>`).join("")}
+              ${store.backups.length ? "" : `<p class="empty-note versions-empty">No backups yet. A copy is also saved automatically every time you publish.</p>`}
+            </div>
+          </div>
+        </div>`;
+      },
+      mount: (view) => { if (previewObserver) previewObserver.disconnect(); previewObserver = fitPreviews(view); },
+    },
+
+    navigation: {
+      title: "Navigation",
+      render: () => {
+        const menu = store.pages.filter((p) => p.inNav);
+        const others = store.pages.filter((p) => !p.inNav);
+        const s = store.site;
+        return `${head("Navigation", "Choose which pages appear in your website's top menu, and in what order.")}
+          <div class="card">
+            <div class="card-head"><span class="card-title">Main menu<small>The first 5 items show in the top menu</small></span></div>
+            <div class="nav-preview" style="background:${esc(s.bg)};color:${esc(s.text)}"><b>${esc(s.name || "My Store")}</b><span>${menu.slice(0, 5).map((p) => `<i>${esc(p.title)}</i>`).join("") || '<i class="muted">No menu items</i>'}</span></div>
+            <div class="menu-list">
+              ${menu.map((p, i) => `
+              <div class="menu-item">
+                <span class="menu-pos">${i + 1}</span>
+                <div class="v-text"><b>${esc(p.title)}</b><span class="muted small">/${esc(p.slug)}</span></div>
+                ${i >= 5 ? '<span class="tag">Hidden: over 5</span>' : ""}
+                <div class="v-actions">
+                  <button class="icon-btn" data-action="nav-move" data-dir="-1" data-id="${p.id}" aria-label="Move ${esc(p.title)} up" ${i === 0 ? "disabled" : ""}>${icon("arrowUp")}</button>
+                  <button class="icon-btn" data-action="nav-move" data-dir="1" data-id="${p.id}" aria-label="Move ${esc(p.title)} down" ${i === menu.length - 1 ? "disabled" : ""}>${icon("arrowDown")}</button>
+                  <button class="icon-btn danger" data-action="nav-remove" data-id="${p.id}" aria-label="Remove ${esc(p.title)} from menu" title="Remove from menu">${icon("x")}</button>
+                </div>
+              </div>`).join("") || '<p class="empty-note" style="padding:18px">Your menu is empty. Add a page below.</p>'}
+            </div>
+            <div class="menu-add">
+              ${others.length ? `<select class="select" id="nav-add-page" aria-label="Page to add">${others.map((p) => `<option value="${p.id}">${esc(p.title)}</option>`).join("")}</select><button class="btn" data-action="nav-add">${icon("plus")}Add to menu</button>`
+                : `<span class="muted small">All your pages are in the menu.</span>`}
+              <a class="link small" href="#/pages">Manage pages</a>
+            </div>
+          </div>
+        </div>`;
+      },
+    },
+
+    preferences: {
+      title: "Preferences",
+      render: () => {
+        const s = store.site, seo = s.seo, so = s.social;
+        const title = seo.title || s.name || "My Store", desc = seo.description || s.sub || "";
+        return `${head("Preferences", "How your website shows up on Google and where customers can follow you. Changes save automatically.")}
+          <form id="prefs-form" autocomplete="off" class="prefs">
+            <div class="card"><div class="card-head"><span class="card-title">Search engine listing</span></div><div class="card-body">
+              <div class="serp"><span class="serp-url">${esc(siteUrl())}</span><b class="serp-title" id="serp-title">${esc(title)}</b><span class="serp-desc" id="serp-desc">${esc(desc)}</span></div>
+              <div class="field"><label for="p-title">Homepage title</label><input class="input" id="p-title" name="title" maxlength="70" value="${esc(seo.title)}" placeholder="${esc(s.name || "My Store")}"><span class="muted small"><span data-count="title">${seo.title.length}</span> of 70 characters</span></div>
+              <div class="field" style="margin:0"><label for="p-desc">Meta description</label><textarea class="textarea" id="p-desc" name="description" maxlength="160" placeholder="${esc(s.sub || "Describe your store in one or two sentences")}">${esc(seo.description)}</textarea><span class="muted small"><span data-count="description">${seo.description.length}</span> of 160 characters</span></div>
+            </div></div>
+            <div class="card"><div class="card-head"><span class="card-title">Social media<small>Shown in your website's footer</small></span></div><div class="card-body">
+              ${[["facebook", "Facebook", "https://facebook.com/yourpage"], ["instagram", "Instagram", "https://instagram.com/yourname"], ["youtube", "YouTube", "https://youtube.com/@yourchannel"], ["tiktok", "TikTok", "https://tiktok.com/@yourname"]].map(([k, l, ph]) => `
+                <div class="field"><label for="p-${k}">${l}</label><input class="input" id="p-${k}" name="${k}" type="url" maxlength="200" value="${esc(so[k] || "")}" placeholder="${ph}"></div>`).join("")}
+            </div></div>
+          </form>
+        </div>`;
+      },
+      mount: (view) => {
+        const form = view.querySelector("#prefs-form");
+        form.addEventListener("input", () => {
+          const d = new FormData(form);
+          store.site.seo = { title: String(d.get("title")).trim(), description: String(d.get("description")).trim() };
+          store.site.social = Object.fromEntries(["facebook", "instagram", "youtube", "tiktok"].map((k) => [k, String(d.get(k)).trim()]));
+          view.querySelector("#serp-title").textContent = store.site.seo.title || store.site.name || "My Store";
+          view.querySelector("#serp-desc").textContent = store.site.seo.description || store.site.sub || "";
+          view.querySelectorAll("[data-count]").forEach((el) => { el.textContent = store.site.seo[el.dataset.count].length; });
+          touchSite(); persist();
+        });
+      },
+    },
+
     website: {
       title: "Customize website",
       render: () => {
@@ -484,7 +632,7 @@
         ];
         const published = catalog.filter((t) => t.status === "published");
         return `${head("Customize website", "Pick a template, choose colors and edit your text. The preview updates as you type.",
-          `${store.published ? '<span class="tag dot green">Live</span>' : '<span class="tag dot yellow">Draft</span>'}<button class="btn" data-action="reset-site">Reset</button><button class="btn btn-primary" data-action="publish">${icon("rocket")}${store.published ? "Publish changes" : "Publish website"}</button>`)}
+          `<a class="btn" href="#/themes">Back to themes</a>${store.published ? '<span class="tag dot green">Live</span>' : '<span class="tag dot yellow">Draft</span>'}<button class="btn" data-action="reset-site">Reset</button><button class="btn btn-primary" data-action="publish">${icon("rocket")}${store.published ? "Publish changes" : "Publish website"}</button>`)}
           <div style="display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start" class="customizer">
             <form id="site-form" autocomplete="off">
               <div class="card"><div class="card-head"><span class="card-title">Template</span></div><div class="card-body">
@@ -535,7 +683,7 @@
           form.querySelectorAll("input[name=font]").forEach((r) => r.nextElementSibling.classList.toggle("on", r.checked));
           view.querySelector("#site-preview").innerHTML = previewHTML(store.site);
           store.customized = true;
-          persist();
+          touchSite(); persist();
         };
         form.addEventListener("input", update);
         form.addEventListener("change", update);
@@ -623,7 +771,7 @@
       const slug = v.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "page";
       if (pg) { pg.title = v.title; if (!pg.locked) pg.slug = slug; }
       else store.pages.push({ id: uid("pg"), title: v.title, slug, inNav: true });
-      persist(); go(); toast(pg ? "Page renamed" : "Page added");
+      touchSite(); persist(); go(); toast(pg ? "Page renamed" : "Page added");
     },
   });
 
@@ -731,17 +879,71 @@
       if (t.id === store.site.template) return;
       if (!(await confirm(`Switch to ${t.name}?`, "Colors and layout will change. Your text, products and pages stay the same.", "Switch template"))) return;
       Object.assign(store.site, { template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent });
-      account.template = t.id; store.customized = true; persist(); go(); toast("Template changed to " + t.name);
+      account.template = t.id; store.customized = true; touchSite(); persist(); go(); toast("Template changed to " + t.name);
     },
-    "palette": (el) => { Object.assign(store.site, { bg: el.dataset.bg, text: el.dataset.text, accent: el.dataset.accent }); store.customized = true; persist(); go(); },
+    "palette": (el) => { Object.assign(store.site, { bg: el.dataset.bg, text: el.dataset.text, accent: el.dataset.accent }); store.customized = true; touchSite(); persist(); go(); },
     "preview-mode": (el) => { previewMode = el.dataset.mode; go(); },
     "reset-site": async () => {
       const t = findTemplate(store.site.template);
       if (!(await confirm("Reset to template?", `Colors and homepage text go back to the ${t.name} defaults.`, "Reset"))) return;
       Object.assign(store.site, { layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, headline: t.headline, sub: t.sub, cta: t.cta, font: "modern" });
-      persist(); go();
+      touchSite(); persist(); go();
     },
-    "publish": () => { store.published = true; store.publishedAt = new Date().toISOString(); persist(); go(); toast("🚀 Website published"); },
+    "publish": () => {
+      store.published = true; store.publishedAt = new Date().toISOString();
+      addBackup("Published " + stamp(store.publishedAt), "publish");
+      persist(); go(); toast("🚀 Website published");
+    },
+    "view-store": () => {
+      const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(store.site.seo.title || store.site.name || "My Store")}</title><link rel="stylesheet" href="${location.origin}/assets/dash.css"><style>body{margin:0;background:${esc(store.site.bg)}}.sp-frame{border:0;border-radius:0;min-height:100vh}</style></head><body><div class="sp-frame">${previewHTML(store.site)}</div></body></html>`;
+      window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
+    },
+    "create-backup": () => dialog({
+      title: "Create backup",
+      body: `<p class="muted" style="margin-bottom:14px">Saves a copy of your website as it is now: design, text, pages, menu and preferences. Products and orders aren't affected.</p>
+        <div class="field"><label>Backup name</label><input class="input" name="name" maxlength="60" placeholder="e.g. Before Eid sale changes"></div>`,
+      submit: "Create backup",
+      onSubmit: (v) => { addBackup(v.name || "Backup " + stamp(new Date()), "manual"); persist(); go(); toast("Backup created"); },
+    }),
+    "preview-version": (el) => {
+      const b = store.backups.find((x) => x.id === el.dataset.id);
+      dialog({
+        title: b.name, size: "lg", submit: "",
+        body: `<p class="muted small" style="margin-bottom:12px">${esc(findTemplate(b.template).name)} · ${stamp(b.at)}</p><div class="version-preview">${devicePreviews(b.data.site, b.data.pages)}</div>`,
+        onOpen: (wrap) => fitPreviews(wrap),
+      });
+    },
+    "restore-version": async (el) => {
+      const b = store.backups.find((x) => x.id === el.dataset.id);
+      if (!(await confirm(`Switch to “${b.name}”?`, "Your website will change to this version. The current version is saved as a backup first, so you can switch back any time.", "Switch version"))) return;
+      addBackup("Before switching to " + b.name, "auto");
+      const data = JSON.parse(JSON.stringify(b.data));
+      store.site = data.site; store.pages = data.pages;
+      store.site.social ||= {}; store.site.seo ||= { title: "", description: "" };
+      account.template = store.site.template;
+      store.customized = true; touchSite(); persist(); go();
+      toast(`Switched to “${b.name}”` + (store.published ? ". Publish to put it live." : ""));
+    },
+    "delete-version": async (el) => {
+      const b = store.backups.find((x) => x.id === el.dataset.id);
+      if (await confirm("Delete backup?", `“${b.name}” will be deleted. You can't undo this.`)) { store.backups = store.backups.filter((x) => x !== b); persist(); go(); toast("Backup deleted"); }
+    },
+    "nav-move": (el) => {
+      const menu = store.pages.filter((p) => p.inNav);
+      const i = menu.findIndex((p) => p.id === el.dataset.id), other = menu[i + Number(el.dataset.dir)];
+      if (!other) return;
+      const a = store.pages.indexOf(menu[i]), b = store.pages.indexOf(other);
+      [store.pages[a], store.pages[b]] = [store.pages[b], store.pages[a]];
+      touchSite(); persist(); go();
+    },
+    "nav-remove": (el) => { store.pages.find((p) => p.id === el.dataset.id).inNav = false; touchSite(); persist(); go(); },
+    "nav-add": () => {
+      const id = document.getElementById("nav-add-page").value;
+      const pg = store.pages.find((p) => p.id === id);
+      // Added items go to the end of the menu
+      store.pages = [...store.pages.filter((p) => p !== pg), pg];
+      pg.inNav = true; touchSite(); persist(); go(); toast(pg.title + " added to the menu");
+    },
     "add-page": () => {
       if (!withinLimit(plan().pages, store.pages.length)) { toast(`Your ${plan().name} plan allows ${plan().pages} pages — upgrade to add more`); return; }
       pageDialog(null);
@@ -749,7 +951,7 @@
     "edit-page": (el) => pageDialog(store.pages.find((p) => p.id === el.dataset.id)),
     "delete-page": async (el) => {
       const pg = store.pages.find((x) => x.id === el.dataset.id);
-      if (await confirm("Delete page?", `The “${pg.title}” page will be removed from your website.`)) { store.pages = store.pages.filter((x) => x !== pg); persist(); go(); }
+      if (await confirm("Delete page?", `The “${pg.title}” page will be removed from your website.`)) { store.pages = store.pages.filter((x) => x !== pg); touchSite(); persist(); go(); }
     },
     "connect-domain": () => {
       const v = document.getElementById("s-domain").value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
@@ -969,7 +1171,7 @@
     }
     if (el.dataset.action === "page-nav") {
       const pg = store.pages.find((x) => x.id === el.dataset.id);
-      pg.inNav = el.checked; persist();
+      pg.inNav = el.checked; touchSite(); persist();
     }
   });
   view.addEventListener("input", (e) => {
@@ -992,8 +1194,25 @@
     if (location.hash === (isProduct ? "#/products" : "#/orders")) go();
   });
 
+  // Online Store in the sidebar opens and closes its own menu (Themes, Pages, Navigation, Preferences)
+  const STORE_ROUTES = ["themes", "pages", "navigation", "preferences", "website"];
+  const storeToggle = document.getElementById("store-toggle"), storeSub = document.getElementById("store-sub");
+  const setStoreOpen = (open) => { storeSub.hidden = !open; storeToggle.setAttribute("aria-expanded", String(open)); };
+  storeToggle.addEventListener("click", () => {
+    const open = storeSub.hidden;
+    setStoreOpen(open);
+    if (open && !STORE_ROUTES.includes(location.hash.replace(/^#\/?/, ""))) location.hash = "#/themes";
+  });
+  const afterRender = (route) => {
+    const inStore = STORE_ROUTES.includes(route);
+    if (inStore) setStoreOpen(true);
+    storeToggle.classList.toggle("in", inStore);
+    // The customizer belongs to Themes
+    if (route === "website") document.querySelector('[data-route="themes"]').classList.add("on");
+  };
+
   hydrateIcons();
   refreshChrome();
-  if (/^#\/(settings|billing)$/.test(location.hash)) { const tab = location.hash.endsWith("billing") ? "billing" : "general"; history.replaceState(null, "", "#/home"); rerender = router(routes, "home"); openSettings(tab); }
-  else rerender = router(routes, "home");
+  if (/^#\/(settings|billing)$/.test(location.hash)) { const tab = location.hash.endsWith("billing") ? "billing" : "general"; history.replaceState(null, "", "#/home"); rerender = router(routes, "home", afterRender); openSettings(tab); }
+  else rerender = router(routes, "home", afterRender);
 })();
