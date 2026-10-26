@@ -237,7 +237,6 @@ window.SiteEditor = (() => {
     };
 
     const seg = (scope, path, label, options, val) => `<div class="ed-field"><label>${esc(label)}</label><div class="ed-seg">${options.map(([v, l]) => `<button type="button" class="${String(val) === v ? "on" : ""}" data-set="${v}" data-scope="${scope}" data-path="${path}">${esc(l)}</button>`).join("")}</div></div>`;
-    const addSectionGrid = () => `<div class="ed-sub">Add section</div><div class="ed-add-grid">${Object.entries(K.TYPES).map(([k, v]) => `<button type="button" data-add-section="${k}">${icon(v.icon)}<span>${esc(v.label)}</span></button>`).join("")}</div>`;
 
     const outline = () => {
       const p = page();
@@ -247,7 +246,7 @@ window.SiteEditor = (() => {
       </div>`;
       return `<div class="ed-sub">Sections on ${esc(p.title)}</div>
         <div class="ed-outline">${row("header", "Header", "layout")}${p.sections.map((s) => row(s.id, (K.TYPES[s.type] || {}).label || s.type, (K.TYPES[s.type] || {}).icon || "layout", s)).join("")}${row("footer", "Footer", "layout")}</div>
-        ${addSectionGrid()}`;
+        <p class="ed-note">To add a section, point at the line between two sections on your website and click the green <b>+</b>.</p>`;
     };
 
     const elements = (t) => {
@@ -267,7 +266,7 @@ window.SiteEditor = (() => {
 
     const contentTab = (t) => {
       if (!t) return outline();
-      return `${(CONTENT[t.type] || []).map((f) => field(f, t.content, "content")).join("")}${elements(t)}${t.section ? addSectionGrid() : ""}`;
+      return `${(CONTENT[t.type] || []).map((f) => field(f, t.content, "content")).join("")}${elements(t)}`;
     };
     const pagesPanel = () => `<div class="ed-panel-head"><b>Pages</b><button class="ed-icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
       <div class="ed-panel-body"><div class="ed-outline">${store.pages.map((p) => `<div class="ed-row ${p.id === state.pageId ? "on" : ""}" data-page="${p.id}"><span class="ed-row-ico">${icon("pages")}</span><span class="ed-row-label">${esc(p.title)}<small>/${esc(p.slug)}</small></span>${p.inNav ? "" : '<span class="tag">Not in menu</span>'}</div>`).join("")}</div>
@@ -312,11 +311,10 @@ window.SiteEditor = (() => {
       changed({ panel: true });
       scrollToSelected();
     };
-    // at: position in the page; by default right after the selected section, or at the end
+    // at: position in the page (the gap whose + was clicked)
     const addSection = (type, at, made) => {
       const s = made || K.make(type, ctx());
       const list = page().sections;
-      if (at == null) at = state.selected && sectionById(state.selected) ? list.indexOf(sectionById(state.selected)) + 1 : list.length;
       list.splice(Math.max(0, Math.min(at, list.length)), 0, s);
       state.selected = s.id; state.mode = "sections"; state.panelOpen = true;
       changed({ panel: true });
@@ -401,7 +399,6 @@ window.SiteEditor = (() => {
       if (b.dataset.row === "hide") { e.stopPropagation(); const s = sectionById(b.dataset.id); s.hidden = !s.hidden; changed({ panel: true }); return; }
       if (b.dataset.select) { select(b.dataset.select); return; }
       if (b.dataset.page) { state.pageId = b.dataset.page; state.selected = null; state.mode = "sections"; frame.contentWindow && frame.contentWindow.scrollTo(0, 0); paintAll(); return; }
-      if (b.dataset.addSection) { addSection(b.dataset.addSection); return; }
       if (b.dataset.set !== undefined) { set(scopeObj(b.dataset.scope), b.dataset.path, b.dataset.set); changed({ panel: true }); return; }
       if (b.hasAttribute("data-clear")) { set(scopeObj(b.dataset.scope), b.dataset.path, ""); changed({ panel: true }); return; }
       if (b.dataset.list) {
