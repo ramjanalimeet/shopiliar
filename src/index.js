@@ -13,6 +13,10 @@ const DEFAULT_TEMPLATE = "luxe-store";
 const SLUG = /^[a-z0-9-]{1,60}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GOOGLE_STATE_COOKIE = "shopiliar_google";
+// Images uploaded in the website editor (stored in D1, served from /media/<id>)
+const MEDIA_TYPES = { "image/webp": "webp", "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif" };
+const MAX_IMAGE_BYTES = 1_500_000;
+const MAX_IMAGES_PER_USER = 300;
 
 export default {
   async fetch(request, env) {
@@ -25,6 +29,7 @@ export default {
         return json({ error: "Something went wrong. Please try again." }, 500);
       }
     }
+    if (url.pathname.startsWith("/media/") && request.method === "GET") return media(env, url);
     // The store dashboard needs a signed-in user
     if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) {
       if (!(await currentUser(request, env))) {
@@ -45,7 +50,8 @@ async function api(request, env, url) {
   if (request.method !== "GET") {
     // Cookies are SameSite=Lax; also refuse cross-site writes outright
     if (request.headers.get("Origin") !== url.origin) return json({ error: "Bad origin." }, 403);
-    if (!(request.headers.get("Content-Type") || "").includes("application/json")) return json({ error: "Expected JSON." }, 415);
+    // Image uploads send the image itself; everything else is JSON
+    if (route !== "POST /api/upload" && !(request.headers.get("Content-Type") || "").includes("application/json")) return json({ error: "Expected JSON." }, 415);
   }
   if ((route === "POST /api/signup" || route === "POST /api/signin" || route === "POST /api/password" || route === "POST /api/ai/site" || route.startsWith("POST /api/messages")) && env.AUTH_LIMITER) {
     const { success } = await env.AUTH_LIMITER.limit({ key: request.headers.get("CF-Connecting-IP") || "unknown" });
@@ -66,6 +72,7 @@ async function api(request, env, url) {
     case "PUT /api/store": return saveStore(request, env);
     case "POST /api/password": return changePassword(request, env);
     case "POST /api/ai/site": return aiSite(request, env);
+    case "POST /api/upload": return uploadImage(request, env);
     default: return json({ error: "Not found." }, 404);
   }
 }
@@ -498,6 +505,48 @@ async function googleCallback(request, env, url) {
 }
 
 // ---------- Sessions ----------
+// The media table is created on first use, so no manual database step is needed
+let mediaReady = false;
+async function ensureMedia(env) {
+  if (mediaReady) return;
+  await env.DB.batch([
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS media (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, type TEXT NOT NULL, data BLOB NOT NULL, size INTEGER NOT NULL, created_at TEXT NOT NULL)"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS media_user ON media(user_id)"),
+  ]);
+  mediaReady = true;
+}
+
+async function uploadImage(request, env) {
+  const user = await currentUser(request, env);
+  if (!user) return json({ error: "Not signed in." }, 401);
+  const type = (request.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+  if (!MEDIA_TYPES[type]) return json({ error: "Please upload a JPG, PNG, WebP or GIF image." }, 415);
+  const data = await request.arrayBuffer();
+  if (!data.byteLength) return json({ error: "The image is empty." }, 400);
+  if (data.byteLength > MAX_IMAGE_BYTES) return json({ error: "That image is too large. Try a smaller one." }, 413);
+  await ensureMedia(env);
+  const count = await env.DB.prepare("SELECT COUNT(*) AS n FROM media WHERE user_id = ?").bind(user.id).first();
+  if ((count?.n || 0) >= MAX_IMAGES_PER_USER) return json({ error: `You've reached the limit of ${MAX_IMAGES_PER_USER} images.` }, 413);
+  const id = crypto.randomUUID().replace(/-/g, "");
+  await env.DB.prepare("INSERT INTO media (id, user_id, type, data, size, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(id, user.id, type, data, data.byteLength, new Date().toISOString()).run();
+  return json({ url: "/media/" + id });
+}
+
+async function media(env, url) {
+  const id = url.pathname.slice("/media/".length);
+  if (!/^[a-f0-9]{32}$/.test(id)) return new Response("Not found", { status: 404 });
+  let row = null;
+  try {
+    await ensureMedia(env);
+    row = await env.DB.prepare("SELECT type, data FROM media WHERE id = ?").bind(id).first();
+  } catch (err) { console.error(err); }
+  if (!row || !MEDIA_TYPES[row.type]) return new Response("Not found", { status: 404 });
+  return new Response(new Uint8Array(row.data), {
+    headers: { "Content-Type": row.type, "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" },
+  });
+}
+
 async function currentUser(request, env) {
   const token = getCookie(request, SESSION_COOKIE);
   if (!token) return null;

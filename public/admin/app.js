@@ -1,6 +1,6 @@
 // Shopilier store owner dashboard (/admin)
 (async () => {
-  const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, withinLimit } = Dash;
+  const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, limitText, withinLimit } = Dash;
   const PLANS = Dash.PLANS();
   const SIGN_IN = "/signin.html?next=" + encodeURIComponent(location.pathname + location.search);
 
@@ -91,6 +91,8 @@
   store.backups ||= [];
   store.site.social ||= {};
   store.site.seo ||= { title: "", description: "" };
+  // Pages are built from sections (hero, products, …) edited in the website editor
+  SiteKit.ensure(store.site, store.pages, { products: store.products });
   let saveTimer = null, saving = Promise.resolve();
   const saveNow = () => {
     clearTimeout(saveTimer);
@@ -121,7 +123,7 @@
   const picked = new URLSearchParams(location.search).get("template");
   if (picked && catalog.some((t) => t.id === picked) && picked !== store.site.template) {
     const t = findTemplate(picked);
-    Object.assign(store.site, { template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, headline: t.headline, sub: t.sub, cta: t.cta });
+    SiteKit.applyTemplate(store.site, store.pages, t);
     account.template = t.id;
     if (me.store) setTimeout(() => toast("Template changed to " + t.name));
   }
@@ -191,7 +193,6 @@
   // Daily line chart for this period against the previous one (shared with the master dashboard)
   const lineChart = (now, span, valueFor, money = true) => Dash.lineChart(range, now, span, valueFor, money);
   // Website preview with the store's products
-  const previewHTML = (site) => siteHTML(site, store.products, store.pages);
   const stamp = (d) => d ? new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "Not yet";
   // Any change to the website itself (design, text, pages, menu, preferences)
   const touchSite = () => { store.siteSavedAt = new Date().toISOString(); };
@@ -211,7 +212,11 @@
   // Full-size and phone previews scale a real-width page down to fit their frame
   const fitPreviews = (root) => {
     const screens = root.querySelectorAll(".th-screen");
-    const fit = () => screens.forEach((sc) => { sc.firstElementChild.style.transform = `scale(${sc.clientWidth / Number(sc.dataset.w)})`; });
+    const fit = () => screens.forEach((sc) => {
+      const k = sc.clientWidth / Number(sc.dataset.w), f = sc.firstElementChild;
+      f.style.transform = `scale(${k})`;
+      f.style.height = (k ? sc.clientHeight / k : 0) + "px";
+    });
     fit();
     const ro = new ResizeObserver(fit);
     screens.forEach((sc) => ro.observe(sc));
@@ -219,10 +224,10 @@
   };
   let previewObserver = null;
   const devicePreviews = (site, pages) => {
-    const html = siteHTML(site, store.products, pages);
+    const html = esc(SiteKit.documentHTML(site, pages, { products: store.products }));
     return `<div class="theme-stage">
-      <div class="th-desktop"><div class="th-bar"><i></i><i></i><i></i><span>${esc(siteUrl())}</span></div><div class="th-screen" data-w="1280"><div class="sp-frame th-canvas" style="width:1280px">${html}</div></div></div>
-      <div class="th-phone"><div class="th-screen" data-w="390"><div class="sp-frame th-canvas" style="width:390px">${html}</div></div></div>
+      <div class="th-desktop"><div class="th-bar"><i></i><i></i><i></i><span>${esc(siteUrl())}</span></div><div class="th-screen" data-w="1280"><iframe class="th-canvas" style="width:1280px" srcdoc="${html}" title="Desktop preview" tabindex="-1" loading="lazy"></iframe></div></div>
+      <div class="th-phone"><div class="th-screen" data-w="390"><iframe class="th-canvas" style="width:390px" srcdoc="${html}" title="Phone preview" tabindex="-1" loading="lazy"></iframe></div></div>
     </div>`;
   };
   const salesChart = (now, span) => lineChart(now, span, (from, to) => sales(inPeriod(store.orders, from, to)));
@@ -256,7 +261,7 @@
       <tbody>${orderRows(orders, compact)}</tbody></table></div>`;
 
   // ---------- Views ----------
-  let orderFilter = "All", orderSearch = "", productView = "table", productSearch = "", previewMode = "desktop";
+  let orderFilter = "All", orderSearch = "", productView = "table", productSearch = "";
 
   const routes = {
     home: {
@@ -623,73 +628,13 @@
     },
 
     website: {
-      title: "Customize website",
-      render: () => {
-        const s = store.site;
-        const palettes = [
-          ["Classic", "#ffffff", "#111111", "#111111"], ["Sand", "#f7f4f0", "#2b211a", "#8a5a3b"], ["Ocean", "#eef6fb", "#0b2a3f", "#0b6e99"],
-          ["Forest", "#f3f7f1", "#1c3326", "#2f6b2a"], ["Berry", "#fdf3f6", "#3d1527", "#ad1a72"], ["Night", "#14141c", "#ffffff", "#ff7a59"],
-        ];
-        const published = catalog.filter((t) => t.status === "published");
-        return `${head("Customize website", "Pick a template, choose colors and edit your text. The preview updates as you type.",
-          `<a class="btn" href="#/themes">Back to themes</a>${store.published ? '<span class="tag dot green">Live</span>' : '<span class="tag dot yellow">Draft</span>'}<button class="btn" data-action="reset-site">Reset</button><button class="btn btn-primary" data-action="publish">${icon("rocket")}${store.published ? "Publish changes" : "Publish website"}</button>`)}
-          <div style="display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start" class="customizer">
-            <form id="site-form" autocomplete="off">
-              <div class="card"><div class="card-head"><span class="card-title">Template</span></div><div class="card-body">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${published.map((t) => `
-                  <button type="button" data-action="pick-template" data-id="${t.id}" style="text-align:left;border:1px solid ${t.id === s.template ? "var(--accent)" : "var(--border)"};box-shadow:${t.id === s.template ? "0 0 0 3px var(--accent-soft)" : "none"};border-radius:9px;overflow:hidden">
-                    <span style="display:block;height:48px;background:linear-gradient(135deg,${esc(t.bg)} 55%,${esc(t.accent)})"></span>
-                    <span style="display:block;padding:7px 9px;font-size:12px;font-weight:600;color:var(--ink)">${esc(t.name)}</span></button>`).join("")}</div>
-              </div></div>
-              <div class="card"><div class="card-head"><span class="card-title">Brand</span></div><div class="card-body">
-                <div class="field"><label for="f-name">Website name</label><input class="input" id="f-name" name="name" value="${esc(s.name)}" maxlength="40"></div>
-                <div class="field"><label>Color theme</label><div style="display:flex;flex-wrap:wrap;gap:6px">${palettes.map(([n, bg, tx, ac]) => `
-                  <button type="button" class="btn btn-sm" data-action="palette" data-bg="${bg}" data-text="${tx}" data-accent="${ac}"><span style="width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,${bg} 50%,${ac} 50%);border:1px solid var(--border-strong)"></span>${n}</button>`).join("")}</div></div>
-                <div class="row">
-                  <div class="field"><label for="f-accent">Button color</label><input class="input" type="color" id="f-accent" name="accent" value="${esc(s.accent)}"></div>
-                  <div class="field"><label for="f-bg">Background</label><input class="input" type="color" id="f-bg" name="bg" value="${esc(s.bg)}"></div>
-                </div>
-                <div class="field" style="margin:0"><label>Font style</label><div class="seg" id="font-seg">${[["modern", "Modern"], ["classic", "Classic"], ["friendly", "Friendly"]].map(([v, l]) => `
-                  <label style="cursor:pointer"><input type="radio" name="font" value="${v}" ${s.font === v ? "checked" : ""} hidden><button type="button" tabindex="-1" class="${s.font === v ? "on" : ""}" style="pointer-events:none">${l}</button></label>`).join("")}</div></div>
-              </div></div>
-              <div class="card"><div class="card-head"><span class="card-title">Homepage text</span></div><div class="card-body">
-                <div class="field"><label for="f-headline">Headline</label><input class="input" id="f-headline" name="headline" value="${esc(s.headline)}" maxlength="80"></div>
-                <div class="field"><label for="f-sub">Short description</label><textarea class="textarea" id="f-sub" name="sub" maxlength="200">${esc(s.sub)}</textarea></div>
-                <div class="field" style="margin:0"><label for="f-cta">Button text</label><input class="input" id="f-cta" name="cta" value="${esc(s.cta)}" maxlength="30"></div>
-              </div></div>
-              <div class="card"><div class="card-head"><span class="card-title">Sections &amp; contact</span></div><div class="card-body">
-                ${[["showProducts", "Products"], ["showAbout", "About us"], ["showContact", "Contact details"]].map(([k, l]) => `
-                  <div class="set-row"><span>Show ${l}</span><label class="switch"><input type="checkbox" name="${k}" ${s[k] ? "checked" : ""} aria-label="Show ${l}"><i></i></label></div>`).join("")}
-                <div class="field" style="margin-top:12px"><label for="f-about">About us text</label><textarea class="textarea" id="f-about" name="about" maxlength="400">${esc(s.about)}</textarea></div>
-                <div class="row"><div class="field"><label for="f-phone">Phone</label><input class="input" id="f-phone" name="phone" value="${esc(s.phone)}"></div><div class="field"><label for="f-email">Email</label><input class="input" id="f-email" name="email" value="${esc(s.email)}"></div></div>
-                <div class="field" style="margin:0"><label for="f-address">Address</label><input class="input" id="f-address" name="address" value="${esc(s.address)}"></div>
-              </div></div>
-            </form>
-            <div class="card" style="position:sticky;top:0">
-              <div class="card-head"><span class="card-title">Live preview<small>${esc(siteUrl())}</small></span>
-                <div class="seg"><button class="${previewMode === "desktop" ? "on" : ""}" data-action="preview-mode" data-mode="desktop">${icon("monitor")}Desktop</button><button class="${previewMode === "mobile" ? "on" : ""}" data-action="preview-mode" data-mode="mobile">${icon("phone")}Mobile</button></div></div>
-              <div class="card-body" style="background:var(--bg);border-radius:0 0 12px 12px"><div class="sp-frame ${previewMode === "mobile" ? "mobile" : ""}" id="site-preview">${previewHTML(s)}</div></div>
-            </div>
-          </div>
-        </div>`;
-      },
-      mount: (view) => {
-        const form = view.querySelector("#site-form");
-        const update = () => {
-          const d = new FormData(form);
-          ["name", "accent", "bg", "font", "headline", "sub", "cta", "about", "phone", "email", "address"].forEach((k) => { if (d.has(k)) store.site[k] = d.get(k); });
-          ["showProducts", "showAbout", "showContact"].forEach((k) => { store.site[k] = form.elements[k].checked; });
-          store.site.text = Dash.isDark(store.site.bg) ? "#ffffff" : (Dash.isDark(store.site.text) ? store.site.text : "#111111");
-          form.querySelectorAll("input[name=font]").forEach((r) => r.nextElementSibling.classList.toggle("on", r.checked));
-          view.querySelector("#site-preview").innerHTML = previewHTML(store.site);
-          store.customized = true;
-          touchSite(); persist();
-        };
-        form.addEventListener("input", update);
-        form.addEventListener("change", update);
-        form.querySelectorAll(".card + .card").forEach((c) => { c.style.marginTop = "18px"; });
-        if (window.innerWidth < 1000) view.querySelector(".customizer").style.gridTemplateColumns = "1fr";
-      },
+      title: "Edit website",
+      render: () => '<div class="ed-root"></div>',
+      mount: (view) => SiteEditor.mount(view.querySelector(".ed-root"), {
+        store, account, catalog, icon, toast, confirm, dialog, touchSite, persist,
+        publish: () => actions.publish(),
+        canAddPage: () => withinLimit(plan().pages, store.pages.length),
+      }),
     },
 
     pages: {
@@ -770,7 +715,7 @@
     onSubmit: (v) => {
       const slug = v.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "page";
       if (pg) { pg.title = v.title; if (!pg.locked) pg.slug = slug; }
-      else store.pages.push({ id: uid("pg"), title: v.title, slug, inNav: true });
+      else { const np = { id: uid("pg"), title: v.title, slug, inNav: true }; np.sections = SiteKit.pageSections(np, { site: store.site, products: store.products }); store.pages.push(np); }
       touchSite(); persist(); go(); toast(pg ? "Page renamed" : "Page added");
     },
   });
@@ -874,28 +819,13 @@
       const c = store.customers.find((x) => x.id === el.dataset.id);
       if (await confirm("Delete customer?", `${c.name} will be removed from your customer list. Their past orders stay.`)) { store.customers = store.customers.filter((x) => x !== c); persist(); go(); }
     },
-    "pick-template": async (el) => {
-      const t = findTemplate(el.dataset.id);
-      if (t.id === store.site.template) return;
-      if (!(await confirm(`Switch to ${t.name}?`, "Colors and layout will change. Your text, products and pages stay the same.", "Switch template"))) return;
-      Object.assign(store.site, { template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent });
-      account.template = t.id; store.customized = true; touchSite(); persist(); go(); toast("Template changed to " + t.name);
-    },
-    "palette": (el) => { Object.assign(store.site, { bg: el.dataset.bg, text: el.dataset.text, accent: el.dataset.accent }); store.customized = true; touchSite(); persist(); go(); },
-    "preview-mode": (el) => { previewMode = el.dataset.mode; go(); },
-    "reset-site": async () => {
-      const t = findTemplate(store.site.template);
-      if (!(await confirm("Reset to template?", `Colors and homepage text go back to the ${t.name} defaults.`, "Reset"))) return;
-      Object.assign(store.site, { layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, headline: t.headline, sub: t.sub, cta: t.cta, font: "modern" });
-      touchSite(); persist(); go();
-    },
     "publish": () => {
       store.published = true; store.publishedAt = new Date().toISOString();
       addBackup("Published " + stamp(store.publishedAt), "publish");
-      persist(); go(); toast("🚀 Website published");
+      persist(); if (location.hash !== "#/website") go(); toast("🚀 Website published");
     },
     "view-store": () => {
-      const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(store.site.seo.title || store.site.name || "My Store")}</title><link rel="stylesheet" href="${location.origin}/assets/dash.css"><style>body{margin:0;background:${esc(store.site.bg)}}.sp-frame{border:0;border-radius:0;min-height:100vh}</style></head><body><div class="sp-frame">${previewHTML(store.site)}</div></body></html>`;
+      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products });
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "create-backup": () => dialog({
@@ -920,6 +850,7 @@
       const data = JSON.parse(JSON.stringify(b.data));
       store.site = data.site; store.pages = data.pages;
       store.site.social ||= {}; store.site.seo ||= { title: "", description: "" };
+      SiteKit.ensure(store.site, store.pages, { products: store.products });
       account.template = store.site.template;
       store.customized = true; touchSite(); persist(); go();
       toast(`Switched to “${b.name}”` + (store.published ? ". Publish to put it live." : ""));
