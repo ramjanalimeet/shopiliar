@@ -167,6 +167,8 @@ window.SiteEditor = (() => {
       const doc = frame.contentDocument;
       doc.addEventListener("click", (e) => {
         e.preventDefault();
+        const plus = e.target.closest("[data-ed-add]");
+        if (plus) { openLibrary(Number(plus.dataset.edAdd)); return; }
         const chip = e.target.closest("[data-ed]");
         if (chip) { sectionAction(chip.dataset.ed, state.selected); return; }
         const el = e.target.closest("[data-sid]");
@@ -310,15 +312,64 @@ window.SiteEditor = (() => {
       changed({ panel: true });
       scrollToSelected();
     };
-    const addSection = (type) => {
-      const s = K.make(type, ctx());
+    // at: position in the page; by default right after the selected section, or at the end
+    const addSection = (type, at, made) => {
+      const s = made || K.make(type, ctx());
       const list = page().sections;
-      const at = state.selected && sectionById(state.selected) ? list.indexOf(sectionById(state.selected)) + 1 : list.length;
-      list.splice(at, 0, s);
-      state.selected = s.id;
+      if (at == null) at = state.selected && sectionById(state.selected) ? list.indexOf(sectionById(state.selected)) + 1 : list.length;
+      list.splice(Math.max(0, Math.min(at, list.length)), 0, s);
+      state.selected = s.id; state.mode = "sections"; state.panelOpen = true;
       changed({ panel: true });
       setTimeout(scrollToSelected, 50);
       toast((K.TYPES[type] || {}).label + " section added");
+    };
+
+    // ---------- Section library (opened from the "+" between sections) ----------
+    // Every ready-made section, previewed live with this store's colors, fonts and products
+    const openLibrary = (at) => {
+      const items = K.LIBRARY.map((it) => ({ ...it, preview: K.fromLibrary(it, ctx()) }));
+      const types = [...new Set(items.map((it) => it.type))];
+      const wrap = document.createElement("div");
+      wrap.className = "overlay lib-overlay";
+      wrap.innerHTML = `<div class="lib" role="dialog" aria-modal="true" aria-label="Add a section">
+        <header class="lib-head"><div><b>Add a section</b><span>Pick a ready-made section. You can change all its text and images after adding it.</span></div>
+          <button type="button" class="ed-icon-btn" data-lib-close aria-label="Close">${icon("x")}</button></header>
+        <div class="lib-body">
+          <nav class="lib-cats" aria-label="Section types"><button type="button" class="on" data-cat="">All sections</button>${types.map((t) => `<button type="button" data-cat="${t}">${icon(K.TYPES[t].icon)}${esc(K.TYPES[t].label)}</button>`).join("")}</nav>
+          <div class="lib-grid">${items.map((it, i) => `
+            <button type="button" class="lib-card" data-pick="${i}" data-type="${it.type}">
+              <span class="lib-prev"><iframe tabindex="-1" aria-hidden="true" loading="lazy" srcdoc="${esc(K.documentHTML(store.site, store.pages, { page: { sections: [it.preview] }, products: store.products, bare: true }))}"></iframe><span class="lib-add">${icon("plus")}Add section</span></span>
+              <span class="lib-name"><b>${esc(K.TYPES[it.type].label)}</b><span>${esc(it.name)}</span></span>
+            </button>`).join("")}</div>
+        </div>
+      </div>`;
+      const prevFocus = document.activeElement;
+      const close = () => { wrap.remove(); ro.disconnect(); document.removeEventListener("keydown", onKey, true); if (prevFocus && prevFocus.isConnected) prevFocus.focus(); };
+      const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
+      // Each preview is a 1280px-wide page scaled down to its card
+      const fit = () => wrap.querySelectorAll(".lib-prev").forEach((box) => {
+        const f = box.querySelector("iframe"), k = box.clientWidth / 1280;
+        if (!k) return;
+        f.style.transform = `scale(${k})`; f.style.height = box.clientHeight / k + "px";
+      });
+      const ro = new ResizeObserver(fit);
+      wrap.addEventListener("click", (e) => {
+        if (e.target === wrap || e.target.closest("[data-lib-close]")) return close();
+        const cat = e.target.closest("[data-cat]");
+        if (cat) {
+          wrap.querySelectorAll("[data-cat]").forEach((b) => b.classList.toggle("on", b === cat));
+          wrap.querySelectorAll(".lib-card").forEach((c) => { c.hidden = !!cat.dataset.cat && c.dataset.type !== cat.dataset.cat; });
+          wrap.querySelector(".lib-grid").scrollTop = 0;
+          fit(); return;
+        }
+        const card = e.target.closest("[data-pick]");
+        if (card) { const it = items[Number(card.dataset.pick)]; close(); addSection(it.type, at, K.fromLibrary(it, ctx())); }
+      });
+      document.addEventListener("keydown", onKey, true);
+      document.body.appendChild(wrap);
+      ro.observe(wrap.querySelector(".lib-grid"));
+      fit();
+      wrap.querySelector("[data-lib-close]").focus();
     };
 
     // ---------- Events ----------

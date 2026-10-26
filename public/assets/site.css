@@ -211,3 +211,13 @@ figcaption span { font-size: 14px; opacity: .7; }
 .ed-chip b { padding: 5px 8px; }
 .ed-chip button { pointer-events: auto; width: 26px; height: 24px; border: 0; border-radius: 6px; background: rgba(255,255,255,.15); color: #fff; cursor: pointer; font-size: 13px; }
 .ed-chip button:hover { background: rgba(255,255,255,.3); }
+
+/* "+" between sections: shows on hover over the gap, in the Shopilier brand green */
+.ed-insert { position: relative; height: 0; z-index: 7; }
+.ed-insert::before { content: ""; position: absolute; left: 0; right: 0; top: -14px; height: 28px; }
+.ed-insert::after { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 2px; background: #0e7a4b; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.ed-insert button { pointer-events: auto; position: absolute; left: 50%; top: 0; z-index: 1; width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 3px solid #fff; border-radius: 50%; background: #0e7a4b; color: #fff; font: 600 22px/1 "Inter", system-ui, sans-serif; cursor: pointer; box-shadow: 0 6px 16px rgba(14,122,75,.4); opacity: 0; transform: scale(.7); transition: opacity .15s, transform .15s; }
+.ed-insert:hover::after, .ed-insert:focus-within::after { opacity: 1; }
+.ed-insert:hover button, .ed-insert button:focus-visible { opacity: 1; transform: scale(1); }
+.ed-insert button:hover { background: #0b6a41; }
+.editing .ed-chip { z-index: 8; }

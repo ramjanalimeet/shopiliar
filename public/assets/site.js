@@ -109,6 +109,20 @@ window.SiteKit = (() => {
     return null;
   };
 
+  // ---------- Section library: ready-made sections shown with live previews ----------
+  const LIBRARY = [
+    ["hero", "Image on the right", { layout: "split" }], ["hero", "Centered", { layout: "center" }], ["hero", "Full-width image", { layout: "bleed" }],
+    ["products", "4 per row", { columns: 4 }], ["products", "3 per row", { columns: 3 }],
+    ["featured", "Image on the right", { imageSide: "right" }], ["featured", "Image on the left", { imageSide: "left" }],
+    ["categories", "Category tiles", {}],
+    ["about", "Image on the left", { imageSide: "left" }], ["about", "Image on the right", { imageSide: "right" }],
+    ["testimonials", "Review cards", {}], ["blog", "Latest posts", {}], ["newsletter", "Email sign-up", {}],
+    ["contact", "Details and form", {}], ["faq", "Questions and answers", {}],
+    ["banner", "Medium height", { height: "m" }], ["banner", "Tall", { height: "l" }],
+    ["custom", "Blank, add your own elements", {}],
+  ].map(([type, name, style]) => ({ type, name, style }));
+  const fromLibrary = (item, ctx) => { const sec = make(item.type, ctx); Object.assign(sec.style, item.style); return sec; };
+
   // ---------- Elements (blocks) that can be added to any section ----------
   const BLOCKS = { heading: "Heading", text: "Text", button: "Button", image: "Image", spacer: "Spacer", divider: "Divider" };
   const makeBlock = (type, text) => ({
@@ -299,16 +313,18 @@ window.SiteKit = (() => {
     const sections = (page.sections || []).filter((s) => ed || !s.hidden);
     const label = (s) => ed && opts.selected === s.id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${esc((TYPES[s.type] || {}).label || s.type)}</b><button data-ed="up" title="Move up">↑</button><button data-ed="down" title="Move down">↓</button><button data-ed="duplicate" title="Duplicate">⧉</button><button data-ed="delete" title="Delete">✕</button></div></div>` : "";
     const sel = (id) => (ed && opts.selected === id ? " is-selected" : "");
+    // Editor: a "+" on each gap between sections opens the section library (index = where it goes)
+    const insert = (i) => ed && !opts.bare ? `<div class="ed-insert" data-insert="${i}"><button type="button" data-ed-add="${i}" title="Add a section here" aria-label="Add a section here">+</button></div>` : "";
     const fixedLabel = (id, name) => ed && opts.selected === id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${name}</b></div></div>` : "";
     return `<div class="site" style="${esc(rootStyle(site))}">
-      ${renderHeader(site, pages, { page }).replace('class="s-header"', `class="s-header${sel("header")}"`).replace(/(<header[^>]*>)/, `$1${fixedLabel("header", "Header")}`)}
-      <main>${sections.map((s) => {
+      ${opts.bare ? "" : renderHeader(site, pages, { page }).replace('class="s-header"', `class="s-header${sel("header")}"`).replace(/(<header[^>]*>)/, `$1${fixedLabel("header", "Header")}`)}
+      <main>${insert(0)}${sections.map((s, i) => {
         const R = RENDER[s.type];
         if (!R) return "";
         const st = s.style || {};
-        return `<section class="s s-${esc(s.type)} pad-${esc(st.padding || "m")} align-${esc(st.align || "left")}${s.hidden ? " is-hidden" : ""}${sel(s.id)}" data-sid="${esc(s.id)}" style="${sectionStyle(st)}">${label(s)}${R(s.content || {}, st, { products: opts.products, ed, blocks: renderBlocks(s.blocks, ed) })}</section>`;
-      }).join("") || (ed ? '<section class="s pad-l align-center"><div class="wrap"><p class="empty">This page has no sections yet. Add one from the panel.</p></div></section>' : "")}</main>
-      ${renderFooter(site, pages).replace('class="s-footer"', `class="s-footer${sel("footer")}"`).replace(/(<footer[^>]*>)/, `$1${fixedLabel("footer", "Footer")}`)}
+        return `<section class="s s-${esc(s.type)} pad-${esc(st.padding || "m")} align-${esc(st.align || "left")}${s.hidden ? " is-hidden" : ""}${sel(s.id)}" data-sid="${esc(s.id)}" style="${sectionStyle(st)}">${label(s)}${R(s.content || {}, st, { products: opts.products, ed, blocks: renderBlocks(s.blocks, ed) })}</section>${insert(i + 1)}`;
+      }).join("") || (ed ? '<section class="s pad-l align-center"><div class="wrap"><p class="empty">This page has no sections yet. Click + to add one.</p></div></section>' : "")}</main>
+      ${opts.bare ? "" : renderFooter(site, pages).replace('class="s-footer"', `class="s-footer${sel("footer")}"`).replace(/(<footer[^>]*>)/, `$1${fixedLabel("footer", "Footer")}`)}
     </div>`;
   };
 
@@ -331,5 +347,5 @@ window.SiteKit = (() => {
     return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${all.replace(/\$/g, "$$$$")}${nav}</body>`);
   };
 
-  return { storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
+  return { LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
 })();
