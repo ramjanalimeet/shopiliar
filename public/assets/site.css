@@ -137,6 +137,10 @@ h2 { font-size: clamp(28px, 3.4vw, 42px); }
 .p-body b { font-weight: 500; }
 .price { font-weight: 700; }
 .sold { font-size: 13px; color: #b42318; font-weight: 600; }
+.p-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: -8px 0 24px; }
+.p-filters button { padding: 9px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+.p-filters button.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+.product[hidden] { display: none; }
 button.p-img { width: 100%; padding: 0; border: 0; cursor: pointer; position: relative; font: inherit; }
 .p-name { padding: 0; border: 0; background: none; font: inherit; font-weight: 500; color: inherit; text-align: left; cursor: pointer; }
 .p-name:hover { text-decoration: underline; }

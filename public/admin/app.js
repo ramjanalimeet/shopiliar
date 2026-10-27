@@ -87,6 +87,14 @@
   const store = me.store || newStore();
   store.discounts ||= [];
   store.orders ||= []; store.products ||= []; store.customers ||= [];
+  store.staff ||= [];
+  // Categories: their own list (name, photo, description). Products keep the category's name.
+  // Older stores only had names on products, so those become categories; "General" means no category.
+  store.categories ||= [];
+  store.products.forEach((p) => {
+    if (p.category === "General") p.category = "";
+    if (p.category && !store.categories.some((c) => c.name === p.category)) store.categories.push({ id: "cat" + Math.random().toString(36).slice(2, 9), name: p.category, image: "", description: "" });
+  });
   store.marketing ||= { pixels: {}, headCode: "", bodyCode: "" };
   store.backups ||= [];
   // Older versions of the history saved identical copies over and over. For each distinct website keep
@@ -672,7 +680,7 @@
               <tbody>${list.length ? list.map((p) => `
                 <tr>
                   <td><button class="t-title" data-action="edit-product" data-id="${p.id}"><span class="thumb" style="background:${esc(p.color)}">${SiteKit.safeImg(p.image) ? `<img src="${esc(p.image)}" alt="">` : ""}</span><span>${esc(p.name)}${(p.options || []).length ? `<span class="sub">${p.options.map((o) => `${esc(o.name)}: ${o.values.length}`).join(" · ")}</span>` : ""}</span></button></td>
-                  <td>${tag(p.category || "General", "brown")}</td>
+                  <td>${p.category ? tag(p.category, "brown") : '<span class="muted">—</span>'}</td>
                   <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(p.price)}${p.compare > p.price ? `<span class="sub" style="text-decoration:line-through">${taka(p.compare)}</span>` : ""}</td>
                   <td class="t-right">${p.stock > 0 ? p.stock : '<span class="tag red">Out of stock</span>'}</td>
                   <td>${p.status === "draft" ? '<span class="tag dot gray">Draft</span>' : '<span class="tag dot green">Active</span>'}</td>
@@ -682,10 +690,42 @@
             <div class="card-body"><div class="gallery">${list.map((p) => `
               <div class="g-card">
                 <div class="g-cover" style="background:${esc(p.color)}">${SiteKit.safeImg(p.image) ? `<img src="${esc(p.image)}" alt="">` : ""}${p.status === "draft" ? '<span class="tag gray">Draft</span>' : ""}</div>
-                <div class="g-body"><div class="g-title">${esc(p.name)}</div><div class="g-meta"><b style="color:var(--ink)">${taka(p.price)}</b>${tag(p.category || "General", "brown")}<span class="muted small">${p.stock} in stock</span></div>
+                <div class="g-body"><div class="g-title">${esc(p.name)}</div><div class="g-meta"><b style="color:var(--ink)">${taka(p.price)}</b>${p.category ? tag(p.category, "brown") : ""}<span class="muted small">${p.stock} in stock</span></div>
                 <div class="g-actions"><button class="btn btn-sm" data-action="edit-product" data-id="${p.id}">${icon("edit")}Edit</button><button class="icon-btn danger" data-action="delete-product" data-id="${p.id}" aria-label="Delete ${esc(p.name)}">${icon("trash")}</button></div></div>
               </div>`).join("") || '<p class="muted">No products yet.</p>'}</div></div>`}
           </div>
+        </div>`;
+      },
+    },
+
+    categories: {
+      title: "Categories",
+      render: () => {
+        const count = (c) => store.products.filter((p) => p.category === c.name).length;
+        const noCat = store.products.filter((p) => !p.category).length;
+        const pics = (c) => store.products.filter((p) => p.category === c.name && SiteKit.safeImg(p.image)).slice(0, 4).map((p) => p.image);
+        return `${head("Categories", "Group your products so customers find what they want faster.", `<button class="btn btn-primary" data-action="add-category">${icon("plus")}Add category</button>`)}
+          ${store.categories.length ? `<div class="cat-grid">${store.categories.map((c) => {
+            const n = count(c), ph = SiteKit.safeImg(c.image) ? [c.image] : pics(c);
+            return `<div class="card cat-card">
+              <button type="button" class="cat-cover${ph.length > 1 ? " multi" : ""}" data-action="edit-category" data-id="${c.id}" aria-label="Edit ${esc(c.name)}">${ph.length ? ph.map((u) => `<img src="${esc(u)}" alt="">`).join("") : `<span>${esc(c.name.slice(0, 1).toUpperCase())}</span>`}</button>
+              <div class="cat-body">
+                <div><b>${esc(c.name)}</b><span class="muted small">${n} ${n === 1 ? "product" : "products"}</span></div>
+                ${c.description ? `<p class="muted small">${esc(c.description)}</p>` : ""}
+                <div class="cat-actions"><button class="btn btn-sm" data-action="edit-category" data-id="${c.id}">${icon("edit")}Edit</button><button class="icon-btn danger" data-action="delete-category" data-id="${c.id}" aria-label="Delete ${esc(c.name)}" title="Delete">${icon("trash")}</button></div>
+              </div>
+            </div>`;
+          }).join("")}
+            <button class="cat-new" data-action="add-category">${icon("plus")}<b>Add category</b><span>e.g. Men, Women, Kids</span></button>
+          </div>
+          ${noCat ? `<p class="muted small" style="margin-top:14px">${noCat} ${noCat === 1 ? "product has" : "products have"} no category. Open a category and tick them, or pick one when you edit a product.</p>` : ""}`
+          : `<div class="card cat-empty">
+              <span class="mk-empty-ico">${icon("grid")}</span>
+              <b>No categories yet</b>
+              <span class="muted">Start with one of these, or make your own:</span>
+              <div class="mk-quick">${["Men", "Women", "Kids", "Accessories", "Shoes"].map((n) => `<button class="mk-chip" data-action="quick-category" data-name="${n}">${icon("plus")}${n}</button>`).join("")}</div>
+              <button class="btn btn-primary" data-action="add-category">${icon("plus")}Add category</button>
+            </div>`}
         </div>`;
       },
     },
@@ -1148,11 +1188,57 @@
   };
   let rerender;
 
+  // A category name from a form: "" for none; a new name is added to the categories list
+  const categoryFor = (name) => {
+    name = String(name || "").trim().slice(0, 30);
+    if (!name) return "";
+    const known = store.categories.find((c) => c.name.toLowerCase() === name.toLowerCase());
+    if (known) return known.name;
+    store.categories.push({ id: uid("cat"), name, image: "", description: "" });
+    return name;
+  };
+  // Add or edit a category: photo, name, description, and which products are in it
+  const categoryDialog = (c) => {
+    let photo = c?.image || "";
+    const prods = store.products;
+    dialog({
+      title: c ? "Edit category" : "New category",
+      submit: c ? "Save" : "Add category",
+      body: `<div class="field"><label>Photo <span class="muted">(optional)</span></label><div class="cat-photo" data-photo></div><span class="pf-hint">Shown on your website's category tiles.</span></div>
+        <div class="field"><label for="cat-name">Name</label><input class="input" id="cat-name" name="name" required maxlength="30" value="${esc(c?.name || "")}" placeholder="e.g. Panjabi, Saree, Shoes"></div>
+        <div class="field"><label for="cat-desc">Description <span class="muted">(optional)</span></label><textarea class="textarea" id="cat-desc" name="description" rows="2" maxlength="300" placeholder="A line about this category">${esc(c?.description || "")}</textarea></div>
+        <div class="field"><label>Products in this category</label>${prods.length ? `<div class="dc-prods cat-prods">${prods.map((p) => `<label><input type="checkbox" name="prod" value="${p.id}" ${c && p.category === c.name ? "checked" : ""}><span class="thumb" style="background:${esc(p.color)}">${SiteKit.safeImg(p.image) ? `<img src="${esc(p.image)}" alt="">` : ""}</span><span>${esc(p.name)}</span><span class="muted small">${p.category && (!c || p.category !== c.name) ? esc(p.category) : ""}</span></label>`).join("")}</div>` : '<p class="muted small">Add products first, then put them in categories.</p>'}</div>`,
+      onOpen: (form) => {
+        const box = form.querySelector("[data-photo]");
+        const draw = () => { box.innerHTML = photo ? `<span class="cat-img"><img src="${esc(photo)}" alt=""></span><button type="button" class="btn btn-sm" data-photo-rm>Remove</button>` : `<label class="pd-up">${icon("image")}<span>Add photo</span><input type="file" accept="image/*" hidden data-photo-up></label>`; };
+        draw();
+        box.addEventListener("click", (e) => { if (e.target.closest("[data-photo-rm]")) { photo = ""; draw(); } });
+        box.addEventListener("change", async (e) => {
+          if (!e.target.files || !e.target.files[0]) return;
+          e.target.closest(".pd-up").classList.add("busy");
+          try { photo = await SiteEditor.upload(e.target.files[0]); } catch (err) { toast(err.message); }
+          draw();
+        });
+      },
+      onSubmit: (v, close, form) => {
+        const name = v.name.trim().slice(0, 30);
+        if (store.categories.some((x) => x !== c && x.name.toLowerCase() === name.toLowerCase())) { toast("You already have a category with this name"); return false; }
+        const old = c?.name, picked = new Set([...form.querySelectorAll("input[name=prod]:checked")].map((x) => x.value));
+        store.products.forEach((p) => {
+          if (picked.has(p.id)) p.category = name;
+          else if (old && p.category === old) p.category = "";
+        });
+        const data = { name, image: photo, description: v.description || "" };
+        if (c) Object.assign(c, data); else store.categories.push({ id: uid("cat"), ...data });
+        persist(); go(); toast(c ? "Category saved" : "Category added");
+      },
+    });
+  };
+
   // Add or edit a product: photos, details, price, stock, and sizes/colors customers pick on the website
   const productDialog = (p) => {
     const colors = ["#c8a98a", "#e9e4da", "#8a6a4f", "#d9cfc4", "#b6d3ea", "#dbeddb", "#f5e0e9", "#2f2f2f"];
     let photos = (p?.images && p.images.length ? p.images : p?.image ? [p.image] : []).slice(0, 6);
-    const cats = [...new Set(store.products.map((x) => x.category).filter(Boolean))];
     const opts = (p?.options || []).map((o) => ({ name: o.name, values: o.values.join(", ") }));
     const optRow = (o, i) => `<div class="pd-opt" data-i="${i}"><input class="input" name="opt_name_${i}" list="pd-opt-names" maxlength="20" placeholder="Size" value="${esc(o?.name || "")}"><input class="input" name="opt_vals_${i}" maxlength="200" placeholder="S, M, L, XL" value="${esc(o?.values || "")}"><button type="button" class="icon-btn danger" data-opt-rm="${i}" aria-label="Remove option" title="Remove">${icon("trash")}</button></div>`;
     dialog({
@@ -1166,7 +1252,7 @@
           <div class="field"><label for="pd-compare">Price before sale (৳) <span class="muted">(optional)</span></label><input class="input" id="pd-compare" name="compare" type="number" min="0" step="1" value="${esc(p?.compare || "")}" placeholder="1800"><span class="pf-hint">Shown crossed out, with a “−17%” badge.</span></div></div>
         <div class="row"><div class="field"><label for="pd-stock">Stock</label><input class="input" id="pd-stock" name="stock" type="number" min="0" step="1" value="${esc(p?.stock ?? 10)}"></div>
           <div class="field"><label for="pd-sku">SKU <span class="muted">(optional)</span></label><input class="input" id="pd-sku" name="sku" maxlength="40" value="${esc(p?.sku || "")}" placeholder="PNJ-001"></div></div>
-        <div class="row"><div class="field"><label for="pd-cat">Category</label><input class="input" id="pd-cat" name="category" maxlength="30" list="pd-cats" value="${esc(p?.category ?? "General")}"><datalist id="pd-cats">${cats.map((c) => `<option value="${esc(c)}">`).join("")}</datalist></div>
+        <div class="row"><div class="field"><label for="pd-cat">Category</label><select class="select" id="pd-cat" name="category"><option value="">No category</option>${store.categories.map((c) => `<option ${c.name === p?.category ? "selected" : ""}>${esc(c.name)}</option>`).join("")}<option value="__new">+ New category…</option></select><input class="input" name="newcat" maxlength="30" placeholder="New category name" hidden style="margin-top:8px"></div>
           <div class="field"><label>Status</label><div class="dc-opts"><label class="dc-opt"><input type="radio" name="status" value="active" ${p?.status !== "draft" ? "checked" : ""}>${icon("eye")}<span>Active</span></label><label class="dc-opt"><input type="radio" name="status" value="draft" ${p?.status === "draft" ? "checked" : ""}>${icon("eyeOff")}<span>Draft (hidden)</span></label></div></div></div>
         <div class="field"><label>Sizes, colors and other options <span class="muted">(optional)</span></label>
           <div class="pd-opts" data-opts>${opts.map(optRow).join("")}</div>
@@ -1201,6 +1287,7 @@
         });
         form.addEventListener("change", async (e) => {
           if (e.target.matches("[type=radio]")) form.querySelectorAll(".dc-opt").forEach((o) => o.classList.toggle("on", o.querySelector("input").checked));
+          if (e.target.name === "category") { const nc = form.elements.newcat; nc.hidden = e.target.value !== "__new"; if (!nc.hidden) nc.focus(); }
           if (!e.target.matches("[data-photo-up]")) return;
           const files = [...e.target.files].slice(0, 6 - photos.length), up = e.target.closest(".pd-up");
           up.classList.add("busy");
@@ -1222,7 +1309,7 @@
         if (options.some((o) => !o.name || !o.values.length)) { toast("Each option needs a name and at least one value"); return false; }
         const data = {
           name: v.name, description: v.description || "", price, compare, stock: Math.max(0, parseInt(v.stock, 10) || 0), sku: v.sku || "",
-          category: v.category || "General", status: v.status === "draft" ? "draft" : "active", images: photos.slice(0, 6), image: photos[0] || "", options,
+          category: categoryFor(v.category === "__new" ? v.newcat : v.category), status: v.status === "draft" ? "draft" : "active", images: photos.slice(0, 6), image: photos[0] || "", options,
           color: p?.color || colors[store.products.length % colors.length],
         };
         if (p) Object.assign(p, data);
@@ -1516,6 +1603,21 @@
       const o = store.orders.find((x) => x.id === el.dataset.id);
       if (await confirm("Delete order?", `Order ${orderNo(o)} from ${o.customer} will be deleted.`)) { store.orders = store.orders.filter((x) => x !== o); persist(); go(); toast("Order deleted"); }
     },
+    "staff-add": () => staffDialog(),
+    "staff-edit": (el) => staffDialog(store.staff.find((m) => m.id === el.dataset.id)),
+    "staff-remove": async (el) => {
+      const m = store.staff.find((x) => x.id === el.dataset.id);
+      if (await confirm(`Remove ${m.name}?`, "They won't be able to open your store any more.", "Remove")) { store.staff = store.staff.filter((x) => x !== m); persist(); go(); toast(m.name + " removed"); }
+    },
+    "add-category": () => categoryDialog(),
+    "edit-category": (el) => categoryDialog(store.categories.find((c) => c.id === el.dataset.id)),
+    "quick-category": (el) => { categoryFor(el.dataset.name); persist(); go(); toast(el.dataset.name + " added"); },
+    "delete-category": async (el) => {
+      const c = store.categories.find((x) => x.id === el.dataset.id), n = store.products.filter((p) => p.category === c.name).length;
+      if (!(await confirm(`Delete ${c.name}?`, n ? `Its ${n} ${n === 1 ? "product stays" : "products stay"}, just without a category.` : "This category will be removed."))) return;
+      store.products.forEach((p) => { if (p.category === c.name) p.category = ""; });
+      store.categories = store.categories.filter((x) => x !== c); persist(); go(); toast(c.name + " deleted");
+    },
     "add-customer": () => customerDialog(),
     "edit-customer": (el) => customerDialog(store.customers.find((x) => x.id === el.dataset.id)),
     "delete-customer": async (el) => {
@@ -1761,10 +1863,51 @@
     ["billing", "Plan & billing", "billing"],
     ["domain", "Domain", "globe"],
     ["payments", "Payments", "money"],
+    ["staff", "Staff & permissions", "customers"],
     ["notifications", "Notifications", "bellRing"],
     ["security", "Account & security", "lock"],
     ["help", "Help Center", "help"],
   ];
+  // ---------- Staff ----------
+  // What staff can open. The owner can always do everything.
+  const STAFF_AREAS = [["orders", "Orders"], ["products", "Products & categories"], ["customers", "Customers"], ["analytics", "Analytics"], ["marketing", "Marketing"], ["discounts", "Discounts"], ["store", "Online Store (website)"], ["settings", "Settings"]];
+  const STAFF_ROLES = {
+    admin: { name: "Admin", text: "Everything, except plan & billing and staff", perms: ["orders", "products", "customers", "analytics", "marketing", "discounts", "store", "settings"] },
+    manager: { name: "Manager", text: "Runs the shop: orders, products, customers, discounts", perms: ["orders", "products", "customers", "analytics", "discounts"] },
+    staff: { name: "Order handler", text: "Only orders and customers", perms: ["orders", "customers"] },
+    custom: { name: "Custom", text: "Pick exactly what they can open", perms: [] },
+  };
+  const staffLimit = () => ({ starter: 1, business: 5, pro: null }[account.plan] ?? 1);
+  const staffDialog = (m) => {
+    const role = m?.role || "manager";
+    dialog({
+      title: m ? "Edit staff member" : "Add staff member",
+      size: "lg",
+      submit: m ? "Save" : "Add staff",
+      body: `<div class="row"><div class="field"><label for="st-name">Name</label><input class="input" id="st-name" name="name" required maxlength="60" value="${esc(m?.name || "")}" placeholder="e.g. Sabbir"></div>
+          <div class="field"><label for="st-email">Email</label><input class="input" id="st-email" name="email" type="email" required maxlength="80" value="${esc(m?.email || "")}" placeholder="name@email.com"></div></div>
+        <div class="field"><label>What they can do</label><div class="st-roles">${Object.entries(STAFF_ROLES).map(([k, r]) => `<label class="st-role${k === role ? " on" : ""}"><input type="radio" name="role" value="${k}" ${k === role ? "checked" : ""}><b>${r.name}</b><small>${r.text}</small></label>`).join("")}</div></div>
+        <div class="field"><label>Pages they can open</label><div class="st-perms">${STAFF_AREAS.map(([k, l]) => `<label><input type="checkbox" name="perm" value="${k}" ${(m ? m.perms : STAFF_ROLES[role].perms).includes(k) ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>
+          <span class="pf-hint">Choosing a role ticks these for you. Change any tick to make it Custom.</span></div>`,
+      onOpen: (form) => form.addEventListener("change", (e) => {
+        if (e.target.name === "role") {
+          const r = STAFF_ROLES[e.target.value];
+          if (e.target.value !== "custom") form.querySelectorAll("input[name=perm]").forEach((c) => { c.checked = r.perms.includes(c.value); });
+        } else if (e.target.name === "perm") form.querySelector("input[name=role][value=custom]").checked = true;
+        form.querySelectorAll(".st-role").forEach((l) => l.classList.toggle("on", l.querySelector("input").checked));
+      }),
+      onSubmit: (v, close, form) => {
+        const email = v.email.trim().toLowerCase();
+        if (email === String(account.email).toLowerCase()) { toast("That's your own email — you're the owner already"); return false; }
+        if (store.staff.some((x) => x !== m && x.email === email)) { toast("Someone with this email is already on your staff"); return false; }
+        const perms = [...form.querySelectorAll("input[name=perm]:checked")].map((c) => c.value);
+        if (!perms.length) { toast("Tick at least one page they can open"); return false; }
+        const data = { name: v.name.trim(), email, role: v.role, perms };
+        if (m) Object.assign(m, data); else store.staff.push({ id: uid("st"), ...data, status: "invited", invited: new Date().toISOString() });
+        persist(); go(); toast(m ? "Saved" : `${data.name} added to your staff`);
+      },
+    });
+  };
   const settingsTab = {
     general: () => `<form data-form="general">
         <h2>General</h2><p class="muted">Your store details. Customers see these on your website.</p>
@@ -1817,6 +1960,23 @@
         <p class="muted small" style="margin-top:10px">Want Rocket, Upay or bank transfer, or to show payment instructions? Add them on the <a class="link" href="#/website?page=${esc((store.pages.find((p) => p.system === "checkout") || {}).id || "")}" data-close>Checkout page</a>.</p>
         <div class="s-foot"><button class="btn btn-primary" type="submit">Save</button></div>
       </form>`,
+    staff: () => {
+      const lim = staffLimit(), n = store.staff.length, can = lim == null || n < lim;
+      const row = (m) => `<div class="st-row">${avatar(m.name)}<span class="st-who"><b>${esc(m.name)}</b><small>${esc(m.email)}</small></span>
+          <span class="st-meta"><span class="tag ${m.role === "admin" ? "purple" : m.role === "custom" ? "gray" : "blue"}">${esc((STAFF_ROLES[m.role] || STAFF_ROLES.custom).name)}</span><span class="tag dot yellow">Invite pending</span></span>
+          <button class="icon-btn" data-action="staff-edit" data-id="${m.id}" aria-label="Edit ${esc(m.name)}" title="Edit">${icon("edit")}</button><button class="icon-btn danger" data-action="staff-remove" data-id="${m.id}" aria-label="Remove ${esc(m.name)}" title="Remove">${icon("trash")}</button>
+          <span class="st-perm-list">${m.perms.map((k) => (STAFF_AREAS.find((a) => a[0] === k) || [k, k])[1]).join(" · ")}</span></div>`;
+      return `<div>
+        <div class="st-head"><div><h2>Staff &amp; permissions</h2><p class="muted">Let people help run your store, and choose what each one can open.</p></div>
+          <button class="btn btn-primary" data-action="staff-add" ${can ? "" : "disabled"}>${icon("plus")}Add staff</button></div>
+        <div class="s-card st-list">
+          <div class="st-row">${avatar(account.name)}<span class="st-who"><b>${esc(account.name)} <span class="muted">(you)</span></b><small>${esc(account.email)}</small></span><span class="st-meta"><span class="tag green">Owner</span></span><span class="st-perm-list">Everything, including plan &amp; billing and staff</span></div>
+          ${store.staff.map(row).join("")}
+        </div>
+        <p class="muted small" style="margin-top:10px">${lim == null ? `${n} staff · unlimited on your plan` : `${n} of ${lim} staff on your ${esc(plan().name)} plan`}${can ? "" : ' — <button type="button" class="link st-up" data-tab="billing">upgrade for more</button>'}.</p>
+        <div class="callout blue" style="margin-top:14px"><span class="ico">${icon("info")}</span><div>Staff sign-in is being set up. Until then, people you add are saved here with what they can do, and they'll get their invite email as soon as it's ready.</div></div>
+      </div>`;
+    },
     notifications: () => `<form data-form="notifications">
         <h2>Notifications</h2><p class="muted">What we tell you about, and where.</p>
         <div class="s-card" style="padding-top:4px;padding-bottom:4px">
