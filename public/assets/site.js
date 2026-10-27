@@ -43,7 +43,22 @@ window.SiteKit = (() => {
   };
   const svg = (name, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ""}</svg>`;
   const FEATURE_ICONS = ["truck", "shield", "headset", "gift", "star", "leaf", "clock", "tag"];
-  const SOCIAL_NAMES = { facebook: "Facebook", instagram: "Instagram", youtube: "YouTube", tiktok: "TikTok" };
+  // Social media platforms: name, an example link, and a one-color logo (24px grid, filled with currentColor).
+  // The first four always show in Preferences; the rest can be added there.
+  const SOCIALS = {
+    facebook: { name: "Facebook", ph: "https://facebook.com/yourpage", d: "M24 12a12 12 0 1 0-13.9 11.9v-8.4H7.1V12h3V9.4c0-3 1.8-4.7 4.5-4.7 1.3 0 2.7.2 2.7.2v3h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4A12 12 0 0 0 24 12z" },
+    instagram: { name: "Instagram", ph: "https://instagram.com/yourname", d: "M12 2.2c3.2 0 3.6 0 4.8.1 3.3.1 4.8 1.7 4.9 4.9.1 1.3.1 1.6.1 4.8s0 3.6-.1 4.8c-.1 3.2-1.7 4.8-4.9 4.9-1.3.1-1.6.1-4.8.1s-3.6 0-4.8-.1c-3.3-.1-4.8-1.7-4.9-4.9C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.8C2.4 3.9 3.9 2.4 7.2 2.3c1.2-.1 1.6-.1 4.8-.1zM12 0C8.7 0 8.3 0 7.1.1 2.7.3.3 2.7.1 7.1 0 8.3 0 8.7 0 12s0 3.7.1 4.9c.2 4.4 2.6 6.8 7 7 1.2.1 1.6.1 4.9.1s3.7 0 4.9-.1c4.4-.2 6.8-2.6 7-7 .1-1.2.1-1.6.1-4.9s0-3.7-.1-4.9c-.2-4.4-2.6-6.8-7-7C15.7 0 15.3 0 12 0zm0 5.8a6.2 6.2 0 1 0 0 12.4 6.2 6.2 0 0 0 0-12.4zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.8a1.4 1.4 0 1 0 0 2.9 1.4 1.4 0 0 0 0-2.9z" },
+    youtube: { name: "YouTube", ph: "https://youtube.com/@yourchannel", d: "M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z" },
+    tiktok: { name: "TikTok", ph: "https://tiktok.com/@yourname", d: "M19.6 6.7a4.8 4.8 0 0 1-3.8-4.2V2h-3.4v13.7a2.9 2.9 0 1 1-2-2.8V9.4a6.3 6.3 0 1 0 5.4 6.3V8.7a8.2 8.2 0 0 0 4.8 1.5V6.8a4.9 4.9 0 0 1-1-.1z" },
+    x: { name: "X (Twitter)", ph: "https://x.com/yourname", d: "M18.2 2.2h3.4l-7.4 8.5L23 21.8h-6.8l-5.3-7-6.1 7H1.4l7.9-9.1L.9 2.2h7l4.8 6.4 5.5-6.4zm-1.2 17.6h1.9L7.1 4.1H5.1l11.9 15.7z" },
+    linkedin: { name: "LinkedIn", ph: "https://linkedin.com/company/yourname", d: "M20.4 20.5h-3.6v-5.6c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9v5.7H9.4V9h3.4v1.6c.5-.9 1.6-1.8 3.4-1.8 3.6 0 4.3 2.4 4.3 5.5v6.2zM5.3 7.4a2.1 2.1 0 1 1 0-4.1 2.1 2.1 0 0 1 0 4.1zm1.8 13.1H3.6V9h3.5v11.5zM22.2 0H1.8C.8 0 0 .8 0 1.7v20.6c0 .9.8 1.7 1.8 1.7h20.4c1 0 1.8-.8 1.8-1.7V1.7C24 .8 23.2 0 22.2 0z" },
+    whatsapp: { name: "WhatsApp", ph: "https://wa.me/8801XXXXXXXXX", d: "M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8.2 8.2 0 0 1-4.1-3.6c-.3-.5.3-.5.9-1.6.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.5 13.5 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3.1 3.1 0 0 0 2-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.2-.3-.3-.6-.4zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zM12 0a12 12 0 0 0-10.3 18.1L0 24l6.1-1.6A12 12 0 1 0 12 0z" },
+    pinterest: { name: "Pinterest", ph: "https://pinterest.com/yourname", d: "M12 0a12 12 0 0 0-4.4 23.2c-.1-.9-.2-2.4 0-3.4l1.4-6s-.4-.7-.4-1.8c0-1.7 1-2.9 2.2-2.9 1 0 1.5.8 1.5 1.7 0 1-.7 2.6-1 4-.3 1.2.6 2.2 1.8 2.2 2.1 0 3.8-2.3 3.8-5.5 0-2.9-2.1-4.9-5.1-4.9a5.3 5.3 0 0 0-5.5 5.3c0 1 .4 2.2.9 2.8.1.1.1.2.1.4l-.3 1.4c-.1.2-.2.3-.4.2-1.5-.7-2.4-2.9-2.4-4.6 0-3.8 2.7-7.2 7.9-7.2 4.1 0 7.3 2.9 7.3 6.9 0 4.1-2.6 7.4-6.2 7.4-1.2 0-2.4-.6-2.7-1.4l-.8 2.8c-.3 1.1-1 2.4-1.5 3.2A12 12 0 1 0 12 0z" },
+    threads: { name: "Threads", ph: "https://threads.net/@yourname", d: "M17.3 11.1l-.4-.2c-.2-3.4-2.1-5.4-5.2-5.4-1.9 0-3.4.8-4.4 2.3l1.7 1.2c.7-1.1 1.8-1.3 2.7-1.3 1 0 1.8.3 2.3.9.4.4.6 1 .7 1.8a12 12 0 0 0-2.8-.1c-2.8.2-4.6 1.8-4.5 4.1 0 1.2.6 2.2 1.6 2.8.8.6 1.9.8 3 .8 1.5-.1 2.6-.7 3.4-1.7.6-.8 1-1.8 1.1-3 .7.4 1.3 1 1.6 1.7.5 1.2.6 3.3-1.1 5-1.5 1.5-3.3 2.1-6 2.1-3 0-5.2-1-6.7-2.9C3.8 17.4 3.1 15 3.1 12s.7-5.4 2.1-7.2C6.6 2.9 8.9 1.9 11.9 1.9c3 0 5.3 1 6.8 2.9.8.9 1.3 2.1 1.7 3.4l2-.5c-.4-1.7-1.1-3.1-2.1-4.3C18.3 1.1 15.5-.1 11.9 0 8.3 0 5.6 1.2 3.7 3.5 2 5.6 1.2 8.5 1.2 12s.8 6.4 2.5 8.5C5.6 22.8 8.3 24 11.9 24c3.2 0 5.5-.9 7.4-2.7 2.5-2.5 2.4-5.6 1.6-7.5-.6-1.4-1.8-2.5-3.5-3.2zm-5.6 5.3c-1.3.1-2.6-.5-2.7-1.6 0-.8.6-1.8 2.6-1.9h.7c.7 0 1.4.1 2 .2-.2 2.8-1.6 3.2-2.6 3.3z" },
+    telegram: { name: "Telegram", ph: "https://t.me/yourname", d: "M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24zm5.6 8.2-2 9.3c-.1.7-.5.8-1.1.5l-3-2.2-1.4 1.4c-.2.2-.3.3-.6.3l.2-3.1 5.6-5c.2-.2 0-.3-.4-.1l-6.9 4.3-3-.9c-.6-.2-.7-.6.1-1l11.6-4.5c.6-.2 1 .1.9 1z" },
+  };
+  const SOCIAL_NAMES = Object.fromEntries(Object.entries(SOCIALS).map(([k, v]) => [k, v.name]));
+  const socialIcon = (k, cls = "") => SOCIALS[k] ? `<svg class="soc ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${SOCIALS[k].d}"/></svg>` : "";
 
   // ---------- Section types ----------
   // label + icon for the "Add section" grid; make() returns a new section's content
@@ -93,7 +108,8 @@ window.SiteKit = (() => {
         { title: "A third post", excerpt: "Regular posts help customers find you on Google.", image: "", date: "", link: "#" },
       ] });
       case "newsletter": return section("newsletter", { title: "Join our newsletter", text: "Get new arrivals and special offers in your inbox.", placeholder: "Your email address", button: "Subscribe" }, { align: "center" });
-      case "contact": return section("contact", { title: "Get in touch", text: "Questions about an order or a product? We're happy to help.", phone: site.phone || "", email: site.email || "", address: site.address || "", showForm: true });
+      // Phone, email and address left empty use the store details from Preferences
+      case "contact": return section("contact", { title: "Get in touch", text: "Questions about an order or a product? We're happy to help.", phone: "", email: "", address: "", showForm: true });
       case "faq": return section("faq", { title: "Frequently asked questions", items: [
         { q: "How long does delivery take?", a: "Inside Dhaka 1–2 days, outside Dhaka 2–4 days." },
         { q: "How can I pay?", a: "bKash, Nagad, card or cash on delivery." },
@@ -158,6 +174,10 @@ window.SiteKit = (() => {
     site.header ||= { logo: "", announcement: { show: false, text: "Free delivery on orders over ৳2,000" }, search: true, account: true, cart: true, style: blankStyle() };
     site.footer ||= { text: site.about || "", showMenu: true, showContact: true, showSocial: true, copyright: "", style: blankStyle() };
     pages.forEach((p) => { if (!Array.isArray(p.sections)) p.sections = pageSections(p, ctx); });
+    // Contact sections that only copied the store details now follow them
+    pages.forEach((p) => p.sections.forEach((sec) => {
+      if (sec.type === "contact") ["phone", "email", "address"].forEach((k) => { if (sec.content[k] && sec.content[k] === site[k]) sec.content[k] = ""; });
+    }));
     return site;
   };
 
@@ -267,7 +287,7 @@ window.SiteKit = (() => {
       </div>`,
     contact: (c, st, ctx) => `<div class="wrap split contact">
         <div class="split-copy">${c.title ? `<h2>${esc(c.title)}</h2>` : ""}${c.text ? `<p class="lead">${esc(c.text)}</p>` : ""}
-          <ul class="contact-list">${c.phone ? `<li>${svg("phone")}${esc(c.phone)}</li>` : ""}${c.email ? `<li>${svg("mail")}${esc(c.email)}</li>` : ""}${c.address ? `<li>${svg("pin")}${esc(c.address)}</li>` : ""}</ul>${ctx.blocks}</div>
+          <ul class="contact-list">${[["phone", "phone"], ["email", "mail"], ["address", "pin"]].map(([k, ic]) => { const val = c[k] || (ctx.site || {})[k]; return val ? `<li>${svg(ic)}${esc(val)}</li>` : ""; }).join("")}</ul>${ctx.blocks}</div>
         ${c.showForm ? `<form class="card contact-form" onsubmit="return false"><input placeholder="Your name"><input type="email" placeholder="Email"><textarea rows="4" placeholder="Message"></textarea><button class="btn" type="submit">Send message</button></form>` : ""}
       </div>`,
     faq: (c, st, ctx) => `<div class="wrap narrow">
@@ -300,7 +320,7 @@ window.SiteKit = (() => {
         <div><b class="logo">${esc(site.name || "My Store")}</b>${f.text ? `<p>${esc(f.text)}</p>` : ""}</div>
         ${f.showMenu ? `<div><b>Pages</b>${navPages(pages).map((p) => `<a href="${esc(pageHref(p))}">${esc(p.title)}</a>`).join("")}</div>` : ""}
         ${f.showContact ? `<div><b>Contact</b>${[site.phone, site.email, site.address].filter(Boolean).map((v) => `<span>${esc(v)}</span>`).join("")}</div>` : ""}
-        ${f.showSocial && socials.length ? `<div><b>Follow us</b>${socials.map(([k, v]) => `<a href="${esc(safeLink(v))}" target="_blank" rel="noopener">${SOCIAL_NAMES[k]}</a>`).join("")}</div>` : ""}
+        ${f.showSocial && socials.length ? `<div><b>Follow us</b><span class="socials">${socials.map(([k, v]) => `<a href="${esc(safeLink(v))}" target="_blank" rel="noopener" aria-label="${SOCIAL_NAMES[k]}" title="${SOCIAL_NAMES[k]}">${socialIcon(k)}</a>`).join("")}</span></div>` : ""}
       </div>
       <div class="wrap copy">${esc(f.copyright || `© ${new Date().getFullYear()} ${site.name || "My Store"}. All rights reserved.`)}</div>
     </footer>`;
@@ -324,7 +344,7 @@ window.SiteKit = (() => {
         const R = RENDER[s.type];
         if (!R) return "";
         const st = s.style || {};
-        return `<section class="s s-${esc(s.type)} pad-${esc(st.padding || "m")} align-${esc(st.align || "left")}${s.hidden ? " is-hidden" : ""}${sel(s.id)}" data-sid="${esc(s.id)}" style="${sectionStyle(st)}">${label(s)}${R(s.content || {}, st, { products: opts.products, ed, blocks: renderBlocks(s.blocks, ed) })}</section>${insert(i + 1)}`;
+        return `<section class="s s-${esc(s.type)} pad-${esc(st.padding || "m")} align-${esc(st.align || "left")}${s.hidden ? " is-hidden" : ""}${sel(s.id)}" data-sid="${esc(s.id)}" style="${sectionStyle(st)}">${label(s)}${R(s.content || {}, st, { products: opts.products, ed, blocks: renderBlocks(s.blocks, ed), site })}</section>${insert(i + 1)}`;
       }).join("") || (ed ? '<section class="s pad-l align-center"><div class="wrap"><p class="empty">This page has no sections yet. Click + to add one.</p></div></section>' : "")}</main>
       ${opts.bare ? "" : renderFooter(site, pages).replace('class="s-footer"', `class="s-footer${sel("footer")}"`).replace(/(<footer[^>]*>)/, `$1${fixedLabel("footer", "Footer")}`)}
     </div>`;
@@ -354,5 +374,5 @@ window.SiteKit = (() => {
     return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${all.replace(/\$/g, "$$$$")}${nav}</body>`);
   };
 
-  return { LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
+  return { SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
 })();
