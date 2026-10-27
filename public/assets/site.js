@@ -118,11 +118,7 @@ window.SiteKit = (() => {
         { q: "Can I return a product?", a: "Yes, within 7 days if it's unused and in its original packaging." },
       ] });
       case "banner": return section("banner", { image: "", title: "A big statement", text: "Use an image banner to set the mood.", button: { text: "Shop Now", link: "/shop" } }, { height: "m", align: "center" });
-      case "checkout": return section("checkout", {
-        title: "Checkout", subtitle: "Almost done! Fill in your details and we'll deliver your order.",
-        insideLabel: "Inside Dhaka", insideFee: 60, outsideLabel: "Outside Dhaka", outsideFee: 120,
-        button: "Place order", note: "You can return unused items within 7 days.", showNote: true, showCoupon: true,
-      });
+      case "checkout": return section("checkout", { ...CHECKOUT, delivery: CHECKOUT.delivery.map((d) => ({ ...d })) });
       case "custom": {
         const s = section("custom", {});
         s.blocks = [makeBlock("heading", "A new section"), makeBlock("text", "Add headings, text, buttons and images to build anything you like.")];
@@ -153,6 +149,21 @@ window.SiteKit = (() => {
     text: text ?? (type === "heading" ? "New heading" : type === "text" ? "Write something here." : type === "button" ? "Click here" : ""),
     link: type === "button" ? "/shop" : "", image: "", size: "m",
   });
+
+  // Everything on the Checkout page the store owner can change
+  const CHECKOUT = {
+    title: "Checkout", subtitle: "Almost done! Fill in your details and we'll deliver your order.", showSteps: true,
+    detailsTitle: "Your details", nameLabel: "Full name", namePh: "Your name", phoneLabel: "Phone", phonePh: "01XXX-XXXXXX",
+    showEmail: true, emailLabel: "Email (optional)", emailPh: "you@email.com",
+    deliveryTitle: "Delivery", addressLabel: "Full address", addressPh: "House, road, area, city",
+    delivery: [{ label: "Inside Dhaka", fee: 60 }, { label: "Outside Dhaka", fee: 120 }],
+    paymentTitle: "Payment",
+    showNote: true, noteLabel: "Order note (optional)", notePh: "Anything we should know?",
+    summaryTitle: "Order summary", showCoupon: true, couponPh: "Discount code", couponButton: "Apply",
+    button: "Place order", buttonTotal: true, note: "You can return unused items within 7 days.",
+    showSecure: true, secureText: "Your details are safe with us",
+  };
+  const PAYMENTS = { cod: "Cash on delivery", bkash: "bKash", nagad: "Nagad", card: "Card" };
 
   // Starting sections for a page, based on its address
   const pageSections = (page, ctx) => {
@@ -190,6 +201,16 @@ window.SiteKit = (() => {
       if (!Array.isArray(co.sections)) co.sections = [];
       if (!co.sections.some((x) => x.type === "checkout")) co.sections.unshift(make("checkout", ctx));
     }
+    // Checkout sections from before every part was editable get the new options (and keep their changes)
+    pages.forEach((p) => p.sections.forEach((sec) => {
+      if (sec.type !== "checkout") return;
+      const c = sec.content;
+      if (!Array.isArray(c.delivery)) {
+        c.delivery = [{ label: c.insideLabel || "Inside Dhaka", fee: Number(c.insideFee ?? 60) }, { label: c.outsideLabel || "Outside Dhaka", fee: Number(c.outsideFee ?? 120) }];
+        ["insideLabel", "insideFee", "outsideLabel", "outsideFee"].forEach((k) => delete c[k]);
+      }
+      Object.keys(CHECKOUT).forEach((k) => { if (c[k] === undefined) c[k] = CHECKOUT[k]; });
+    }));
     // Contact sections that only copied the store details now follow them
     pages.forEach((p) => p.sections.forEach((sec) => {
       if (sec.type === "contact") ["phone", "email", "address"].forEach((k) => { if (sec.content[k] && sec.content[k] === site[k]) sec.content[k] = ""; });
@@ -315,34 +336,36 @@ window.SiteKit = (() => {
     // Checkout: details, delivery, payment and an order summary, in the website's own colors and fonts
     checkout: (c, st, ctx) => {
       const items = (ctx.products || []).filter((p) => p.status !== "draft").slice(0, 2);
-      const inside = Math.max(0, Number(c.insideFee) || 0), outside = Math.max(0, Number(c.outsideFee) || 0);
-      const sub = items.reduce((a, p) => a + (Number(p.price) || 0), 0), total = sub + inside;
+      const opts = (Array.isArray(c.delivery) ? c.delivery : []).map((d) => ({ label: d.label || "Delivery", fee: Math.max(0, Number(d.fee) || 0) }));
+      const fee = opts.length ? opts[0].fee : 0;
+      const sub = items.reduce((a, p) => a + (Number(p.price) || 0), 0), total = sub + fee;
       const pays = (ctx.site && ctx.site.payments && ctx.site.payments.length ? ctx.site.payments : ["Cash on delivery"]);
-      const field = (label, type = "text", ph = "") => `<label class="co-field"><span>${label}</span>${type === "area" ? `<textarea rows="2" placeholder="${esc(ph)}"></textarea>` : `<input type="${type}" placeholder="${esc(ph)}">`}</label>`;
+      const field = (label, type, ph) => `<label class="co-field">${label ? `<span>${esc(label)}</span>` : ""}${type === "area" ? `<textarea rows="2" placeholder="${esc(ph)}"></textarea>` : `<input type="${type}" placeholder="${esc(ph)}">`}</label>`;
+      let n = 0;
+      const step = (title) => (title || c.showSteps ? `<h3>${c.showSteps ? `<i>${++n}</i>` : ""}${esc(title)}</h3>` : "");
+      // Picking a delivery option updates the delivery charge and total
+      const pick = `var f=+this.dataset.fee,s=+this.form.dataset.sub,q=this.closest('.checkout');q.querySelector('.co-fee').textContent=this.dataset.label;q.querySelectorAll('.co-tot').forEach(function(e){e.textContent='৳'+(s+f).toLocaleString('en-IN')})`;
       return `<div class="wrap checkout">
         <div class="co-head">${c.title ? `<h1>${esc(c.title)}</h1>` : ""}${c.subtitle ? `<p class="lead">${esc(c.subtitle)}</p>` : ""}</div>
         <div class="co-grid">
-          <form class="co-form" onsubmit="return false">
-            <div class="co-step"><h3><i>1</i>Your details</h3><div class="co-row">${field("Full name", "text", "Your name")}${field("Phone", "tel", "01XXX-XXXXXX")}</div>${field("Email (optional)", "email", "you@email.com")}</div>
-            <div class="co-step"><h3><i>2</i>Delivery</h3>${field("Full address", "area", "House, road, area, city")}
-              <div class="co-options">
-                <label class="co-option on"><input type="radio" name="delivery" checked><span>${esc(c.insideLabel || "Inside Dhaka")}</span><b>${taka(inside)}</b></label>
-                <label class="co-option"><input type="radio" name="delivery"><span>${esc(c.outsideLabel || "Outside Dhaka")}</span><b>${taka(outside)}</b></label>
-              </div></div>
-            <div class="co-step"><h3><i>3</i>Payment</h3><div class="co-options">${pays.map((p, i) => `<label class="co-option${i ? "" : " on"}"><input type="radio" name="pay"${i ? "" : " checked"}><span>${esc(p)}</span></label>`).join("")}</div></div>
-            ${c.showNote ? `<div class="co-step">${field("Order note (optional)", "area", "Anything we should know?")}</div>` : ""}
-            <button class="btn co-place" type="submit">${esc(c.button || "Place order")} · ${taka(total)}</button>
+          <form class="co-form" onsubmit="return false" data-sub="${sub}">
+            <div class="co-step">${step(c.detailsTitle)}<div class="co-row">${field(c.nameLabel, "text", c.namePh)}${field(c.phoneLabel, "tel", c.phonePh)}</div>${c.showEmail ? field(c.emailLabel, "email", c.emailPh) : ""}</div>
+            <div class="co-step">${step(c.deliveryTitle)}${field(c.addressLabel, "area", c.addressPh)}
+              ${opts.length ? `<div class="co-options">${opts.map((d, i) => `<label class="co-option"><input type="radio" name="delivery" data-fee="${d.fee}" data-label="${esc(taka(d.fee))}" onchange="${esc(pick)}"${i ? "" : " checked"}><span>${esc(d.label)}</span><b>${taka(d.fee)}</b></label>`).join("")}</div>` : ""}</div>
+            <div class="co-step">${step(c.paymentTitle)}<div class="co-options">${pays.map((p, i) => `<label class="co-option"><input type="radio" name="pay"${i ? "" : " checked"}><span>${esc(p)}</span></label>`).join("")}</div></div>
+            ${c.showNote ? `<div class="co-step">${field(c.noteLabel, "area", c.notePh)}</div>` : ""}
+            <button class="btn co-place" type="submit">${esc(c.button || "Place order")}${c.buttonTotal ? ` · <span class="co-tot">${taka(total)}</span>` : ""}</button>
             ${c.note ? `<p class="co-small">${esc(c.note)}</p>` : ""}
             ${ctx.blocks}
           </form>
           <aside class="co-summary">
-            <h3>Order summary</h3>
+            ${c.summaryTitle ? `<h3>${esc(c.summaryTitle)}</h3>` : ""}
             ${items.length ? items.map((p) => `<div class="co-item"><span class="co-img" style="background:${esc(color(p.color) || "#e9e6e1")}">${safeImg(p.image) ? `<img src="${esc(p.image)}" alt="">` : ""}<em>1</em></span><span class="co-name">${esc(p.name)}</span><b>${taka(p.price)}</b></div>`).join("") : `<p class="empty">Items in the cart show here.</p>`}
-            ${c.showCoupon ? `<div class="co-coupon"><input placeholder="Discount code" aria-label="Discount code"><button class="btn btn-outline" type="button">Apply</button></div>` : ""}
+            ${c.showCoupon ? `<div class="co-coupon"><input placeholder="${esc(c.couponPh || "Discount code")}" aria-label="${esc(c.couponPh || "Discount code")}"><button class="btn btn-outline" type="button">${esc(c.couponButton || "Apply")}</button></div>` : ""}
             <div class="co-line"><span>Subtotal</span><span>${taka(sub)}</span></div>
-            <div class="co-line"><span>Delivery</span><span>${taka(inside)}</span></div>
-            <div class="co-line co-total"><span>Total</span><span>${taka(total)}</span></div>
-            <p class="co-secure">${svg("shield")}Your details are safe with us</p>
+            ${opts.length ? `<div class="co-line"><span>Delivery</span><span class="co-fee">${taka(fee)}</span></div>` : ""}
+            <div class="co-line co-total"><span>Total</span><span class="co-tot">${taka(total)}</span></div>
+            ${c.showSecure && c.secureText ? `<p class="co-secure">${svg("shield")}${esc(c.secureText)}</p>` : ""}
           </aside>
         </div>
       </div>`;
@@ -425,5 +448,5 @@ window.SiteKit = (() => {
     return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${all.replace(/\$/g, "$$$$")}${nav}</body>`);
   };
 
-  return { SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
+  return { CHECKOUT, PAYMENTS, SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
 })();

@@ -48,6 +48,7 @@ body.ed-side-hidden .side { display: none; }
 .ed-link { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .ed-note { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin: 6px 0 14px; }
 .ed-note a { color: var(--accent); font-weight: 600; }
+.ed-subhead { margin: 22px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .ed-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; margin-bottom: 4px; font-size: 14px; border-bottom: 1px solid var(--border); }
 .ed-image { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ed-thumb { width: 92px; height: 68px; border-radius: 10px; overflow: hidden; display: grid; place-items: center; background: var(--hover); color: var(--muted); border: 1px solid var(--border); flex: none; }

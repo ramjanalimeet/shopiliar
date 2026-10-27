@@ -182,7 +182,7 @@
 
   // ---------- Helpers ----------
   const ORDER_STATUS = { Pending: "yellow", Paid: "blue", Shipped: "purple", Delivered: "green", Cancelled: "red" };
-  const PAYMENT_LABEL = { cod: "Cash on delivery", bkash: "bKash", nagad: "Nagad", card: "Card" };
+  const PAYMENT_LABEL = SiteKit.PAYMENTS;
   // The Checkout page shows the payment methods turned on in Settings → Payments
   const syncPayments = () => { store.site.payments = Object.keys(PAYMENT_LABEL).filter((k) => store.settings.payments[k]).map((k) => PAYMENT_LABEL[k]); };
   syncPayments();
