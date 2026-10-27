@@ -427,23 +427,14 @@
 .pf-saved { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 600; }
 .pf-saved .i { width: 15px; height: 15px; }
 .pf-saved.saving { background: #f3f4f6; color: var(--muted); }
-.pf-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; }
-.pf-nav { position: sticky; top: 16px; display: grid; gap: 2px; }
-.pf-nav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: var(--text); font-size: 14px; font-weight: 500; }
-.pf-nav a:hover { background: var(--hover); }
-.pf-nav a.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-.pf-nav .i { width: 17px; height: 17px; }
-.pf-cards { display: grid; gap: 18px; max-width: 880px; }
-.pf-card { scroll-margin-top: 16px; }
-.pf-head { display: flex; align-items: flex-start; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--border); }
-.pf-head > div { flex: 1; }
-.pf-head h2 { font-size: 16.5px; color: var(--ink); letter-spacing: -.01em; }
-.pf-head p { margin-top: 2px; font-size: 13.5px; color: var(--muted); }
-.pf-head .switch { margin-top: 8px; }
-.pf-ico { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
-.pf-ico .i { width: 19px; height: 19px; }
-.pf-body { padding: 18px 20px 6px; }
-.pf-body .field { margin-bottom: 16px; }
+/* Search engine listing and Social media side by side, the important settings below */
+.pf-top { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.pf-group { margin: 30px 0 14px; font-size: 18px; color: var(--ink); letter-spacing: -.01em; }
+.pf-stack { display: grid; gap: 18px; }
+.pf-top > .card, .pf-stack > .card { margin-top: 0; }
+#prefs-form .card-head { gap: 12px; }
+#prefs-form .card-body .field { margin-bottom: 16px; }
+@media (max-width: 1000px) { .pf-top { grid-template-columns: 1fr; } }
 .pf-hint { display: block; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
 
 .pf-status { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 18px 20px; border-color: #fde6a7; background: #fffaf0; }
@@ -494,10 +485,7 @@
 .pf-social-ico { width: 40px; height: 40px; flex: none; display: grid; place-items: center; margin-bottom: 16px; border-radius: 10px; color: #fff; font-weight: 800; font-size: 17px; }
 
 @media (max-width: 1100px) {
-  .pf-layout { grid-template-columns: 1fr; }
-  .pf-nav { position: static; display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
-  .pf-nav a { flex: none; border: 1px solid var(--border); background: #fff; }
-}
+      }
 @media (max-width: 760px) {
   .pf-look { grid-template-columns: 1fr; }
   .pf-preview { position: static; }

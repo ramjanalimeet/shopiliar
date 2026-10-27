@@ -741,32 +741,31 @@
         const color = (k, label, val) => `<label class="pf-color"><input type="color" data-k="${k}" value="${v(val)}"><span><b>${label}</b><small>${v(val)}</small></span></label>`;
         const PALETTES = [["Classic", "#ffffff", "#111111", "#111111"], ["Sand", "#f7f4f0", "#2b211a", "#8a5a3b"], ["Ocean", "#eef6fb", "#0b2a3f", "#0b6e99"], ["Forest", "#f3f7f1", "#1c3326", "#2f6b2a"], ["Berry", "#fdf3f6", "#3d1527", "#ad1a72"], ["Night", "#14141c", "#ffffff", "#ff7a59"]];
         const SOC = [["facebook", "Facebook", "https://facebook.com/yourpage", "#1877f2", "f"], ["instagram", "Instagram", "https://instagram.com/yourname", "#e1306c", "◎"], ["youtube", "YouTube", "https://youtube.com/@yourchannel", "#ff0000", "▶"], ["tiktok", "TikTok", "https://tiktok.com/@yourname", "#111111", "♪"]];
-        const nav = [["status", "Website status", "globe"], ["details", "Store details", "store"], ["look", "Look & feel", "palette"], ["announce", "Announcement bar", "megaphone"], ["seo", "Google & sharing", "search"], ["social", "Social media", "chat"]];
         return `${head("Preferences", "Your website's important settings in one place. Changes save automatically.", `<span class="pf-saved" id="pf-saved">${icon("check")}All changes saved</span>`)}
-          <div class="pf-layout">
-            <nav class="pf-nav" aria-label="Preferences sections">${nav.map(([id, l, ic]) => `<a href="#pf-${id}" data-jump="pf-${id}">${icon(ic)}${l}</a>`).join("")}</nav>
-            <form class="pf-cards" id="prefs-form" autocomplete="off" onsubmit="return false">
+          <form id="prefs-form" autocomplete="off" onsubmit="return false">
+            <div class="pf-top">
+              <div class="card"><div class="card-head"><span class="card-title">Search engine listing</span></div><div class="card-body">
+                  <div class="serp"><span class="serp-url">${esc(siteUrl())}</span><b class="serp-title" id="serp-title">${esc(title)}</b><span class="serp-desc" id="serp-desc">${esc(desc || "Add a description so people know what you sell.")}</span></div>
+                  ${text("seo.title", "Title in Google", seo.title, { max: 70, ph: s.name || "My Store", hint: `<span data-count="seo.title">${seo.title.length}</span> of 70 characters` })}
+                  <div class="field"><label for="p-desc">Description</label><textarea class="textarea" id="p-desc" data-k="seo.description" maxlength="160" placeholder="e.g. Handmade furniture delivered across Bangladesh.">${esc(seo.description)}</textarea><span class="pf-hint"><span data-count="seo.description">${seo.description.length}</span> of 160 characters</span></div>
+                  ${image("seo.image", "Share image", seo.image, "Shown when your link is shared on Facebook, WhatsApp or Messenger. 1200 × 630 works best.")}
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Social media<small>Shown in your website's footer</small></span></div><div class="card-body">
+                  ${SOC.map(([k, l, ph, c, g]) => `<div class="pf-social"><span class="pf-social-ico" style="background:${c}">${g}</span><div class="field"><label for="p-${k}">${l}</label><input class="input" id="p-${k}" data-k="social.${k}" type="url" maxlength="200" value="${v(so[k])}" placeholder="${ph}"></div></div>`).join("")}
+                  ${text("footer.copyright", "Footer copyright line", f.copyright, { max: 120, ph: `© ${new Date().getFullYear()} ${s.name || "My Store"}. All rights reserved.` })}
+              </div></div>
+            </div>
 
-              <section class="card pf-card pf-status ${store.published ? "live" : ""}" id="pf-status">
-                <span class="pf-status-ico">${icon(store.published ? "check" : "rocket")}</span>
-                <div class="pf-status-text"><b>${store.published ? "Your website is live" : "Your website isn't live yet"}</b>
-                  <span>${esc(siteUrl())}${store.published ? ` · published ${stamp(store.publishedAt)}` : " · publish it to let customers visit"}</span></div>
-                <div class="pf-status-btns"><button type="button" class="btn" data-action="view-store">${icon("external")}View your store</button><button type="button" class="btn btn-primary" data-action="publish">${icon("rocket")}${store.published ? "Publish changes" : "Publish website"}</button></div>
-              </section>
-
-              <section class="card pf-card" id="pf-details">
-                <div class="pf-head"><span class="pf-ico">${icon("store")}</span><div><h2>Store details</h2><p>Shown in your website's header, footer and Contact section.</p></div></div>
-                <div class="pf-body">
+            <h2 class="pf-group">Important settings</h2>
+            <div class="pf-stack">
+              <div class="card"><div class="card-head"><span class="card-title">Store details<small>Header, footer and Contact section</small></span></div><div class="card-body">
                   ${text("name", "Website name", s.name, { max: 40, ph: "My Store" })}
                   ${image("header.logo", "Logo", h.logo, "Shown instead of the name in the header. A wide PNG with a clear background works best.")}
                   <div class="row">${text("phone", "Phone", s.phone, { max: 30, ph: "01XXX-XXXXXX" })}${text("email", "Email", s.email, { max: 120, ph: "hello@yourstore.com", type: "email" })}</div>
                   ${text("address", "Address", s.address, { max: 160, ph: "House, road, area, city" })}
-                </div>
-              </section>
-
-              <section class="card pf-card" id="pf-look">
-                <div class="pf-head"><span class="pf-ico">${icon("palette")}</span><div><h2>Look &amp; feel</h2><p>Colors, fonts and buttons for your whole website.</p></div></div>
-                <div class="pf-body pf-look">
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Look &amp; feel<small>Colors, fonts and buttons for your whole website</small></span></div>
+                <div class="card-body pf-look">
                   <div>
                     <div class="field"><label>Color sets</label><div class="pf-palettes">${PALETTES.map(([n, bg, tx, ac]) => `<button type="button" data-palette="${bg},${tx},${ac}" class="${s.bg === bg && s.accent === ac ? "on" : ""}"><i style="background:${bg}"></i><i style="background:${ac}"></i>${n}</button>`).join("")}</div></div>
                     <div class="pf-colors">${color("bg", "Background", s.bg)}${color("text", "Text", s.text)}${color("accent", "Buttons", s.accent)}</div>
@@ -776,36 +775,20 @@
                   </div>
                   <div class="pf-preview"><span class="pf-preview-label">Live preview</span><div class="th-screen" data-w="1280"><iframe class="th-canvas" style="width:1280px" id="pf-frame" srcdoc="${esc(SiteKit.documentHTML(s, store.pages, { page: store.pages[0], products: store.products }))}" title="Website preview" tabindex="-1"></iframe></div></div>
                 </div>
-              </section>
-
-              <section class="card pf-card" id="pf-announce">
-                <div class="pf-head"><span class="pf-ico">${icon("megaphone")}</span><div><h2>Announcement bar</h2><p>A short message in a colored strip at the very top of every page.</p></div>
-                  <label class="switch"><input type="checkbox" data-k="header.announcement.show" ${h.announcement.show ? "checked" : ""} aria-label="Show the announcement bar"><i></i></label></div>
-                <div class="pf-body">
+              </div>
+              <div class="card"><div class="card-head"><span class="card-title">Announcement bar<small>A short message at the very top of every page</small></span>
+                <label class="switch" style="margin-left:auto"><input type="checkbox" data-k="header.announcement.show" ${h.announcement.show ? "checked" : ""} aria-label="Show the announcement bar"><i></i></label></div><div class="card-body">
                   <div class="pf-announce-demo ${h.announcement.show ? "" : "off"}" style="background:${esc(s.accent)};color:${SiteKit.isDark(s.accent) ? "#fff" : "#111"}" id="pf-announce-demo">${esc(h.announcement.text || "Your message")}</div>
                   ${text("header.announcement.text", "Message", h.announcement.text, { max: 90, ph: "Free delivery on orders over ৳2,000" })}
-                </div>
-              </section>
-
-              <section class="card pf-card" id="pf-seo">
-                <div class="pf-head"><span class="pf-ico">${icon("search")}</span><div><h2>Google &amp; sharing</h2><p>How your website looks in Google results and when someone shares your link.</p></div></div>
-                <div class="pf-body">
-                  <div class="serp"><span class="serp-url">${esc(siteUrl())}</span><b class="serp-title" id="serp-title">${esc(title)}</b><span class="serp-desc" id="serp-desc">${esc(desc || "Add a description so people know what you sell.")}</span></div>
-                  ${text("seo.title", "Title in Google", seo.title, { max: 70, ph: s.name || "My Store", hint: `<span data-count="seo.title">${seo.title.length}</span> of 70 characters` })}
-                  <div class="field"><label for="p-desc">Description</label><textarea class="textarea" id="p-desc" data-k="seo.description" maxlength="160" placeholder="e.g. Handmade furniture delivered across Bangladesh.">${esc(seo.description)}</textarea><span class="pf-hint"><span data-count="seo.description">${seo.description.length}</span> of 160 characters</span></div>
-                  ${image("seo.image", "Share image", seo.image, "Shown when your link is shared on Facebook, WhatsApp or Messenger. 1200 × 630 works best.")}
-                </div>
-              </section>
-
-              <section class="card pf-card" id="pf-social">
-                <div class="pf-head"><span class="pf-ico">${icon("chat")}</span><div><h2>Social media</h2><p>Links shown in your website's footer.</p></div></div>
-                <div class="pf-body">
-                  ${SOC.map(([k, l, ph, c, g]) => `<div class="pf-social"><span class="pf-social-ico" style="background:${c}">${g}</span><div class="field"><label for="p-${k}">${l}</label><input class="input" id="p-${k}" data-k="social.${k}" type="url" maxlength="200" value="${v(so[k])}" placeholder="${ph}"></div></div>`).join("")}
-                  ${text("footer.copyright", "Footer copyright line", f.copyright, { max: 120, ph: `© ${new Date().getFullYear()} ${s.name || "My Store"}. All rights reserved.` })}
-                </div>
-              </section>
-            </form>
-          </div>
+              </div></div>
+              <div class="card pf-status ${store.published ? "live" : ""}">
+                <span class="pf-status-ico">${icon(store.published ? "check" : "rocket")}</span>
+                <div class="pf-status-text"><b>${store.published ? "Your website is live" : "Your website isn't live yet"}</b>
+                  <span>${esc(siteUrl())}${store.published ? ` · published ${stamp(store.publishedAt)}` : " · publish it to let customers visit"}</span></div>
+                <div class="pf-status-btns"><button type="button" class="btn" data-action="view-store">${icon("external")}View your store</button><button type="button" class="btn btn-primary" data-action="publish">${icon("rocket")}${store.published ? "Publish changes" : "Publish website"}</button></div>
+              </div>
+            </div>
+          </form>
         </div>`;
       },
       mount: (view) => {
@@ -851,26 +834,6 @@
           else if (b.dataset.palette) { const [bg, tx, ac] = b.dataset.palette.split(","); Object.assign(store.site, { bg, text: tx, accent: ac }); changed(true); }
           else if (b.dataset.clear) { set(store.site, b.dataset.clear, ""); changed(true); }
         });
-        // Section list: scroll to a card and mark it
-        const nav = view.querySelector(".pf-nav"), scroller = document.querySelector(".scroll");
-        nav.addEventListener("click", (e) => {
-          const a = e.target.closest("[data-jump]");
-          if (!a) return;
-          e.preventDefault();
-          view.querySelector("#" + a.dataset.jump).scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-        const mark = () => {
-          const top = scroller.getBoundingClientRect().top + 120;
-          let cur = "pf-status";
-          const cards = [...view.querySelectorAll(".pf-card")];
-          cards.forEach((c) => { if (c.getBoundingClientRect().top <= top) cur = c.id; });
-          // At the bottom of the page the last card can't reach the top, so mark it then
-          if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4) cur = cards[cards.length - 1].id;
-          nav.querySelectorAll("a").forEach((a) => a.classList.toggle("on", a.dataset.jump === cur));
-        };
-        scroller.addEventListener("scroll", mark, { passive: true }); mark();
-        const stop = () => { if (!view.contains(nav)) { scroller.removeEventListener("scroll", mark); removeEventListener("hashchange", stop); } };
-        addEventListener("hashchange", stop);
       },
     },
 
