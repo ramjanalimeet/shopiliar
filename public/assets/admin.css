@@ -733,3 +733,10 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
   .pg-grid { grid-template-columns: 1fr; }
   .pg-new { min-height: 140px; }
 }
+
+/* Order details */
+.order-line { display: flex; justify-content: space-between; gap: 12px; margin: 4px 0; }
+.order-answers { display: grid; gap: 8px; margin: 12px 0 0; padding: 12px 14px; border-radius: 12px; background: #f7f8f9; }
+.order-answers div { display: grid; grid-template-columns: 120px 1fr; gap: 10px; font-size: 13.5px; }
+.order-answers dt { color: var(--muted); }
+.order-answers dd { margin: 0; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
