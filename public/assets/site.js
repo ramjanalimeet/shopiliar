@@ -34,6 +34,7 @@ window.SiteKit = (() => {
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     cart: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h12L22 7H6"/>',
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    chevron: '<path d="m6 9 6 6 6-6"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
     phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
@@ -395,16 +396,56 @@ window.SiteKit = (() => {
     custom: (c, st, ctx) => `<div class="wrap narrow">${ctx.blocks || (ctx.ed ? '<p class="empty">Add elements to this section from the panel.</p>' : "")}</div>`,
   };
 
-  const navPages = (pages) => pages.filter((p) => p.inNav).slice(0, 5);
+  // Menu items with no dropdown parent (a parent that's not in the menu doesn't count)
+  const isTop = (p, pages) => !p.parent || !pages.some((x) => x.id === p.parent && x.inNav && !x.parent);
+  const navPages = (pages) => pages.filter((p) => p.inNav && isTop(p, pages)).slice(0, 5);
+  const navChildren = (pages, parent) => pages.filter((p) => p.inNav && p.parent === parent.id);
   const pageHref = (p) => "/" + (p.slug || "");
+
+  // Dropdown menu styles, picked in Navigation
+  const DROPDOWNS = [
+    { id: "simple", name: "Simple list", text: "A clean list of links. Works for any store." },
+    { id: "icons", name: "Boxes with icons", text: "Two columns of tidy boxes, each with an icon." },
+    { id: "cards", name: "Image cards", text: "A picture for each page — great for collections." },
+    { id: "mega", name: "Mega menu", text: "Full width, with links and a featured product." },
+  ];
+  // A picture for a page: the first image in its sections
+  const pageImage = (p) => {
+    for (const sec of p.sections || []) {
+      const c = sec.content || {};
+      if (safeImg(c.image)) return c.image;
+      const it = (c.items || []).find((x) => safeImg(x && x.image));
+      if (it) return it.image;
+    }
+    return "";
+  };
+  const renderDropdown = (site, parent, kids, opts) => {
+    const style = opts.ddStyle || (site.header && site.header.dropdown) || "simple";
+    const link = (p, inner) => `<a href="${esc(pageHref(p))}"${opts.page && p.id === opts.page.id ? ' class="on"' : ""}>${inner}</a>`;
+    let body;
+    if (style === "icons") body = kids.map((p) => link(p, `<i class="dd-ico">${svg("arrow")}</i><span><b>${esc(p.title)}</b><small>/${esc(p.slug)}</small></span>`)).join("");
+    else if (style === "cards") body = kids.map((p) => { const img = pageImage(p); return link(p, `<span class="dd-img">${img ? `<img src="${esc(img)}" alt="">` : `<em>${esc((p.title || "?").slice(0, 1))}</em>`}</span><b>${esc(p.title)}</b>`); }).join("");
+    else if (style === "mega") {
+      const prods = (opts.products || []).filter((x) => x.status !== "draft").slice(0, 3);
+      body = `<div class="dd-cols"><b class="dd-head">${esc(parent.title)}</b>${kids.map((p) => link(p, `${esc(p.title)}${svg("arrow")}`)).join("")}</div>
+        ${prods.length ? `<div class="dd-feature"><small>Featured</small><div>${prods.map((x) => `<a href="/shop"><span class="dd-img" style="background:${esc(color(x.color) || "#e9e6e1")}">${safeImg(x.image) ? `<img src="${esc(x.image)}" alt="">` : ""}</span><b>${esc(x.name)}</b><span>${taka(x.price)}</span></a>`).join("")}</div></div>` : ""}`;
+    } else body = kids.map((p) => link(p, esc(p.title))).join("");
+    return `<div class="dd-panel dd-${style}"><div class="dd-in">${body}</div></div>`;
+  };
 
   const renderHeader = (site, pages, opts) => {
     const h = site.header;
+    const firstDd = opts.ddOpenFirst ? navPages(pages).find((p) => navChildren(pages, p).length) : null;
     return `<header class="s-header" data-sid="header" style="${sectionStyle(h.style)}">
       ${h.announcement?.show && h.announcement.text ? `<div class="announce">${esc(h.announcement.text)}</div>` : ""}
       <div class="wrap nav">
         <a class="logo" href="/">${safeImg(h.logo) ? `<img src="${esc(h.logo)}" alt="${esc(site.name)}">` : esc(site.name || "My Store")}</a>
-        <nav class="menu">${navPages(pages).map((p) => `<a href="${esc(pageHref(p))}"${opts.page && p.id === opts.page.id ? ' class="on"' : ""}>${esc(p.title)}</a>`).join("")}</nav>
+        <nav class="menu">${navPages(pages).map((p, i) => {
+          const a = `<a href="${esc(pageHref(p))}"${opts.page && p.id === opts.page.id ? ' class="on"' : ""}>${esc(p.title)}</a>`;
+          const kids = navChildren(pages, p);
+          if (!kids.length) return a;
+          return `<div class="dd${p === firstDd ? " open" : ""}">${a.replace("</a>", `${svg("chevron", "dd-arrow")}</a>`)}${renderDropdown(site, p, kids, opts)}</div>`;
+        }).join("")}</nav>
         <div class="tools">${h.search ? `<span>${svg("search")}</span>` : ""}${h.account ? `<span>${svg("user")}</span>` : ""}${h.cart ? `<a href="/checkout" aria-label="Cart and checkout">${svg("cart")}</a>` : ""}<span class="burger">${svg("menu")}</span></div>
       </div>
     </header>`;
@@ -430,12 +471,13 @@ window.SiteKit = (() => {
     const label = (s) => ed && opts.selected === s.id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${esc((TYPES[s.type] || {}).label || s.type)}</b><button data-ed="up" title="Move up">↑</button><button data-ed="down" title="Move down">↓</button>${s.type === "checkout" ? "" : '<button data-ed="duplicate" title="Duplicate">⧉</button><button data-ed="delete" title="Delete">✕</button>'}</div></div>` : "";
     const sel = (id) => (ed && opts.selected === id ? " is-selected" : "");
     // Just the header (live menu bar preview on the Navigation page)
-    if (opts.headerOnly) return `<div class="site" style="${esc(rootStyle(site))};min-height:0">${renderHeader(site, pages, { page })}</div>`;
+    // ddOpenFirst shows the first dropdown open (with room for it); ddStyle previews a dropdown style
+    if (opts.headerOnly) return `<div class="site${opts.ddOpenFirst ? " dd-preview" : ""}" style="${esc(rootStyle(site))};min-height:0">${renderHeader(site, pages, { page, products: opts.products, ddOpenFirst: opts.ddOpenFirst, ddStyle: opts.ddStyle })}</div>`;
     // Editor: a "+" on each gap between sections opens the section library (index = where it goes)
     const insert = (i) => ed && !opts.bare ? `<div class="ed-insert" data-insert="${i}"><button type="button" data-ed-add="${i}" title="Add a section here" aria-label="Add a section here">+</button></div>` : "";
     const fixedLabel = (id, name) => ed && opts.selected === id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${name}</b></div></div>` : "";
     return `<div class="site" style="${esc(rootStyle(site))}">
-      ${opts.bare ? "" : renderHeader(site, pages, { page }).replace('class="s-header"', `class="s-header${sel("header")}"`).replace(/(<header[^>]*>)/, `$1${fixedLabel("header", "Header")}`)}
+      ${opts.bare ? "" : renderHeader(site, pages, { page, products: opts.products }).replace('class="s-header"', `class="s-header${sel("header")}"`).replace(/(<header[^>]*>)/, `$1${fixedLabel("header", "Header")}`)}
       <main>${insert(0)}${sections.map((s, i) => {
         const R = RENDER[s.type];
         if (!R) return "";
@@ -470,5 +512,5 @@ window.SiteKit = (() => {
     return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${all.replace(/\$/g, "$$$$")}${nav}</body>`);
   };
 
-  return { CHECKOUT, PAYMENTS, SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
+  return { DROPDOWNS, CHECKOUT, PAYMENTS, SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
 })();

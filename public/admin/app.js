@@ -194,6 +194,19 @@
   syncPayments();
   // The Checkout page is part of every website, so it doesn't count toward the plan's pages
   const pageCount = () => store.pages.filter((p) => !p.system).length;
+  // The menu as rows: each top item, then the items in its dropdown
+  const menuRows = () => {
+    const menu = store.pages.filter((p) => p.inNav);
+    const top = menu.filter((p) => !p.parent || !menu.some((x) => x.id === p.parent && !x.parent));
+    return top.flatMap((p) => [{ p, child: false }, ...menu.filter((x) => x.parent === p.id && !top.includes(x)).map((x) => ({ p: x, child: true }))]);
+  };
+  // Save the menu from rows in order; a dropdown item belongs to the top item above it
+  const saveMenu = (rows) => {
+    let top = null;
+    rows.forEach((r) => { if (r.child && top) r.p.parent = top.id; else { delete r.p.parent; top = r.p; } });
+    store.pages = [...rows.map((r) => r.p), ...store.pages.filter((p) => !p.inNav)];
+    touchSite(); persist(); go();
+  };
   const PAY_COLOR = { "Cash on delivery": "gray", bKash: "pink", Nagad: "orange", Card: "blue" };
   const sales = (orders) => orders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
   const siteUrl = () => store.settings.domain && store.settings.domainStatus === "connected" ? store.settings.domain : store.settings.subdomain + ".shopilier.com";
@@ -644,35 +657,55 @@
     navigation: {
       title: "Navigation",
       render: () => {
-        const menu = store.pages.filter((p) => p.inNav);
-        // The real header of the website, so the preview matches it exactly
-        const bar = esc(SiteKit.documentHTML(store.site, store.pages, { page: store.pages[0], products: store.products, headerOnly: true }));
-        return `${head("Navigation", "The menu at the top of your website. Drag ⋮⋮ to change the order, or use ⋯ to edit an item.",
+        const rows = menuRows(), hasDd = rows.some((r) => r.child);
+        let topN = 0;
+        // The real header of the website, so the preview matches it exactly (with the first dropdown open)
+        const doc = (o = {}) => esc(SiteKit.documentHTML(store.site, store.pages, { page: store.pages[0], products: store.products, headerOnly: true, ddOpenFirst: hasDd, ...o }));
+        const ddStyle = store.site.header.dropdown || "simple";
+        return `${head("Navigation", "The menu at the top of your website. Drag ⋮⋮ up or down to change the order — drag it to the right, under another item, to make a dropdown.",
           `<button class="btn btn-primary" data-action="nav-add-item">${icon("plus")}Add menu item</button>`)}
           <div class="card nav-live">
-            <div class="nav-live-head"><span class="nav-live-dot">Live preview</span><span class="muted small">This is how the menu looks on your website</span></div>
-            <div class="nav-live-frame"><div class="nav-live-inner"><iframe class="nav-frame" srcdoc="${bar}" title="Menu preview" tabindex="-1"></iframe></div></div>
+            <div class="nav-live-head"><span class="nav-live-dot">Live preview</span><span class="muted small">This is how the menu looks on your website${hasDd ? " — the dropdown opens when customers point at it" : ""}</span></div>
+            <div class="nav-live-frame"><div class="nav-live-inner"><iframe class="nav-frame" srcdoc="${doc()}" title="Menu preview" tabindex="-1"></iframe></div></div>
           </div>
           <div class="card">
-            <div class="card-head"><span class="card-title">Main menu</span><span class="muted small">${menu.length} ${menu.length === 1 ? "item" : "items"} · the first 5 show on your website</span></div>
-            ${menu.length ? `<ul class="nav-list" id="nav-list">${menu.map((p, i) => `
-              <li class="nav-row" data-id="${p.id}">
-                <button type="button" class="nav-handle" aria-label="Move ${esc(p.title)}: drag, or use the up and down arrow keys" title="Drag to reorder">${icon("grip")}</button>
-                <span class="nav-ico">${icon(p.slug ? "pages" : "home")}</span>
-                <div class="nav-text"><b>${esc(p.title)}</b><span>${esc(siteUrl())}/${esc(p.slug)}</span></div>
-                ${i >= 5 ? '<span class="tag">Not shown: only 5 fit</span>' : ""}
+            <div class="card-head"><span class="card-title">Main menu</span><span class="muted small">${rows.length} ${rows.length === 1 ? "item" : "items"} · the first 5 show on your website</span></div>
+            ${rows.length ? `<ul class="nav-list" id="nav-list">${rows.map(({ p, child }, i) => {
+              const n = child ? topN : ++topN;
+              const prevTop = !child && rows.slice(0, i).reverse().find((r) => !r.child);
+              const hasKids = !child && rows[i + 1] && rows[i + 1].child;
+              const sibs = rows.filter((r) => r.child === child && (!child || r.p.parent === p.parent));
+              const si = sibs.findIndex((r) => r.p === p);
+              return `
+              <li class="nav-row${child ? " nav-child" : ""}" data-id="${p.id}">
+                <button type="button" class="nav-handle" aria-label="Move ${esc(p.title)}: drag, or use the arrow keys (right and left put it in or out of a dropdown)" title="Drag to reorder, or to the right to put it in a dropdown">${icon("grip")}</button>
+                <span class="nav-ico">${icon(child ? "nest" : p.slug ? "pages" : "home")}</span>
+                <div class="nav-text"><b>${esc(p.title)}${hasKids ? '<span class="tag">Dropdown</span>' : ""}</b><span>${esc(siteUrl())}/${esc(p.slug)}</span></div>
+                ${!child && n > 5 ? '<span class="tag">Not shown: only 5 fit</span>' : ""}
                 <div class="v-more">
                   <button class="icon-btn" data-action="version-menu" aria-haspopup="menu" aria-expanded="false" aria-label="More options for ${esc(p.title)}" title="More options">${icon("dots")}</button>
                   <div class="v-menu" role="menu" hidden>
                     <button role="menuitem" data-action="nav-edit" data-id="${p.id}">${icon("edit")}<span><b>Edit</b><small>Change the name or link</small></span></button>
-                    ${i ? `<button role="menuitem" data-action="nav-move" data-dir="-1" data-id="${p.id}">${icon("arrowUp")}<span><b>Move up</b></span></button>` : ""}
-                    ${i < menu.length - 1 ? `<button role="menuitem" data-action="nav-move" data-dir="1" data-id="${p.id}">${icon("arrowDown")}<span><b>Move down</b></span></button>` : ""}
+                    ${si > 0 ? `<button role="menuitem" data-action="nav-move" data-dir="-1" data-id="${p.id}">${icon("arrowUp")}<span><b>Move up</b></span></button>` : ""}
+                    ${si < sibs.length - 1 ? `<button role="menuitem" data-action="nav-move" data-dir="1" data-id="${p.id}">${icon("arrowDown")}<span><b>Move down</b></span></button>` : ""}
+                    ${prevTop && !hasKids ? `<button role="menuitem" data-action="nav-nest" data-id="${p.id}">${icon("nest")}<span><b>Put in a dropdown</b><small>Show it under “${esc(prevTop.p.title)}”</small></span></button>` : ""}
+                    ${child ? `<button role="menuitem" data-action="nav-unnest" data-id="${p.id}">${icon("unnest")}<span><b>Take out of dropdown</b><small>Show it in the menu bar again</small></span></button>` : ""}
                     <button role="menuitem" class="danger" data-action="nav-remove" data-id="${p.id}">${icon("x")}<span><b>Remove from menu</b><small>The page itself stays</small></span></button>
                   </div>
                 </div>
-              </li>`).join("")}</ul>`
+              </li>`;
+            }).join("")}</ul>`
               : `<div class="versions-empty">${icon("menu")}<b>Your menu is empty</b><span>Click <b>Add menu item</b> to put a page in the top menu.</span></div>`}
           </div>
+          ${hasDd ? `<div class="card ms-styles">
+            <div class="card-head"><span class="card-title">Dropdown style</span><span class="muted small">How your dropdown menus look. Pick one — the preview above changes too.</span></div>
+            <div class="ms-grid">${SiteKit.DROPDOWNS.map((d) => `
+              <button type="button" class="ms-card${d.id === ddStyle ? " on" : ""}" data-action="dd-style" data-id="${d.id}" aria-pressed="${d.id === ddStyle}">
+                <span class="ms-shot"><iframe class="ms-frame" srcdoc="${doc({ ddStyle: d.id })}" title="${esc(d.name)} preview" tabindex="-1" loading="lazy"></iframe></span>
+                <span class="ms-info"><b>${esc(d.name)}${d.id === ddStyle ? `<span class="tag green">${icon("check")}In use</span>` : ""}</b><small>${esc(d.text)}</small></span>
+              </button>`).join("")}
+            </div>
+          </div>` : rows.length > 1 ? `<div class="card ms-tip">${icon("nest")}<div><b>Make a dropdown menu</b><span>Drag an item's ⋮⋮ to the right, under another item — or use ⋯ → <b>Put in a dropdown</b>. Then choose how your dropdowns look.</span></div></div>` : ""}
         </div>`;
       },
       mount: (view) => {
@@ -688,45 +721,75 @@
         frame.addEventListener("load", fit); fit();
         new ResizeObserver(fit).observe(box);
 
-        // Drag ⋮⋮ to reorder (mouse or touch); arrow keys on the handle do the same
+        // Style cards: zoom in on the open dropdown
+        view.querySelectorAll(".ms-frame").forEach((f) => {
+          const shot = f.parentElement;
+          const crop = () => {
+            const d = f.contentDocument, panel = d && d.querySelector(".dd.open .dd-in");
+            if (!panel) return;
+            // Every card is the same height; the dropdown is scaled to fit it and centred
+            const r = panel.getBoundingClientRect(), W = shot.clientWidth, H = r.bottom + 18;
+            const k = Math.min(0.75, W / (r.width + 48), shot.clientHeight / H);
+            const x0 = r.left + r.width / 2 - W / (2 * k);
+            f.style.height = H + "px"; f.style.transform = `scale(${k}) translateX(${-x0}px)`;
+          };
+          f.addEventListener("load", crop); crop();
+          new ResizeObserver(crop).observe(shot);
+        });
+
+        // Drag ⋮⋮ up or down to reorder, and to the right or left to put an item in or out of a dropdown
+        // (mouse or touch). Arrow keys on the handle do the same.
         const list = view.querySelector("#nav-list");
         if (!list) return;
-        const save = () => {
-          const order = [...list.querySelectorAll(".nav-row")].map((r) => store.pages.find((p) => p.id === r.dataset.id));
-          store.pages = [...order, ...store.pages.filter((p) => !p.inNav)];
-          touchSite(); persist(); go();
-        };
+        const save = () => saveMenu([...list.querySelectorAll(".nav-row")].map((r) => ({ p: store.pages.find((p) => p.id === r.dataset.id), child: r.classList.contains("nav-child") })));
+        // A top item's dropdown items move with it
+        const kidsOf = (row) => { const out = []; let n = row.nextElementSibling; while (n && n.classList.contains("nav-child")) { out.push(n); n = n.nextElementSibling; } return row.classList.contains("nav-child") ? [] : out; };
+        const STEP = 36;
         let drag = null;
         list.addEventListener("pointerdown", (e) => {
           const h = e.target.closest(".nav-handle");
           if (!h || e.button > 0) return;
           e.preventDefault();
-          drag = { row: h.closest(".nav-row"), moved: false };
-          drag.row.classList.add("dragging"); list.classList.add("is-dragging");
-          h.setPointerCapture(e.pointerId);
+          const row = h.closest(".nav-row");
+          drag = { row, kids: kidsOf(row), x: e.clientX, wasChild: row.classList.contains("nav-child"), moved: false };
+          drag.kids.forEach((k) => k.classList.add("drag-hidden"));
+          row.classList.add("dragging"); list.classList.add("is-dragging");
+          // On the window while dragging: moving the row in the page drops the handle's pointer capture
+          addEventListener("pointermove", move); addEventListener("pointerup", drop); addEventListener("pointercancel", drop);
         });
-        list.addEventListener("pointermove", (e) => {
+        const move = (e) => {
           if (!drag) return;
-          const rows = [...list.querySelectorAll(".nav-row:not(.dragging)")];
+          const rows = [...list.querySelectorAll(".nav-row:not(.dragging):not(.drag-hidden)")];
           const before = rows.find((r) => { const b = r.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
           if (before !== drag.row.nextElementSibling) { list.insertBefore(drag.row, before || null); drag.moved = true; }
-        });
-        const drop = () => {
-          if (!drag) return;
-          const moved = drag.moved;
-          drag.row.classList.remove("dragging"); list.classList.remove("is-dragging"); drag = null;
-          if (moved) { save(); toast("Menu order saved"); }
+          // Sideways: in or out of a dropdown (not the first item, and not an item that has its own dropdown)
+          const dx = e.clientX - drag.x, first = !drag.row.previousElementSibling || [...list.querySelectorAll(".nav-row:not(.drag-hidden)")][0] === drag.row;
+          const child = first || drag.kids.length ? false : dx > STEP ? true : dx < -STEP ? false : drag.wasChild;
+          if (child !== drag.row.classList.contains("nav-child")) { drag.row.classList.toggle("nav-child", child); drag.moved = true; }
         };
-        list.addEventListener("pointerup", drop);
-        list.addEventListener("pointercancel", drop);
+        const drop = () => {
+          removeEventListener("pointermove", move); removeEventListener("pointerup", drop); removeEventListener("pointercancel", drop);
+          if (!drag) return;
+          const { row, kids, moved } = drag;
+          let at = row;
+          kids.forEach((k) => { k.classList.remove("drag-hidden"); at.after(k); at = k; });
+          row.classList.remove("dragging"); list.classList.remove("is-dragging"); drag = null;
+          if (moved) { const child = row.classList.contains("nav-child"); save(); toast(child ? "Added to the dropdown" : "Menu saved"); }
+        };
         list.addEventListener("keydown", (e) => {
           const h = e.target.closest(".nav-handle");
-          if (!h || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+          if (!h || !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
           e.preventDefault();
-          const row = h.closest(".nav-row"), id = row.dataset.id;
-          const sib = e.key === "ArrowUp" ? row.previousElementSibling : row.nextElementSibling;
-          if (!sib) return;
-          if (e.key === "ArrowUp") list.insertBefore(row, sib); else list.insertBefore(sib, row);
+          const row = h.closest(".nav-row"), id = row.dataset.id, kids = kidsOf(row);
+          if (e.key === "ArrowRight") { if (!row.previousElementSibling || kids.length) return; row.classList.add("nav-child"); }
+          else if (e.key === "ArrowLeft") row.classList.remove("nav-child");
+          else {
+            const block = [row, ...kids];
+            const sib = e.key === "ArrowUp" ? row.previousElementSibling : block[block.length - 1].nextElementSibling;
+            if (!sib) return;
+            if (e.key === "ArrowUp") block.forEach((r) => list.insertBefore(r, sib));
+            else { const sibBlock = [sib, ...kidsOf(sib)]; sibBlock.forEach((r) => list.insertBefore(r, row)); }
+          }
           save();
           view.querySelector(`.nav-row[data-id="${id}"] .nav-handle`).focus();
         });
@@ -1169,19 +1232,52 @@
       }
     },
     "toggle-versions": () => { showAllVersions = !showAllVersions; go(); },
+    // Move an item past its neighbour at the same level (a top item takes its dropdown with it)
     "nav-move": (el) => {
       closeVersionMenus();
-      const menu = store.pages.filter((p) => p.inNav);
-      const i = menu.findIndex((p) => p.id === el.dataset.id), other = menu[i + Number(el.dataset.dir)];
-      if (!other) return;
-      const a = store.pages.indexOf(menu[i]), b = store.pages.indexOf(other);
-      [store.pages[a], store.pages[b]] = [store.pages[b], store.pages[a]];
-      touchSite(); persist(); go();
+      const rows = menuRows(), dir = Number(el.dataset.dir);
+      const blocks = [];
+      rows.forEach((r) => { if (r.child) blocks[blocks.length - 1].kids.push(r); else blocks.push({ row: r, kids: [] }); });
+      const row = rows.find((r) => r.p.id === el.dataset.id);
+      if (row.child) {
+        const b = blocks.find((x) => x.kids.includes(row)), i = b.kids.indexOf(row), j = i + dir;
+        if (j < 0 || j >= b.kids.length) return;
+        [b.kids[i], b.kids[j]] = [b.kids[j], b.kids[i]];
+      } else {
+        const i = blocks.findIndex((x) => x.row === row), j = i + dir;
+        if (j < 0 || j >= blocks.length) return;
+        [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
+      }
+      saveMenu(blocks.flatMap((b) => [b.row, ...b.kids]));
+    },
+    "nav-nest": (el) => {
+      closeVersionMenus();
+      const rows = menuRows(), row = rows.find((r) => r.p.id === el.dataset.id);
+      row.child = true; saveMenu(rows);
+      const parent = store.pages.find((p) => p.id === row.p.parent);
+      toast(`${row.p.title} is now in the “${parent ? parent.title : ""}” dropdown`);
+    },
+    "nav-unnest": (el) => {
+      closeVersionMenus();
+      const rows = menuRows(), i = rows.findIndex((r) => r.p.id === el.dataset.id), row = rows[i];
+      // It goes right after its dropdown, so the items below it stay in the dropdown
+      rows.splice(i, 1);
+      let at = i;
+      while (rows[at] && rows[at].child) at++;
+      row.child = false; rows.splice(at, 0, row);
+      saveMenu(rows); toast(row.p.title + " is back in the menu bar");
+    },
+    "dd-style": (el) => {
+      store.site.header.dropdown = el.dataset.id; touchSite(); persist(); go();
+      toast((SiteKit.DROPDOWNS.find((d) => d.id === el.dataset.id) || {}).name + " dropdown style is in use");
     },
     "nav-remove": (el) => {
       closeVersionMenus();
       const pg = store.pages.find((p) => p.id === el.dataset.id);
-      pg.inNav = false; touchSite(); persist(); go(); toast(pg.title + " removed from the menu");
+      // Its dropdown items go to the menu bar
+      pg.inNav = false; delete pg.parent;
+      store.pages.forEach((p) => { if (p.parent === pg.id) delete p.parent; });
+      touchSite(); persist(); go(); toast(pg.title + " removed from the menu");
     },
     // Edit a menu item: its name and its link (the home page always stays at /)
     "nav-edit": (el) => {
@@ -1224,7 +1320,7 @@
             pg = { id: uid("pg"), title: v.title, slug, inNav: true };
             pg.sections = SiteKit.pageSections(pg, { site: store.site, products: store.products });
           } else pg = store.pages.find((p) => p.id === v.page);
-          pg.inNav = true;
+          pg.inNav = true; delete pg.parent;
           // New items go to the end of the menu
           const menu = store.pages.filter((p) => p.inNav && p !== pg);
           store.pages = [...menu, pg, ...store.pages.filter((p) => !p.inNav)];
@@ -1252,7 +1348,7 @@
     "page-toggle-nav": (el) => {
       closeVersionMenus();
       const pg = store.pages.find((p) => p.id === el.dataset.id);
-      pg.inNav = !pg.inNav; touchSite(); persist(); go(); toast(pg.title + (pg.inNav ? " is now in the menu" : " was hidden from the menu"));
+      pg.inNav = !pg.inNav; delete pg.parent; store.pages.forEach((x) => { if (x.parent === pg.id) delete x.parent; }); touchSite(); persist(); go(); toast(pg.title + (pg.inNav ? " is now in the menu" : " was hidden from the menu"));
     },
     // The Checkout page can't be deleted, only put back to how it started
     "page-reset": async (el) => {
