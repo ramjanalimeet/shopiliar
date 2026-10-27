@@ -313,6 +313,8 @@ window.SiteKit = (() => {
     const sections = (page.sections || []).filter((s) => ed || !s.hidden);
     const label = (s) => ed && opts.selected === s.id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${esc((TYPES[s.type] || {}).label || s.type)}</b><button data-ed="up" title="Move up">↑</button><button data-ed="down" title="Move down">↓</button><button data-ed="duplicate" title="Duplicate">⧉</button><button data-ed="delete" title="Delete">✕</button></div></div>` : "";
     const sel = (id) => (ed && opts.selected === id ? " is-selected" : "");
+    // Just the header (live menu bar preview on the Navigation page)
+    if (opts.headerOnly) return `<div class="site" style="${esc(rootStyle(site))};min-height:0">${renderHeader(site, pages, { page })}</div>`;
     // Editor: a "+" on each gap between sections opens the section library (index = where it goes)
     const insert = (i) => ed && !opts.bare ? `<div class="ed-insert" data-insert="${i}"><button type="button" data-ed-add="${i}" title="Add a section here" aria-label="Add a section here">+</button></div>` : "";
     const fixedLabel = (id, name) => ed && opts.selected === id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${name}</b></div></div>` : "";

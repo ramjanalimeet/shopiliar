@@ -634,32 +634,91 @@
       title: "Navigation",
       render: () => {
         const menu = store.pages.filter((p) => p.inNav);
-        const others = store.pages.filter((p) => !p.inNav);
-        const s = store.site;
-        return `${head("Navigation", "Choose which pages appear in your website's top menu, and in what order.")}
+        // The real header of the website, so the preview matches it exactly
+        const bar = esc(SiteKit.documentHTML(store.site, store.pages, { page: store.pages[0], products: store.products, headerOnly: true }));
+        return `${head("Navigation", "The menu at the top of your website. Drag ⋮⋮ to change the order, or use ⋯ to edit an item.",
+          `<button class="btn btn-primary" data-action="nav-add-item">${icon("plus")}Add menu item</button>`)}
+          <div class="card nav-live">
+            <div class="nav-live-head"><span class="nav-live-dot">Live preview</span><span class="muted small">This is how the menu looks on your website</span></div>
+            <div class="nav-live-frame"><div class="nav-live-inner"><iframe class="nav-frame" srcdoc="${bar}" title="Menu preview" tabindex="-1"></iframe></div></div>
+          </div>
           <div class="card">
-            <div class="card-head"><span class="card-title">Main menu<small>The first 5 items show in the top menu</small></span></div>
-            <div class="nav-preview" style="background:${esc(s.bg)};color:${esc(s.text)}"><b>${esc(s.name || "My Store")}</b><span>${menu.slice(0, 5).map((p) => `<i>${esc(p.title)}</i>`).join("") || '<i class="muted">No menu items</i>'}</span></div>
-            <div class="menu-list">
-              ${menu.map((p, i) => `
-              <div class="menu-item">
-                <span class="menu-pos">${i + 1}</span>
-                <div class="v-text"><b>${esc(p.title)}</b><span class="muted small">/${esc(p.slug)}</span></div>
-                ${i >= 5 ? '<span class="tag">Hidden: over 5</span>' : ""}
-                <div class="v-actions">
-                  <button class="icon-btn" data-action="nav-move" data-dir="-1" data-id="${p.id}" aria-label="Move ${esc(p.title)} up" ${i === 0 ? "disabled" : ""}>${icon("arrowUp")}</button>
-                  <button class="icon-btn" data-action="nav-move" data-dir="1" data-id="${p.id}" aria-label="Move ${esc(p.title)} down" ${i === menu.length - 1 ? "disabled" : ""}>${icon("arrowDown")}</button>
-                  <button class="icon-btn danger" data-action="nav-remove" data-id="${p.id}" aria-label="Remove ${esc(p.title)} from menu" title="Remove from menu">${icon("x")}</button>
+            <div class="card-head"><span class="card-title">Main menu</span><span class="muted small">${menu.length} ${menu.length === 1 ? "item" : "items"} · the first 5 show on your website</span></div>
+            ${menu.length ? `<ul class="nav-list" id="nav-list">${menu.map((p, i) => `
+              <li class="nav-row" data-id="${p.id}">
+                <button type="button" class="nav-handle" aria-label="Move ${esc(p.title)}: drag, or use the up and down arrow keys" title="Drag to reorder">${icon("grip")}</button>
+                <span class="nav-ico">${icon(p.slug ? "pages" : "home")}</span>
+                <div class="nav-text"><b>${esc(p.title)}</b><span>${esc(siteUrl())}/${esc(p.slug)}</span></div>
+                ${i >= 5 ? '<span class="tag">Not shown: only 5 fit</span>' : ""}
+                <div class="v-more">
+                  <button class="icon-btn" data-action="version-menu" aria-haspopup="menu" aria-expanded="false" aria-label="More options for ${esc(p.title)}" title="More options">${icon("dots")}</button>
+                  <div class="v-menu" role="menu" hidden>
+                    <button role="menuitem" data-action="nav-edit" data-id="${p.id}">${icon("edit")}<span><b>Edit</b><small>Change the name or link</small></span></button>
+                    ${i ? `<button role="menuitem" data-action="nav-move" data-dir="-1" data-id="${p.id}">${icon("arrowUp")}<span><b>Move up</b></span></button>` : ""}
+                    ${i < menu.length - 1 ? `<button role="menuitem" data-action="nav-move" data-dir="1" data-id="${p.id}">${icon("arrowDown")}<span><b>Move down</b></span></button>` : ""}
+                    <button role="menuitem" class="danger" data-action="nav-remove" data-id="${p.id}">${icon("x")}<span><b>Remove from menu</b><small>The page itself stays</small></span></button>
+                  </div>
                 </div>
-              </div>`).join("") || '<p class="empty-note" style="padding:18px">Your menu is empty. Add a page below.</p>'}
-            </div>
-            <div class="menu-add">
-              ${others.length ? `<select class="select" id="nav-add-page" aria-label="Page to add">${others.map((p) => `<option value="${p.id}">${esc(p.title)}</option>`).join("")}</select><button class="btn" data-action="nav-add">${icon("plus")}Add to menu</button>`
-                : `<span class="muted small">All your pages are in the menu.</span>`}
-              <a class="link small" href="#/pages">Manage pages</a>
-            </div>
+              </li>`).join("")}</ul>`
+              : `<div class="versions-empty">${icon("menu")}<b>Your menu is empty</b><span>Click <b>Add menu item</b> to put a page in the top menu.</span></div>`}
           </div>
         </div>`;
+      },
+      mount: (view) => {
+        // Fit the 1280px-wide header into the card and size it to the header's height.
+        // On small screens it stays readable (at least 55%) and the bar scrolls sideways.
+        const frame = view.querySelector(".nav-frame"), box = view.querySelector(".nav-live-frame"), inner = view.querySelector(".nav-live-inner");
+        const fit = () => {
+          const k = Math.max(box.clientWidth / 1280, 0.55), doc = frame.contentDocument;
+          const h = doc && doc.body ? doc.body.scrollHeight : 76;
+          frame.style.transform = `scale(${k})`; frame.style.height = h + "px";
+          inner.style.width = 1280 * k + "px"; inner.style.height = h * k + "px";
+        };
+        frame.addEventListener("load", fit); fit();
+        new ResizeObserver(fit).observe(box);
+
+        // Drag ⋮⋮ to reorder (mouse or touch); arrow keys on the handle do the same
+        const list = view.querySelector("#nav-list");
+        if (!list) return;
+        const save = () => {
+          const order = [...list.querySelectorAll(".nav-row")].map((r) => store.pages.find((p) => p.id === r.dataset.id));
+          store.pages = [...order, ...store.pages.filter((p) => !p.inNav)];
+          touchSite(); persist(); go();
+        };
+        let drag = null;
+        list.addEventListener("pointerdown", (e) => {
+          const h = e.target.closest(".nav-handle");
+          if (!h || e.button > 0) return;
+          e.preventDefault();
+          drag = { row: h.closest(".nav-row"), moved: false };
+          drag.row.classList.add("dragging"); list.classList.add("is-dragging");
+          h.setPointerCapture(e.pointerId);
+        });
+        list.addEventListener("pointermove", (e) => {
+          if (!drag) return;
+          const rows = [...list.querySelectorAll(".nav-row:not(.dragging)")];
+          const before = rows.find((r) => { const b = r.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
+          if (before !== drag.row.nextElementSibling) { list.insertBefore(drag.row, before || null); drag.moved = true; }
+        });
+        const drop = () => {
+          if (!drag) return;
+          const moved = drag.moved;
+          drag.row.classList.remove("dragging"); list.classList.remove("is-dragging"); drag = null;
+          if (moved) { save(); toast("Menu order saved"); }
+        };
+        list.addEventListener("pointerup", drop);
+        list.addEventListener("pointercancel", drop);
+        list.addEventListener("keydown", (e) => {
+          const h = e.target.closest(".nav-handle");
+          if (!h || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+          e.preventDefault();
+          const row = h.closest(".nav-row"), id = row.dataset.id;
+          const sib = e.key === "ArrowUp" ? row.previousElementSibling : row.nextElementSibling;
+          if (!sib) return;
+          if (e.key === "ArrowUp") list.insertBefore(row, sib); else list.insertBefore(sib, row);
+          save();
+          view.querySelector(`.nav-row[data-id="${id}"] .nav-handle`).focus();
+        });
       },
     },
 
@@ -985,6 +1044,7 @@
     },
     "toggle-versions": () => { showAllVersions = !showAllVersions; go(); },
     "nav-move": (el) => {
+      closeVersionMenus();
       const menu = store.pages.filter((p) => p.inNav);
       const i = menu.findIndex((p) => p.id === el.dataset.id), other = menu[i + Number(el.dataset.dir)];
       if (!other) return;
@@ -992,13 +1052,66 @@
       [store.pages[a], store.pages[b]] = [store.pages[b], store.pages[a]];
       touchSite(); persist(); go();
     },
-    "nav-remove": (el) => { store.pages.find((p) => p.id === el.dataset.id).inNav = false; touchSite(); persist(); go(); },
-    "nav-add": () => {
-      const id = document.getElementById("nav-add-page").value;
-      const pg = store.pages.find((p) => p.id === id);
-      // Added items go to the end of the menu
-      store.pages = [...store.pages.filter((p) => p !== pg), pg];
-      pg.inNav = true; touchSite(); persist(); go(); toast(pg.title + " added to the menu");
+    "nav-remove": (el) => {
+      closeVersionMenus();
+      const pg = store.pages.find((p) => p.id === el.dataset.id);
+      pg.inNav = false; touchSite(); persist(); go(); toast(pg.title + " removed from the menu");
+    },
+    // Edit a menu item: its name and its link (the home page always stays at /)
+    "nav-edit": (el) => {
+      closeVersionMenus();
+      const pg = store.pages.find((p) => p.id === el.dataset.id);
+      dialog({
+        title: "Edit menu item",
+        body: `<div class="field"><label>Name</label><input class="input" name="title" required maxlength="40" value="${esc(pg.title)}"></div>
+          <div class="field"><label>Link</label><div class="slug-field"><span>${esc(siteUrl())}/</span><input class="input" name="slug" maxlength="60" value="${esc(pg.slug)}" ${pg.locked ? 'disabled title="The home page always stays at /"' : 'placeholder="about-us"'} spellcheck="false" autocomplete="off"></div>
+          <p class="muted small" style="margin-top:6px">${pg.locked ? "The home page's link can't change." : "Use lowercase letters, numbers and dashes."}</p></div>`,
+        submit: "Save",
+        onSubmit: (v) => {
+          if (!pg.locked) {
+            const slug = String(v.slug || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            if (!slug) { toast("Please add a link, e.g. about-us"); return false; }
+            if (store.pages.some((p) => p !== pg && p.slug === slug)) { toast(`Another page already uses /${slug}`); return false; }
+            pg.slug = slug;
+          }
+          pg.title = v.title; touchSite(); persist(); go(); toast("Menu item saved");
+        },
+      });
+    },
+    // Put a hidden page in the menu, or make a new page for it
+    "nav-add-item": () => {
+      const hidden = store.pages.filter((p) => !p.inNav), canNew = withinLimit(plan().pages, store.pages.length);
+      if (!hidden.length && !canNew) { toast(`Your ${plan().name} plan allows ${plan().pages} pages — upgrade to add more`); return; }
+      dialog({
+        title: "Add menu item",
+        body: `${hidden.length ? `<label class="add-choice"><input type="radio" name="kind" value="page" checked><span><b>A page you already have</b>
+            <select class="select" name="page">${hidden.map((p) => `<option value="${p.id}">${esc(p.title)} (/${esc(p.slug)})</option>`).join("")}</select></span></label>` : ""}
+          ${canNew ? `<label class="add-choice"><input type="radio" name="kind" value="new" ${hidden.length ? "" : "checked"}><span><b>A new page</b>
+            <input class="input" name="title" maxlength="40" placeholder="Page name, e.g. FAQ"></span></label>` : ""}`,
+        submit: "Add to menu",
+        onSubmit: (v) => {
+          let pg;
+          if (v.kind === "new") {
+            if (!v.title) { toast("Please give the new page a name"); return false; }
+            let slug = v.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "page";
+            while (store.pages.some((p) => p.slug === slug)) slug += "-2";
+            pg = { id: uid("pg"), title: v.title, slug, inNav: true };
+            pg.sections = SiteKit.pageSections(pg, { site: store.site, products: store.products });
+          } else pg = store.pages.find((p) => p.id === v.page);
+          pg.inNav = true;
+          // New items go to the end of the menu
+          const menu = store.pages.filter((p) => p.inNav && p !== pg);
+          store.pages = [...menu, pg, ...store.pages.filter((p) => !p.inNav)];
+          touchSite(); persist(); go(); toast(pg.title + " added to the menu");
+        },
+        onOpen: (form) => {
+          // Typing a new page name picks "A new page"
+          const t = form.querySelector('input[name="title"]');
+          if (t) t.addEventListener("focus", () => { form.querySelector('input[value="new"]').checked = true; });
+          const sel = form.querySelector('select[name="page"]');
+          if (sel) sel.addEventListener("focus", () => { form.querySelector('input[value="page"]').checked = true; });
+        },
+      });
     },
     "add-page": () => {
       if (!withinLimit(plan().pages, store.pages.length)) { toast(`Your ${plan().name} plan allows ${plan().pages} pages — upgrade to add more`); return; }
