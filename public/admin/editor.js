@@ -47,7 +47,7 @@ window.SiteEditor = (() => {
       ["heading", "", "Order button"], ["text", "button", "Button text"], ["toggle", "buttonTotal", "Show total on the button"], ["textarea", "note", "Small text under the button", { rows: 2 }],
       ["note", "", "The order summary shows what's in the customer's cart."]],
     header: [["image", "logo", "Logo image (optional)"], ["toggle", "announcement.show", "Show announcement bar"], ["text", "announcement.text", "Announcement", { when: "announcement.show" }],
-      ["toggle", "search", "Search icon"], ["toggle", "account", "Account icon"], ["toggle", "cart", "Cart icon"], ["note", "", 'Menu items come from <a href="#/navigation">Navigation</a>. The website name, logo and announcement can also be changed in <a href="#/preferences">Preferences</a>.']],
+      ["toggle", "search", "Search icon"], ["toggle", "account", "Account icon"], ["toggle", "cart", "Cart icon"], ["note", "", 'The menu, the banner\'s link and color, and more header buttons are in <a href="#/navigation">Navigation</a>. The website name and logo are also in <a href="#/preferences">Preferences</a>.']],
     footer: [["textarea", "text", "About text"], ["toggle", "showMenu", "Show pages"], ["toggle", "showContact", "Show contact details"], ["toggle", "showSocial", "Show social links"], ["text", "copyright", "Copyright line", { placeholder: "© 2026 Your store. All rights reserved." }],
       ["note", "", 'Social links come from <a href="#/preferences">Preferences</a>.']],
   };

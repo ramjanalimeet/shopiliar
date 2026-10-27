@@ -463,7 +463,7 @@ window.SiteKit = (() => {
           if (!kids.length) return a;
           return `<div class="dd${p === firstDd ? " open" : ""}">${a.replace("</a>", `${svg("chevron", "dd-arrow")}</a>`)}${renderDropdown(site, p, kids, opts)}</div>`;
         }).join("")}</nav>
-        <div class="tools">${h.search ? `<span title="Search">${svg("search")}</span>` : ""}${x.wishlist ? `<span title="Wishlist">${svg("heart")}</span>` : ""}${x.track ? `<a href="/contact" title="Track order">${svg("truck")}</a>` : ""}${h.account ? `<span title="Account">${svg("user")}</span>` : ""}${x.whatsapp && waLink(site) ? `<a href="${esc(waLink(site))}" target="_blank" rel="noopener" title="WhatsApp" class="t-wa">${socialIcon("whatsapp")}</a>` : ""}${x.phone && digits(site.phone) ? `<a href="tel:${esc(digits(site.phone))}" title="Call us">${svg("phone")}</a>` : ""}${h.cart ? `<a href="/checkout" aria-label="Cart and checkout" title="Cart">${svg("cart")}</a>` : ""}${h.cta && h.cta.show && h.cta.text ? `<a class="btn t-cta" href="${esc(safeLink(h.cta.link) || "/shop")}">${esc(h.cta.text)}</a>` : ""}<span class="burger">${svg("menu")}</span></div>
+        <div class="tools">${h.search ? `<span title="Search">${svg("search")}</span>` : ""}${x.wishlist ? `<span title="Wishlist">${svg("heart")}</span>` : ""}${x.track ? `<a href="/contact" title="Track order">${svg("truck")}</a>` : ""}${h.account ? `<span title="Account">${svg("user")}</span>` : ""}${x.whatsapp && waLink(site) ? `<a href="${esc(waLink(site))}" target="_blank" rel="noopener" title="WhatsApp" class="t-wa">${socialIcon("whatsapp")}</a>` : ""}${x.phone && digits(site.phone) ? `<a href="tel:${esc(digits(site.phone))}" title="Call us">${svg("phone")}</a>` : ""}${h.cart ? `<a href="/checkout" aria-label="Cart and checkout" title="Cart">${svg("cart")}</a>` : ""}${h.cta && h.cta.show && h.cta.text ? `<a class="btn t-cta" href="${esc(safeLink(h.cta.link) || "/shop")}">${esc(h.cta.text)}</a>` : ""}<button type="button" class="burger" aria-label="Menu">${svg("menu")}</button></div>
       </div>
     </header>`;
   };
@@ -525,7 +525,7 @@ window.SiteKit = (() => {
     // opts.start: the page to open first (default: the home page)
     const first = Math.max(0, pages.findIndex((p) => p.id === opts.start));
     const all = pages.map((p, i) => `<div data-slug="${esc(p.slug || "")}"${i === first ? "" : " hidden"}>${renderBody(site, pages, { ...opts, page: p })}</div>`).join("");
-    const nav = `<script>document.addEventListener("click",function(e){var a=e.target.closest("a[href^='/']");if(!a)return;var slug=a.getAttribute("href").slice(1),pg=document.querySelector('[data-slug="'+slug+'"]');e.preventDefault();if(!pg)return;document.querySelectorAll("[data-slug]").forEach(function(d){d.hidden=d!==pg});scrollTo(0,0)});<\/script>`;
+    const nav = `<script>document.addEventListener("click",function(e){var m=e.target.closest(".burger");if(m){m.closest(".s-header").classList.toggle("m-open");return}document.querySelectorAll(".m-open").forEach(function(h){h.classList.remove("m-open")});var a=e.target.closest("a[href^='/']");if(!a)return;var slug=a.getAttribute("href").slice(1),pg=document.querySelector('[data-slug="'+slug+'"]');e.preventDefault();if(!pg)return;document.querySelectorAll("[data-slug]").forEach(function(d){d.hidden=d!==pg});scrollTo(0,0)});<\/script>`;
     return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${all.replace(/\$/g, "$$$$")}${nav}</body>`);
   };
 

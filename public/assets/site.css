@@ -49,7 +49,7 @@ h2 { font-size: clamp(28px, 3.4vw, 42px); }
 .menu a { padding: 6px 0; border-bottom: 2px solid transparent; }
 .menu a.on, .menu a:hover { border-color: currentColor; }
 .tools { display: flex; align-items: center; gap: 22px; }
-.burger { display: none; }
+.burger { display: none; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; }
 
 /* Dropdown menus */
 .nav { position: relative; }
@@ -270,6 +270,16 @@ figcaption span { font-size: 14px; opacity: .7; }
   .menu { display: none; }
   .tools { gap: 16px; }
   .burger { display: block; }
+  /* Phone menu: the burger opens the menu under the header, with dropdown items listed under their parent */
+  .s-header.m-open .menu { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; z-index: 40; gap: 0; margin: 0; padding: 4px 18px 14px; background: var(--bg); border-bottom: 1px solid var(--line); box-shadow: 0 16px 30px -18px rgba(0,0,0,.35); }
+  .m-open .menu > a, .m-open .dd > a { padding: 13px 0; border-bottom: 1px solid var(--line) !important; font-size: 16px; }
+  .m-open .dd { flex-direction: column; position: static; }
+  .m-open .dd-arrow { display: none; }
+  .m-open .dd-panel { display: block; position: static; transform: none; padding: 0; }
+  .m-open .dd-in { display: grid; gap: 0; padding: 0 0 0 16px; border: 0; border-radius: 0; box-shadow: none; background: none; min-width: 0; }
+  .m-open .dd-in a { display: block; width: auto; padding: 11px 0; border-bottom: 1px solid var(--line) !important; font-size: 15px; background: none; }
+  .m-open .dd-img, .m-open .dd-ico, .m-open .dd-feature, .m-open .dd-head, .m-open .dd-in small, .m-open .dd-cols .ic { display: none; }
+  .m-open .dd-cols { display: contents; }
   .pad-m { padding: 52px 0; } .pad-l { padding: 72px 0; }
   .s-hero.pad-m .hero-grid, .s-hero.pad-l .hero-grid { padding-top: 40px; padding-bottom: 40px; }
   .hero-grid, .split { grid-template-columns: 1fr; }
