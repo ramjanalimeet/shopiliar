@@ -47,7 +47,15 @@
       <header class="topbar">
         <button class="top-icon menu-btn" type="button" aria-label="Open menu"><span data-icon="menu"></span></button>
         <label class="top-search"><span data-icon="search"></span><input id="top-search" type="search" placeholder="Search products, orders, customers…" aria-label="Search products, orders and customers"></label>
-        <a class="top-bell" href="#/orders" id="bell" aria-label="Pending orders" title="Pending orders"><span data-icon="bell"></span><span class="badge" id="bell-count"></span></a>
+        <!-- Date filters for Home: a preset range, or one whole month -->
+        <div class="top-filters" id="top-filters" hidden>
+          <label class="top-select"><span data-icon="calendar"></span><select id="f-range" aria-label="Date range"></select><span data-icon="chevronDown"></span></label>
+          <label class="top-select"><span data-icon="calendar"></span><select id="f-month" aria-label="Month"></select><span data-icon="chevronDown"></span></label>
+        </div>
+        <div class="bell-wrap">
+          <button class="top-bell" type="button" id="bell" aria-label="Notifications" title="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="bell-menu"><span data-icon="bell"></span><span class="badge" id="bell-count"></span></button>
+          <div class="bell-menu" id="bell-menu" hidden></div>
+        </div>
         <div class="profile">
           <button class="profile-btn" type="button" id="profile-btn" aria-haspopup="menu" aria-expanded="false">
             <span class="profile-avatar" id="me-avatar"></span>
