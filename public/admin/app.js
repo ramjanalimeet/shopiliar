@@ -193,6 +193,27 @@
   const syncPayments = () => { const list = checkoutPays(); if (list) Object.entries(PAYMENT_LABEL).forEach(([k, l]) => { store.settings.payments[k] = hasPay(list, l) >= 0; }); };
   syncPayments();
   // The Checkout page is part of every website, so it doesn't count toward the plan's pages
+  // The website isn't live, or it changed after the last publish
+  const unpublished = () => !store.published || !!(store.siteSavedAt && store.publishedAt && store.siteSavedAt > store.publishedAt);
+  // Page links: unique, and never one the dashboard or the website itself uses
+  const RESERVED_SLUGS = ["admin", "api", "media", "assets", "master-admin", "checkout"];
+  const slugify = (x) => String(x || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const slugTaken = (slug, except) => RESERVED_SLUGS.includes(slug) || store.pages.some((p) => p !== except && p.slug === slug);
+  const uniqueSlug = (title, except) => {
+    const base = slugify(title) || "page";
+    let slug = base, n = 2;
+    while (slugTaken(slug, except)) slug = `${base}-${n++}`;
+    return slug;
+  };
+  // Older stores could have two pages with the same link (e.g. a second "checkout"): give the extra one its own
+  {
+    const seen = new Set();
+    store.pages.forEach((p) => {
+      if (p.locked) { seen.add(p.slug); return; }
+      if (seen.has(p.slug) || RESERVED_SLUGS.includes(p.slug)) { const base = p.slug || "page"; let n = 2; while (seen.has(`${base}-${n}`) || store.pages.some((x) => x.slug === `${base}-${n}`)) n++; p.slug = `${base}-${n}`; }
+      seen.add(p.slug);
+    });
+  }
   const pageCount = () => store.pages.filter((p) => !p.system).length;
   // Navigation: the promotional banner and the buttons on the right of the header
   // Navigation is split in three tabs, so there's only one thing on screen at a time
@@ -690,10 +711,13 @@
             <div class="theme-info">
               <span class="theme-thumb" style="background:linear-gradient(135deg,${esc(s.bg)} 55%,${esc(s.accent)})"></span>
               <div class="theme-meta">
-                <div class="theme-name"><b>${esc(t.name)}</b><span class="tag green">Current theme</span>${store.published ? "" : '<span class="tag dot yellow">Not published</span>'}</div>
+                <div class="theme-name"><b>${esc(t.name)}</b><span class="tag green">Current theme</span>${!store.published ? '<span class="tag dot yellow">Not published</span>' : unpublished() ? '<span class="tag dot yellow">Changes not published</span>' : '<span class="tag dot green">Live</span>'}</div>
                 <span class="muted small">Last saved: ${stamp(store.siteSavedAt || store.publishedAt)}</span>
               </div>
-              <a class="btn btn-dark" href="#/website">${icon("brush")}Customize</a>
+              <div class="theme-btns">
+                ${unpublished() ? `<button class="btn" data-action="publish">${icon("rocket")}${store.published ? "Publish changes" : "Publish"}</button>` : ""}
+                <a class="btn btn-primary" href="#/website">${icon("brush")}Customize</a>
+              </div>
             </div>
           </div>
 
@@ -939,10 +963,10 @@
                   <div class="field"><label for="p-desc">Description</label><textarea class="textarea" id="p-desc" data-k="seo.description" maxlength="160" placeholder="e.g. Handmade furniture delivered across Bangladesh.">${esc(seo.description)}</textarea><span class="pf-hint"><span data-count="seo.description">${seo.description.length}</span> of 160 characters</span></div>
                   ${image("seo.image", "Share image", seo.image, "Shown when your link is shared on Facebook, WhatsApp or Messenger. 1200 × 630 works best.")}
               </div></div>
-              <div class="card"><div class="card-head"><span class="card-title">Announcement bar<small>A short message at the very top of every page</small></span>
-                <label class="switch" style="margin-left:auto"><input type="checkbox" data-k="header.announcement.show" ${h.announcement.show ? "checked" : ""} aria-label="Show the announcement bar"><i></i></label></div><div class="card-body">
-                  <div class="pf-announce-demo ${h.announcement.show ? "" : "off"}" style="${esc(SiteKit.announceStyle(h.announcement) || `background:${s.accent};color:${SiteKit.isDark(s.accent) ? "#fff" : "#111"}`)}" id="pf-announce-demo">${esc(h.announcement.text || "Your message")}</div>
-                  ${text("header.announcement.text", "Message", h.announcement.text, { max: 90, ph: "Free delivery on orders over ৳2,000" })}
+              <div class="card"><div class="card-head"><span class="card-title">Promotional banner<small>A short message at the very top of every page</small></span>
+                <label class="switch" style="margin-left:auto"><input type="checkbox" data-k="header.announcement.show" ${h.announcement.show ? "checked" : ""} aria-label="Show the promotional banner"><i></i></label></div><div class="card-body">
+                  <div class="pf-announce-demo ${h.announcement.show ? "" : "off"}" style="${esc(SiteKit.announceStyle(h.announcement) || `background:${s.accent};color:${SiteKit.isDark(s.accent) ? "#fff" : "#111"}`)}" id="pf-announce-demo">${esc(h.announcement.text || "Your message")}${h.announcement.link ? " →" : ""}</div>
+                  <div class="pf-banner-edit"><span class="muted small">Change the message, link and color in Navigation.</span><button type="button" class="btn btn-sm" data-edit-banner>${icon("edit")}Edit banner</button></div>
               </div></div>
               <div class="card"><div class="card-head"><span class="card-title">Look &amp; feel<small>Colors, fonts and buttons for your whole website</small></span></div>
                 <div class="card-body pf-look">
@@ -988,7 +1012,6 @@
           if (k === "phone" || k === "address") store.settings[k] = el.value;
           if (k === "seo.title" || k === "name") view.querySelector("#serp-title").textContent = store.site.seo.title || store.site.name || "My Store";
           if (k === "seo.description") view.querySelector("#serp-desc").textContent = store.site.seo.description || "Add a description so people know what you sell.";
-          if (k === "header.announcement.text") view.querySelector("#pf-announce-demo").textContent = el.value || "Your message";
           if (el.type === "color") el.closest(".pf-color").querySelector("small").textContent = el.value;
           view.querySelectorAll(`[data-count="${k}"]`).forEach((c) => { c.textContent = el.value.length; });
           changed(false);
@@ -1006,6 +1029,7 @@
         form.addEventListener("click", (e) => {
           const b = e.target.closest("button");
           if (!b) return;
+          if (b.hasAttribute("data-edit-banner")) { navTab = "banner"; location.hash = "#/navigation"; return; }
           if (b.dataset.set) { set(store.site, b.dataset.set, b.dataset.v); changed(true); }
           else if (b.dataset.palette) { const [bg, tx, ac] = b.dataset.palette.split(","); Object.assign(store.site, { bg, text: tx, accent: ac }); changed(true); }
           else if (b.dataset.clear) { set(store.site, b.dataset.clear, ""); changed(true); }
@@ -1131,7 +1155,7 @@
     body: `<div class="field"><label>Page title</label><input class="input" name="title" required maxlength="40" value="${esc(pg?.title)}" placeholder="e.g. FAQ"></div>`,
     submit: pg ? "Save" : "Add page",
     onSubmit: (v) => {
-      const slug = v.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "page";
+      const slug = uniqueSlug(v.title, pg);
       if (pg) { pg.title = v.title; if (!pg.locked) pg.slug = slug; }
       else { const np = { id: uid("pg"), title: v.title, slug, inNav: true }; np.sections = SiteKit.pageSections(np, { site: store.site, products: store.products }); store.pages.push(np); }
       touchSite(); persist(); go(); toast(pg ? "Page renamed" : "Page added");
@@ -1395,9 +1419,10 @@
         submit: "Save",
         onSubmit: (v) => {
           if (!pg.locked) {
-            const slug = String(v.slug || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            const slug = slugify(v.slug);
             if (!slug) { toast("Please add a link, e.g. about-us"); return false; }
-            if (store.pages.some((p) => p !== pg && p.slug === slug)) { toast(`Another page already uses /${slug}`); return false; }
+            if (RESERVED_SLUGS.includes(slug) && !store.pages.some((p) => p !== pg && p.slug === slug)) { toast(`/${slug} is used by Shopilier — please pick another link`); return false; }
+            if (slugTaken(slug, pg)) { toast(`Another page already uses /${slug}`); return false; }
             pg.slug = slug;
           }
           pg.title = v.title; touchSite(); persist(); go(); toast("Menu item saved");
@@ -1419,9 +1444,7 @@
           let pg;
           if (v.kind === "new") {
             if (!v.title) { toast("Please give the new page a name"); return false; }
-            let slug = v.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "page";
-            while (store.pages.some((p) => p.slug === slug)) slug += "-2";
-            pg = { id: uid("pg"), title: v.title, slug, inNav: true };
+            pg = { id: uid("pg"), title: v.title, slug: uniqueSlug(v.title), inNav: true };
             pg.sections = SiteKit.pageSections(pg, { site: store.site, products: store.products });
           } else pg = store.pages.find((p) => p.id === v.page);
           pg.inNav = true; delete pg.parent;

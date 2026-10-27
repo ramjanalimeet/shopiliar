@@ -346,7 +346,7 @@
 .theme-meta { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .theme-name { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .theme-name b { font-size: 16px; color: var(--ink); }
-.theme-info .btn-dark { flex: none; }
+.theme-btns { display: flex; gap: 8px; flex: none; }
 
 .versions-card { margin-top: 18px; }
 .versions-card .card-head { align-items: flex-start; padding: 18px 20px; }
@@ -543,6 +543,7 @@
 
 .pf-announce-demo { margin-bottom: 16px; padding: 10px 14px; border-radius: 10px; text-align: center; font-size: 13.5px; font-weight: 500; transition: opacity .2s; }
 .pf-announce-demo.off { opacity: .35; }
+.pf-banner-edit { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .pf-social { display: flex; align-items: flex-end; gap: 12px; }
 .pf-social .field { flex: 1; }
 .pf-social-ico { width: 40px; height: 40px; flex: none; display: grid; place-items: center; margin-bottom: 16px; border-radius: 50%; border: 1px solid var(--border); background: #fff; color: #111; }
@@ -573,7 +574,7 @@
   .th-phone { width: 96px; border-width: 5px; border-radius: 16px 16px 0 0; padding-top: 6px; }
   .th-desktop { border-width: 5px; }
   .theme-info { flex-wrap: wrap; padding: 16px; }
-  .theme-info .btn-dark { width: 100%; justify-content: center; }
+  .theme-btns { width: 100%; } .theme-btns .btn { flex: 1; justify-content: center; }
     .versions { padding: 12px 14px 14px; }
   .version { flex-wrap: wrap; }
   .v-text { width: calc(100% - 52px); flex: none; }
