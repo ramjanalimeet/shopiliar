@@ -336,6 +336,9 @@ window.SiteKit = (() => {
     return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
       <title>${esc((site.seo && site.seo.title) || site.name || "My Store")}</title>
       ${site.seo && site.seo.description ? `<meta name="description" content="${esc(site.seo.description)}">` : ""}
+      <meta property="og:title" content="${esc((site.seo && site.seo.title) || site.name || "My Store")}">
+      ${site.seo && site.seo.description ? `<meta property="og:description" content="${esc(site.seo.description)}">` : ""}
+      ${site.seo && safeImg(site.seo.image) ? `<meta property="og:image" content="${esc((site.seo.image.startsWith("/") ? origin : "") + site.seo.image)}">` : ""}
       <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
       <link rel="stylesheet" href="${FONT_LINK}"><link rel="stylesheet" href="${origin}/assets/site.css">
       </head><body${opts.ed ? ' class="editing"' : ""}>${renderBody(site, pages, opts)}</body></html>`;
