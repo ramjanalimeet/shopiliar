@@ -134,11 +134,17 @@
   const hasFreeDomain = () => account.billing === "yearly" && account.plan !== "starter";
 
   // ---------- Chrome ----------
+  // Active products with 3 or fewer left (0 = sold out)
+  const lowStock = () => store.products.filter((p) => p.status !== "draft" && p.stock <= 3);
+  let bellMenu = null, paintBell = () => {};
+  let unreadReplies = 0;
   const refreshChrome = () => {
     const pending = store.orders.filter((o) => o.status === "Pending").length;
     document.querySelectorAll("[data-badge]").forEach((el) => { el.textContent = pending || ""; });
     document.getElementById("count-pages").textContent = store.pages.length;
-    document.getElementById("bell-count").textContent = pending ? (pending > 9 ? "9+" : pending) : "";
+    const alerts = pending + lowStock().length + unreadReplies;
+    document.getElementById("bell-count").textContent = alerts ? (alerts > 9 ? "9+" : alerts) : "";
+    if (bellMenu && !bellMenu.hidden) paintBell();
     document.getElementById("me-avatar").innerHTML = avatar(account.name);
     document.getElementById("me-name").textContent = account.name.split(" ")[0];
     document.getElementById("me-store").textContent = siteUrl();
@@ -149,7 +155,7 @@
   const profileBtn = document.getElementById("profile-btn");
   const profileMenu = document.getElementById("profile-menu");
   const toggleMenu = (open) => { profileMenu.hidden = !open; profileBtn.setAttribute("aria-expanded", String(open)); };
-  profileBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleMenu(profileMenu.hidden); });
+  profileBtn.addEventListener("click", (e) => { e.stopPropagation(); if (bellMenu) bellMenu.hidden = true; toggleMenu(profileMenu.hidden); });
   document.addEventListener("click", (e) => { if (!profileMenu.hidden && !e.target.closest(".profile")) toggleMenu(false); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !profileMenu.hidden) { toggleMenu(false); profileBtn.focus(); } });
   profileMenu.addEventListener("click", (e) => { if (e.target.closest("a")) toggleMenu(false); });
@@ -178,7 +184,29 @@
   const usage = (kind, used, limit) => limit == null ? `<span class="muted small">Unlimited ${kind}</span>` : `<span class="muted small">${used} / ${limit} ${kind}</span>`;
 
   // ---------- Home helpers ----------
-  let range = 30; // days shown on Home
+  // Home shows a preset range (rolling days) or one calendar month, chosen in the top bar
+  let period = { days: 30 };
+  const RANGES = [[7, "Last 7 days"], [30, "Last 30 days"], [90, "Last 90 days"], [365, "Last 12 months"]];
+  const monthName = (y, m) => new Date(y, m, 1).toLocaleString("en-GB", { month: "long", year: "numeric" });
+  // from/to and the period before it, plus what the chart needs (number of days, end, offset to the previous period)
+  const periodInfo = () => {
+    const now = Date.now();
+    if (period.month) {
+      const { y, m } = period.month;
+      const from = new Date(y, m, 1).getTime(), to = Math.min(new Date(y, m + 1, 1).getTime(), now);
+      const prevFrom = new Date(y, m - 1, 1).getTime();
+      return { from, to, prevFrom, prevTo: prevFrom + (to - from), days: Math.max(1, Math.ceil((to - from) / 864e5)), chartEnd: to - 1, span: from - prevFrom,
+        vs: `vs. ${new Date(y, m - 1, 1).toLocaleString("en-GB", { month: "long" })}` };
+    }
+    const span = period.days * 864e5;
+    return { from: now - span, to: now, prevFrom: now - 2 * span, prevTo: now - span, days: period.days, chartEnd: now, span, vs: `vs. previous ${period.days} days` };
+  };
+  // store.visitors holds the last 14 days, oldest first
+  const visitorsBetween = (from, to) => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const n = store.visitors.length;
+    return store.visitors.reduce((sum, v, i) => { const t = today.getTime() - (n - 1 - i) * 864e5; return t >= new Date(from).setHours(0, 0, 0, 0) && t < to ? sum + v : sum; }, 0);
+  };
   const inPeriod = (orders, from, to) => orders.filter((o) => { const t = new Date(o.date).getTime(); return t >= from && t < to; });
   const delta = Dash.delta;
   // Share of this period's customers who had ordered before
@@ -191,7 +219,7 @@
     return (back.length / names.length) * 100;
   };
   // Daily line chart for this period against the previous one (shared with the master dashboard)
-  const lineChart = (now, span, valueFor, money = true) => Dash.lineChart(range, now, span, valueFor, money);
+  const lineChart = (days, now, span, valueFor, money = true) => Dash.lineChart(days, now, span, valueFor, money);
   // Website preview with the store's products
   const stamp = (d) => d ? new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "Not yet";
   // Any change to the website itself (design, text, pages, menu, preferences)
@@ -230,7 +258,7 @@
       <div class="th-phone"><div class="th-screen" data-w="390"><iframe class="th-canvas" style="width:390px" srcdoc="${html}" title="Phone preview" tabindex="-1" loading="lazy"></iframe></div></div>
     </div>`;
   };
-  const salesChart = (now, span) => lineChart(now, span, (from, to) => sales(inPeriod(store.orders, from, to)));
+  const salesChart = (p) => lineChart(p.days, p.chartEnd, p.span, (from, to) => sales(inPeriod(store.orders, from, to)));
   const topProducts = (orders) => {
     if (!store.products.length) return `<p class="empty-note">No products yet. <a class="link" href="#/products" data-action="add-product">Add your first product</a></p>`;
     const sold = {};
@@ -267,22 +295,21 @@
     home: {
       title: "Home",
       render: () => {
-        const now = Date.now(), span = range * 864e5;
-        const cur = inPeriod(store.orders, now - span, now), prev = inPeriod(store.orders, now - 2 * span, now - span);
-        const live = (list) => list.filter((o) => o.status !== "Cancelled");
-        const visits = store.visitors.slice(-Math.min(range, store.visitors.length)).reduce((a, b) => a + b, 0);
-        const visitsPrev = range === 7 ? store.visitors.slice(0, 7).reduce((a, b) => a + b, 0) : 0;
-        const vsText = `<span class="muted">vs. previous ${range} days</span>`;
+        const p = periodInfo();
+        const cur = inPeriod(store.orders, p.from, p.to), prev = inPeriod(store.orders, p.prevFrom, p.prevTo);
+        // Visitor numbers only go back 14 days, so compare only when the previous period fits inside them
+        const visits = visitorsBetween(p.from, p.to);
+        const visitsPrev = p.prevFrom >= Date.now() - 14 * 864e5 ? visitorsBetween(p.prevFrom, p.prevTo) : null;
+        const vsText = `<span class="muted">${p.vs}</span>`;
         const stat = (label, value, ico, color, d) => `<div class="stat"><div class="stat-top"><span class="stat-label">${label}</span><span class="stat-ico ${color}">${icon(ico)}</span></div><div class="stat-value">${value}</div><div class="stat-delta">${d}</div></div>`;
         const curSales = sales(cur), prevSales = sales(prev);
-        const ret = returning(cur, now - span), retPrev = returning(prev, now - 2 * span);
-        return `${head("", "",
-          `<label class="range">${icon("calendar")}<select data-action="range" aria-label="Date range">${[7, 30, 90].map((d) => `<option value="${d}"${d === range ? " selected" : ""}>Last ${d} days</option>`).join("")}</select>${icon("chevronDown")}</label>`)}
+        const ret = returning(cur, p.from), retPrev = returning(prev, p.prevFrom);
+        return `<div class="page">
           ${store.published ? "" : `<div class="callout yellow"><span class="ico">${icon("rocket")}</span><div><b>Your website isn't live yet.</b> Customize it, then publish when you're ready.</div><a class="btn btn-sm btn-dark" href="#/website">Customize &amp; publish</a></div>`}
           <div class="stats">
             ${stat("Total sales", taka(curSales), "bag", "c1", delta(curSales, prevSales) + vsText)}
             ${stat("Total orders", cur.length.toLocaleString("en-IN"), "cart", "c2", delta(cur.length, prev.length) + vsText)}
-            ${stat("Online store sessions", visits.toLocaleString("en-IN"), "barchart", "c3", store.published || visits ? (visitsPrev ? delta(visits, visitsPrev) + vsText : `<span class="muted">Last ${Math.min(range, 14)} days</span>`) : '<span class="muted">Counting starts when you publish</span>')}
+            ${stat("Online store sessions", visits.toLocaleString("en-IN"), "barchart", "c3", store.published || visits ? (visitsPrev ? delta(visits, visitsPrev) + vsText : '<span class="muted">Visitor counts cover the last 14 days</span>') : '<span class="muted">Counting starts when you publish</span>')}
             ${stat("Returning customers", ret.toFixed(1).replace(/\.0$/, "") + "%", "customers", "c4", delta(ret, retPrev, true) + vsText)}
           </div>
           <div class="home-grid">
@@ -291,7 +318,7 @@
                 <div class="card-body">
                   <div class="sales-top"><span class="sales-total">${taka(curSales)}</span><span class="stat-delta" style="margin:0">${delta(curSales, prevSales)}${vsText}</span>
                     <span class="legend"><span><i></i>This period</span><span><i class="prev"></i>Previous period</span></span></div>
-                  ${salesChart(now, span)}
+                  ${salesChart(p)}
                 </div></div>
               <div class="card"><div class="card-head"><span class="card-title">Recent orders</span><a class="link" href="#/orders">View all</a></div>
                 <div class="table-wrap"><table class="orders-mini">
@@ -702,7 +729,7 @@
   // The chat button sits at the bottom right; unread replies show as a badge on it
   let inbox = null;
   const chatFab = document.getElementById("chat-fab"), chatPanel = document.getElementById("chat-panel"), chatRoot = document.getElementById("chat-root");
-  const setMsgBadge = (n) => { document.getElementById("msg-count").textContent = n ? (n > 9 ? "9+" : n) : ""; };
+  const setMsgBadge = (n) => { unreadReplies = n || 0; document.getElementById("msg-count").textContent = n ? (n > 9 ? "9+" : n) : ""; refreshChrome(); };
   const checkMessages = () => ShopilierInbox.unread("user").then(setMsgBadge);
   checkMessages();
   setInterval(() => { if (chatPanel.hidden) checkMessages(); }, 60000);
@@ -1106,7 +1133,6 @@
   });
   view.addEventListener("change", (e) => {
     const el = e.target;
-    if (el.dataset.action === "range") { range = Number(el.value); go(); }
     if (el.dataset.action === "pixel-on") {
       const p = pixelById(el.dataset.id);
       store.marketing.pixels[p.id].on = el.checked; persist(); go(); toast(`${p.name} ${el.checked ? "is active" : "is paused"}`);
@@ -1144,6 +1170,51 @@
     if (location.hash === (isProduct ? "#/products" : "#/orders")) go();
   });
 
+  // ---------- Home date filters (top bar) ----------
+  const filters = document.getElementById("top-filters"), fRange = document.getElementById("f-range"), fMonth = document.getElementById("f-month");
+  const paintFilters = () => {
+    const d = new Date();
+    fRange.innerHTML = `${period.month ? '<option value="" selected>Date range</option>' : ""}${RANGES.map(([n, l]) => `<option value="${n}"${!period.month && period.days === n ? " selected" : ""}>${l}</option>`).join("")}`;
+    fMonth.innerHTML = `<option value=""${period.month ? "" : " selected"}>Month</option>${Array.from({ length: 12 }, (_, i) => {
+      const t = new Date(d.getFullYear(), d.getMonth() - i, 1), y = t.getFullYear(), m = t.getMonth();
+      return `<option value="${y}-${m}"${period.month && period.month.y === y && period.month.m === m ? " selected" : ""}>${monthName(y, m)}</option>`;
+    }).join("")}`;
+  };
+  fRange.addEventListener("change", () => { if (fRange.value) { period = { days: Number(fRange.value) }; paintFilters(); go(); } });
+  fMonth.addEventListener("change", () => {
+    if (!fMonth.value) period = { days: 30 };
+    else { const [y, m] = fMonth.value.split("-").map(Number); period = { month: { y, m } }; }
+    paintFilters(); go();
+  });
+  paintFilters();
+
+  // ---------- Notifications (bell) ----------
+  const bellBtn = document.getElementById("bell");
+  bellMenu = document.getElementById("bell-menu");
+  paintBell = () => {
+    const pending = store.orders.filter((o) => o.status === "Pending"), low = lowStock();
+    const items = [
+      ...pending.slice(0, 5).map((o) => `<a class="bell-item" href="#/orders" data-close-bell><span class="bell-ico c2">${icon("cart")}</span><span><b>New order ${orderNo(o)} is pending</b><small>${esc(o.customer)} · ${taka(o.total)} · ${day(o.date)}</small></span></a>`),
+      ...low.slice(0, 5).map((p) => `<a class="bell-item" href="#/products" data-close-bell><span class="bell-ico c4">${icon("alert")}</span><span><b>${esc(p.name)} ${p.stock ? `has ${p.stock} left` : "is sold out"}</b><small>Update the stock in Products</small></span></a>`),
+      unreadReplies ? `<button class="bell-item" type="button" data-bell-chat><span class="bell-ico c1">${icon("chat")}</span><span><b>${unreadReplies} new ${unreadReplies === 1 ? "reply" : "replies"} from the Shopilier team</b><small>Open the chat to read</small></span></button>` : "",
+      store.published ? "" : `<a class="bell-item" href="#/website" data-close-bell><span class="bell-ico c3">${icon("rocket")}</span><span><b>Your website isn't live yet</b><small>Customize it, then publish</small></span></a>`,
+    ].filter(Boolean);
+    const more = pending.length > 5 ? `<a class="bell-more" href="#/orders" data-close-bell>See all ${pending.length} pending orders</a>` : "";
+    bellMenu.innerHTML = `<div class="bell-head"><b>Notifications</b>${items.length ? `<span class="muted small">${items.length}</span>` : ""}</div>
+      ${items.length ? `<div class="bell-list">${items.join("")}</div>${more}` : `<div class="bell-empty">${icon("check")}<b>You're all caught up</b><span>New orders, low stock and replies show up here.</span></div>`}`;
+  };
+  const toggleBell = (open) => {
+    if (open) { toggleMenu(false); paintBell(); }
+    bellMenu.hidden = !open; bellBtn.setAttribute("aria-expanded", String(open));
+  };
+  bellBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleBell(bellMenu.hidden); });
+  bellMenu.addEventListener("click", (e) => {
+    if (e.target.closest("[data-bell-chat]")) { toggleBell(false); openChat(); }
+    else if (e.target.closest("[data-close-bell]")) toggleBell(false);
+  });
+  document.addEventListener("click", (e) => { if (!bellMenu.hidden && !e.target.closest(".bell-wrap")) toggleBell(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !bellMenu.hidden) { toggleBell(false); bellBtn.focus(); } });
+
   // Online Store in the sidebar opens and closes its own menu (Themes, Pages, Navigation, Preferences)
   const STORE_ROUTES = ["themes", "pages", "navigation", "preferences", "website"];
   const storeToggle = document.getElementById("store-toggle"), storeSub = document.getElementById("store-sub");
@@ -1154,6 +1225,7 @@
     if (open && !STORE_ROUTES.includes(location.hash.replace(/^#\/?/, ""))) location.hash = "#/themes";
   });
   const afterRender = (route) => {
+    filters.hidden = route !== "home";
     const inStore = STORE_ROUTES.includes(route);
     if (inStore) setStoreOpen(true);
     storeToggle.classList.toggle("in", inStore);
