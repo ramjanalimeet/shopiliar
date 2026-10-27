@@ -525,6 +525,30 @@ window.SiteKit = (() => {
   };
 
   // Every page in one document; menu links switch pages without leaving it (used by "View your store")
+  // How much a discount code takes off. items: [{ id, price, qty }], fee: the delivery charge.
+  // Plain functions (no outside variables) so the website's script and the dashboard share them.
+  const discountFor = function (d, items, fee) {
+    var sum = function (l) { return l.reduce(function (a, it) { return a + it.price * it.qty; }, 0); };
+    var sub = sum(items);
+    if (!d || sub < (d.min || 0)) return 0;
+    if (d.type === "shipping") return Math.max(0, fee || 0);
+    var base = d.products && d.products.length ? sum(items.filter(function (it) { return d.products.indexOf(it.id) >= 0; })) : sub;
+    var off = d.type === "percent" ? Math.round(base * d.value / 100) : d.value;
+    if (d.type === "percent" && d.max) off = Math.min(off, d.max);
+    return Math.max(0, Math.min(off, base));
+  };
+  // Why a code can't be used right now, or "" when it can. now: a time in ms.
+  const discountProblem = function (d, items, now) {
+    var sub = items.reduce(function (a, it) { return a + it.price * it.qty; }, 0);
+    if (!d || d.active === false) return "That code doesn't work";
+    if (d.starts && now < new Date(d.starts + "T00:00:00").getTime()) return "This code isn't active yet";
+    if (d.ends && now > new Date(d.ends + "T23:59:59").getTime()) return "This code has expired";
+    if (d.limit && (d.used || 0) >= d.limit) return "This code has been used up";
+    if (sub < (d.min || 0)) return "This code needs an order of \u09f3" + Number(d.min).toLocaleString("en-IN") + " or more";
+    if (d.products && d.products.length && !items.some(function (it) { return d.products.indexOf(it.id) >= 0; })) return "This code isn't for the items in your cart";
+    return "";
+  };
+
   // The website's shopping: add to cart, the cart on the checkout page, discount codes and placing an order.
   // Runs on the website only (not in the editor). Orders go to the dashboard that opened the preview.
   const storefront = function () {
@@ -539,10 +563,7 @@ window.SiteKit = (() => {
       setTimeout(function () { t.remove(); }, 2200);
     };
     var subtotal = function () { return cart.reduce(function (a, it) { return a + byId(it.id).price * it.qty; }, 0); };
-    var discountOf = function (sub) {
-      if (!code || sub < (code.min || 0)) return 0;
-      return Math.min(sub, code.type === "percent" ? Math.round(sub * code.value / 100) : code.value);
-    };
+    var feeNow = function () { var d = document.querySelector('.checkout input[name="delivery"]:checked'); return d ? Number(d.getAttribute("data-fee")) || 0 : 0; };
     var save = function () { try { sessionStorage.setItem("shop-cart", JSON.stringify(cart)); } catch (e) {} draw(); };
     // Shop events for the ad and analytics pixels connected in Marketing (each only if it's on the page)
     var track = function (ev, value, items) {
@@ -565,7 +586,10 @@ window.SiteKit = (() => {
       document.querySelectorAll('.tools a[href="/checkout"]').forEach(function (a) { if (count) a.setAttribute("data-count", count); else a.removeAttribute("data-count"); });
       document.querySelectorAll(".checkout").forEach(function (root) {
         var box = root.querySelector("[data-items]"), sub = subtotal(), d = root.querySelector('input[name="delivery"]:checked');
-        var fee = d ? Number(d.getAttribute("data-fee")) || 0 : 0, off = discountOf(sub), total = Math.max(0, sub - off) + (cart.length ? fee : 0);
+        var fee = cart.length && d ? Number(d.getAttribute("data-fee")) || 0 : 0;
+        // A code stops working when the cart changes so it no longer fits
+        if (code) { var why = discountProblem(code, lines(), Date.now()); if (why) { code = null; msg(root, why, false); } }
+        var off = code ? discountFor(code, lines(), fee) : 0, total = Math.max(0, sub + fee - off);
         box.innerHTML = cart.length ? cart.map(function (it) {
           var p = byId(it.id);
           return '<div class="co-item"><span class="co-img" style="background:' + esc(p.color || "#e9e6e1") + '">' + (p.image ? '<img src="' + esc(p.image) + '" alt="">' : "") + "<em>" + it.qty + '</em></span><span class="co-name">' + esc(p.name) +
@@ -575,7 +599,7 @@ window.SiteKit = (() => {
         root.querySelectorAll(".co-fee").forEach(function (e) { e.textContent = taka(cart.length ? fee : 0); });
         root.querySelectorAll(".co-tot").forEach(function (e) { e.textContent = taka(total); });
         var dl = root.querySelector(".co-disc");
-        if (dl) { dl.hidden = !off; dl.querySelector(".co-disc-v").textContent = "\u2212" + taka(off) + (code ? " (" + code.code + ")" : ""); }
+        if (dl) { dl.hidden = !off; dl.querySelector("span").textContent = code && code.type === "shipping" ? "Free delivery" : "Discount"; dl.querySelector(".co-disc-v").textContent = "\u2212" + taka(off) + (code ? " (" + code.code + ")" : ""); }
         var btn = root.querySelector(".co-place"); if (btn) btn.disabled = !cart.length;
       });
     };
@@ -604,9 +628,8 @@ window.SiteKit = (() => {
         var root = ap.closest(".checkout"), val = (root.querySelector(".co-code").value || "").trim().toUpperCase();
         var found = D.discounts.filter(function (d) { return d.code === val; })[0];
         if (!val) { code = null; msg(root, "", false); }
-        else if (!found) { code = null; msg(root, "That code doesn't work", false); }
-        else if (subtotal() < (found.min || 0)) { code = null; msg(root, "This code needs an order of " + taka(found.min) + " or more", false); }
-        else { code = found; msg(root, "Code " + found.code + " applied", true); }
+        else if (!found || discountProblem(found, lines(), Date.now())) { code = null; msg(root, discountProblem(found, lines(), Date.now()), false); }
+        else { code = found; msg(root, "Code " + found.code + " applied" + (found.once ? " (one use per customer)" : ""), true); }
         draw();
       }
     });
@@ -625,7 +648,7 @@ window.SiteKit = (() => {
       var root = form.closest(".checkout"), answers = [];
       form.querySelectorAll("[data-q]").forEach(function (f) { if (f.value.trim()) answers.push({ label: f.getAttribute("data-q"), type: f.getAttribute("data-type"), value: f.value.trim() }); });
       var pick = function (n) { var r = form.querySelector('input[name="' + n + '"]:checked'); return r ? r.value : ""; };
-      var paid = Math.max(0, subtotal() - discountOf(subtotal()));
+      var fee = feeNow(), paid = Math.max(0, subtotal() + fee - (code ? discountFor(code, lines(), fee) : 0));
       track("buy", paid, lines());
       var order = { items: cart.map(function (it) { return { id: it.id, qty: it.qty }; }), answers: answers, delivery: pick("delivery"), payment: pick("pay"), code: code ? code.code : "" };
       if (window.opener) { try { window.opener.postMessage({ type: "shopilier-order", order: order }, location.origin === "null" ? "*" : location.origin); } catch (err) {} }
@@ -645,14 +668,17 @@ window.SiteKit = (() => {
     // What the shop script needs: products that are for sale and the discount codes that work
     const shop = {
       products: (opts.products || []).filter((p) => p.status !== "draft").map((p) => ({ id: p.id, name: p.name, price: Number(p.price) || 0, stock: p.stock == null ? null : Number(p.stock), color: color(p.color), image: safeImg(p.image) ? p.image : "" })),
-      discounts: (opts.discounts || []).filter((d) => d.active !== false).map((d) => ({ code: d.code, type: d.type, value: Number(d.value) || 0, min: Number(d.min) || 0 })),
+      discounts: (opts.discounts || []).filter((d) => d.active !== false).map((d) => ({
+        code: d.code, type: d.type, value: Number(d.value) || 0, min: Number(d.min) || 0, max: Number(d.max) || 0, products: d.products || [],
+        starts: d.starts || "", ends: d.ends || "", limit: Number(d.limit) || 0, used: Number(d.used) || 0, once: !!d.once,
+      })),
     };
-    const shopJs = `<script>window.SHOP=${JSON.stringify(shop).replace(/</g, "\\u003c")};(${storefront})();<\/script>`;
+    const shopJs = `<script>window.SHOP=${JSON.stringify(shop).replace(/</g, "\\u003c")};var discountFor=(${discountFor}),discountProblem=(${discountProblem});(${storefront})();<\/script>`;
     // Pixels and custom code from Marketing: in the <head>, and at the end of the <body>
     const t = opts.tracking || {};
     return doc.replace("</head>", () => (t.head ? t.head + "\n" : "") + "</head>")
       .replace(/<body([^>]*)>[\s\S]*<\/body>/, (m, attrs) => `<body${attrs}>${all}${nav}${shopJs}${t.body || ""}</body>`);
   };
 
-  return { ANNOUNCE_COLORS, announceStyle, HEADER_BUTTONS, DROPDOWNS, CHECKOUT, PAYMENTS, SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
+  return { discountFor, discountProblem, ANNOUNCE_COLORS, announceStyle, HEADER_BUTTONS, DROPDOWNS, CHECKOUT, PAYMENTS, SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
 })();
