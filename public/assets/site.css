@@ -140,7 +140,10 @@ figcaption span { font-size: 14px; opacity: .7; }
 .co-step { padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
 .co-step h3 { display: flex; align-items: center; gap: 10px; font-size: 18px; margin-bottom: 14px; }
 .co-step h3 i { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-style: normal; font-size: 13px; font-family: var(--bfont); }
-.co-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.co-row { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
+.co-row + .co-options { margin-top: 4px; }
+.co-field.wide { grid-column: 1 / -1; }
+.co-option small { display: block; margin-top: 2px; font-size: 13px; opacity: .7; }
 .co-field { display: grid; gap: 6px; margin-bottom: 12px; font-size: 14px; }
 .co-field span { font-weight: 500; }
 .co-field input, .co-field textarea, .co-coupon input { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }

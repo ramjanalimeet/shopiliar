@@ -118,7 +118,7 @@ window.SiteKit = (() => {
         { q: "Can I return a product?", a: "Yes, within 7 days if it's unused and in its original packaging." },
       ] });
       case "banner": return section("banner", { image: "", title: "A big statement", text: "Use an image banner to set the mood.", button: { text: "Shop Now", link: "/shop" } }, { height: "m", align: "center" });
-      case "checkout": return section("checkout", { ...CHECKOUT, delivery: CHECKOUT.delivery.map((d) => ({ ...d })) });
+      case "checkout": return section("checkout", JSON.parse(JSON.stringify(CHECKOUT)));
       case "custom": {
         const s = section("custom", {});
         s.blocks = [makeBlock("heading", "A new section"), makeBlock("text", "Add headings, text, buttons and images to build anything you like.")];
@@ -153,11 +153,13 @@ window.SiteKit = (() => {
   // Everything on the Checkout page the store owner can change
   const CHECKOUT = {
     title: "Checkout", subtitle: "Almost done! Fill in your details and we'll deliver your order.", showSteps: true,
-    detailsTitle: "Your details", nameLabel: "Full name", namePh: "Your name", phoneLabel: "Phone", phonePh: "01XXX-XXXXXX",
-    showEmail: true, emailLabel: "Email (optional)", emailPh: "you@email.com",
-    deliveryTitle: "Delivery", addressLabel: "Full address", addressPh: "House, road, area, city",
+    detailsTitle: "Your details",
+    details: [{ label: "Full name", hint: "Your name", type: "text" }, { label: "Phone", hint: "01XXX-XXXXXX", type: "tel" }, { label: "Email (optional)", hint: "you@email.com", type: "email" }],
+    deliveryTitle: "Delivery",
+    deliveryFields: [{ label: "Full address", hint: "House, road, area, city", type: "textarea" }],
     delivery: [{ label: "Inside Dhaka", fee: 60 }, { label: "Outside Dhaka", fee: 120 }],
     paymentTitle: "Payment",
+    payMethods: [{ label: "Cash on delivery", info: "Pay when you get your order" }, { label: "bKash", info: "" }],
     showNote: true, noteLabel: "Order note (optional)", notePh: "Anything we should know?",
     summaryTitle: "Order summary", showCoupon: true, couponPh: "Discount code", couponButton: "Apply",
     button: "Place order", buttonTotal: true, note: "You can return unused items within 7 days.",
@@ -205,11 +207,19 @@ window.SiteKit = (() => {
     pages.forEach((p) => p.sections.forEach((sec) => {
       if (sec.type !== "checkout") return;
       const c = sec.content;
+      if (!Array.isArray(c.details)) {
+        c.details = [{ label: c.nameLabel ?? "Full name", hint: c.namePh ?? "Your name", type: "text" }, { label: c.phoneLabel ?? "Phone", hint: c.phonePh ?? "01XXX-XXXXXX", type: "tel" }];
+        if (c.showEmail !== false) c.details.push({ label: c.emailLabel ?? "Email (optional)", hint: c.emailPh ?? "you@email.com", type: "email" });
+      }
+      if (!Array.isArray(c.deliveryFields)) c.deliveryFields = [{ label: c.addressLabel ?? "Full address", hint: c.addressPh ?? "House, road, area, city", type: "textarea" }];
+      if (!Array.isArray(c.payMethods)) c.payMethods = (site.payments && site.payments.length ? site.payments : ["Cash on delivery", "bKash"]).map((label) => ({ label, info: "" }));
+      ["nameLabel", "namePh", "phoneLabel", "phonePh", "showEmail", "emailLabel", "emailPh", "addressLabel", "addressPh"].forEach((k) => delete c[k]);
+      delete site.payments;
       if (!Array.isArray(c.delivery)) {
         c.delivery = [{ label: c.insideLabel || "Inside Dhaka", fee: Number(c.insideFee ?? 60) }, { label: c.outsideLabel || "Outside Dhaka", fee: Number(c.outsideFee ?? 120) }];
         ["insideLabel", "insideFee", "outsideLabel", "outsideFee"].forEach((k) => delete c[k]);
       }
-      Object.keys(CHECKOUT).forEach((k) => { if (c[k] === undefined) c[k] = CHECKOUT[k]; });
+      Object.keys(CHECKOUT).forEach((k) => { if (c[k] === undefined) c[k] = JSON.parse(JSON.stringify(CHECKOUT[k])); });
     }));
     // Contact sections that only copied the store details now follow them
     pages.forEach((p) => p.sections.forEach((sec) => {
@@ -339,8 +349,20 @@ window.SiteKit = (() => {
       const opts = (Array.isArray(c.delivery) ? c.delivery : []).map((d) => ({ label: d.label || "Delivery", fee: Math.max(0, Number(d.fee) || 0) }));
       const fee = opts.length ? opts[0].fee : 0;
       const sub = items.reduce((a, p) => a + (Number(p.price) || 0), 0), total = sub + fee;
-      const pays = (ctx.site && ctx.site.payments && ctx.site.payments.length ? ctx.site.payments : ["Cash on delivery"]);
-      const field = (label, type, ph) => `<label class="co-field">${label ? `<span>${esc(label)}</span>` : ""}${type === "area" ? `<textarea rows="2" placeholder="${esc(ph)}"></textarea>` : `<input type="${type}" placeholder="${esc(ph)}">`}</label>`;
+      const pays = (Array.isArray(c.payMethods) ? c.payMethods : []).filter((m) => m && m.label);
+      const field = (label, type, ph, wide) => `<label class="co-field${wide ? " wide" : ""}">${label ? `<span>${esc(label)}</span>` : ""}${type === "textarea" ? `<textarea rows="2" placeholder="${esc(ph)}"></textarea>` : `<input type="${["tel", "email", "number"].includes(type) ? type : "text"}" placeholder="${esc(ph || "")}">`}</label>`;
+      // The store's own form fields: long answers and a last odd field take the full width
+      const fields = (list) => {
+        const l = (Array.isArray(list) ? list : []).filter((f) => f && (f.label || f.hint));
+        return l.length ? `<div class="co-row">${l.map((f, i) => {
+          const long = f.type === "textarea";
+          // A short field with nothing beside it takes the full width
+          let run = 0;
+          for (let j = i - 1; j >= 0 && l[j].type !== "textarea"; j--) run++;
+          const alone = !long && run % 2 === 0 && (!l[i + 1] || l[i + 1].type === "textarea");
+          return field(f.label, f.type, f.hint, long || alone);
+        }).join("")}</div>` : "";
+      };
       let n = 0;
       const step = (title) => (title || c.showSteps ? `<h3>${c.showSteps ? `<i>${++n}</i>` : ""}${esc(title)}</h3>` : "");
       // Picking a delivery option updates the delivery charge and total
@@ -349,11 +371,11 @@ window.SiteKit = (() => {
         <div class="co-head">${c.title ? `<h1>${esc(c.title)}</h1>` : ""}${c.subtitle ? `<p class="lead">${esc(c.subtitle)}</p>` : ""}</div>
         <div class="co-grid">
           <form class="co-form" onsubmit="return false" data-sub="${sub}">
-            <div class="co-step">${step(c.detailsTitle)}<div class="co-row">${field(c.nameLabel, "text", c.namePh)}${field(c.phoneLabel, "tel", c.phonePh)}</div>${c.showEmail ? field(c.emailLabel, "email", c.emailPh) : ""}</div>
-            <div class="co-step">${step(c.deliveryTitle)}${field(c.addressLabel, "area", c.addressPh)}
+            <div class="co-step">${step(c.detailsTitle)}${fields(c.details)}</div>
+            <div class="co-step">${step(c.deliveryTitle)}${fields(c.deliveryFields)}
               ${opts.length ? `<div class="co-options">${opts.map((d, i) => `<label class="co-option"><input type="radio" name="delivery" data-fee="${d.fee}" data-label="${esc(taka(d.fee))}" onchange="${esc(pick)}"${i ? "" : " checked"}><span>${esc(d.label)}</span><b>${taka(d.fee)}</b></label>`).join("")}</div>` : ""}</div>
-            <div class="co-step">${step(c.paymentTitle)}<div class="co-options">${pays.map((p, i) => `<label class="co-option"><input type="radio" name="pay"${i ? "" : " checked"}><span>${esc(p)}</span></label>`).join("")}</div></div>
-            ${c.showNote ? `<div class="co-step">${field(c.noteLabel, "area", c.notePh)}</div>` : ""}
+            ${pays.length ? `<div class="co-step">${step(c.paymentTitle)}<div class="co-options">${pays.map((p, i) => `<label class="co-option"><input type="radio" name="pay"${i ? "" : " checked"}><span>${esc(p.label)}${p.info ? `<small>${esc(p.info)}</small>` : ""}</span></label>`).join("")}</div></div>` : ""}
+            ${c.showNote ? `<div class="co-step">${field(c.noteLabel, "textarea", c.notePh)}</div>` : ""}
             <button class="btn co-place" type="submit">${esc(c.button || "Place order")}${c.buttonTotal ? ` · <span class="co-tot">${taka(total)}</span>` : ""}</button>
             ${c.note ? `<p class="co-small">${esc(c.note)}</p>` : ""}
             ${ctx.blocks}
