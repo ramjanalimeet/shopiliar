@@ -451,7 +451,32 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
 .top-select:hover { background: var(--hover); }
 .top-select:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .top-select .i { width: 17px; height: 17px; color: var(--muted); flex: none; pointer-events: none; }
-.top-select select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; font: inherit; color: inherit; padding: 0 4px 0 0; cursor: pointer; outline: none; }
+.top-select .dd-label { white-space: nowrap; }
+.top-select .dd-caret .i { width: 16px; height: 16px; transition: transform .15s; }
+.top-select[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.top-select[aria-expanded="true"] .dd-caret .i { transform: rotate(180deg); }
+.dd.on .top-select { border-color: #b9dcc8; background: #f3faf6; }
+.dd.on .top-select > .i:first-child { color: var(--accent); }
+
+/* Filter dropdown menus */
+.dd { position: relative; }
+.dd-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; min-width: 210px; padding: 6px; background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 16px 40px rgba(16, 24, 40, .14), 0 2px 6px rgba(16, 24, 40, .06); animation: dd-in .14s ease-out; }
+.dd-menu[hidden] { display: none; }
+@keyframes dd-in { from { opacity: 0; transform: translateY(-4px); } }
+.dd-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; height: 40px; padding: 0 12px; border: 0; border-radius: 9px; background: none; color: var(--ink); font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; }
+.dd-item:hover, .dd-item:focus-visible { background: var(--hover); outline: none; }
+.dd-item.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.dd-item .i { width: 17px; height: 17px; color: var(--accent); }
+.dd-months { width: 264px; padding: 10px 12px 12px; }
+.dd-year { padding: 6px 4px 8px; font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+.dd-grid + .dd-year { margin-top: 6px; border-top: 1px solid var(--border); padding-top: 12px; }
+.dd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.dd-month { height: 38px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--ink); font-size: 14px; font-weight: 500; cursor: pointer; }
+.dd-month:hover, .dd-month:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+.dd-month.now { border-color: #b9dcc8; }
+.dd-month.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.dd-clear { display: block; width: 100%; margin-top: 12px; padding: 10px 0 2px; border: 0; border-top: 1px solid var(--border); background: none; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; }
+.dd-clear:hover { text-decoration: underline; }
 .bell-wrap { position: relative; margin-left: auto; }
 .top-filters:not([hidden]) + .bell-wrap { margin-left: 4px; }
 .top-bell { border: 0; background: transparent; cursor: pointer; }
@@ -475,13 +500,15 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
 .bell-empty span { font-size: 13px; color: var(--muted); }
 @media (max-width: 760px) {
   .top-select { height: 36px; padding: 0 8px; font-size: 13px; }
-  .top-select .i:first-child { display: none; }
+  .top-select > .i:first-child { display: none; }
 }
 @media (max-width: 480px) {
   .top-filters { gap: 4px; min-width: 0; }
-  .top-select { padding: 0 6px; }
-  .top-select .i { display: none; }
-  .top-select select { max-width: 86px; text-overflow: ellipsis; }
+  .top-select { padding: 0 8px; }
+  .top-select > .i:first-child { display: none; }
+  .top-select .dd-label { max-width: 76px; overflow: hidden; text-overflow: ellipsis; }
+  #dd-range .dd-menu { right: auto; left: 0; }
+  #dd-month .dd-menu { right: auto; left: -60px; }
 }
 @media (max-width: 560px) {
   .bell-menu { position: fixed; left: 12px; right: 12px; top: 62px; width: auto; max-width: none; }

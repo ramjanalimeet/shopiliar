@@ -49,8 +49,14 @@
         <label class="top-search"><span data-icon="search"></span><input id="top-search" type="search" placeholder="Search products, orders, customers…" aria-label="Search products, orders and customers"></label>
         <!-- Date filters for Home: a preset range, or one whole month -->
         <div class="top-filters" id="top-filters" hidden>
-          <label class="top-select"><span data-icon="calendar"></span><select id="f-range" aria-label="Date range"></select><span data-icon="chevronDown"></span></label>
-          <label class="top-select"><span data-icon="calendar"></span><select id="f-month" aria-label="Month"></select><span data-icon="chevronDown"></span></label>
+          <div class="dd" id="dd-range">
+            <button class="top-select" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Date range"><span data-icon="calendar"></span><span class="dd-label"></span><span class="dd-caret" data-icon="chevronDown"></span></button>
+            <div class="dd-menu" role="listbox" aria-label="Date range" hidden></div>
+          </div>
+          <div class="dd" id="dd-month">
+            <button class="top-select" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Month"><span data-icon="calendar"></span><span class="dd-label"></span><span class="dd-caret" data-icon="chevronDown"></span></button>
+            <div class="dd-menu dd-months" role="listbox" aria-label="Month" hidden></div>
+          </div>
         </div>
         <div class="bell-wrap">
           <button class="top-bell" type="button" id="bell" aria-label="Notifications" title="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="bell-menu"><span data-icon="bell"></span><span class="badge" id="bell-count"></span></button>

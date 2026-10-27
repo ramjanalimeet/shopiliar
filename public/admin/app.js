@@ -155,7 +155,7 @@
   const profileBtn = document.getElementById("profile-btn");
   const profileMenu = document.getElementById("profile-menu");
   const toggleMenu = (open) => { profileMenu.hidden = !open; profileBtn.setAttribute("aria-expanded", String(open)); };
-  profileBtn.addEventListener("click", (e) => { e.stopPropagation(); if (bellMenu) bellMenu.hidden = true; toggleMenu(profileMenu.hidden); });
+  profileBtn.addEventListener("click", (e) => { e.stopPropagation(); if (bellMenu) bellMenu.hidden = true; document.querySelectorAll(".dd-menu").forEach((m) => { m.hidden = true; }); toggleMenu(profileMenu.hidden); });
   document.addEventListener("click", (e) => { if (!profileMenu.hidden && !e.target.closest(".profile")) toggleMenu(false); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !profileMenu.hidden) { toggleMenu(false); profileBtn.focus(); } });
   profileMenu.addEventListener("click", (e) => { if (e.target.closest("a")) toggleMenu(false); });
@@ -1171,21 +1171,56 @@
   });
 
   // ---------- Home date filters (top bar) ----------
-  const filters = document.getElementById("top-filters"), fRange = document.getElementById("f-range"), fMonth = document.getElementById("f-month");
+  // Two dropdowns: a preset range (list with a tick) and a month picker (months in a grid by year)
+  const filters = document.getElementById("top-filters"), ddRange = document.getElementById("dd-range"), ddMonth = document.getElementById("dd-month");
+  const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const paintFilters = () => {
-    const d = new Date();
-    fRange.innerHTML = `${period.month ? '<option value="" selected>Date range</option>' : ""}${RANGES.map(([n, l]) => `<option value="${n}"${!period.month && period.days === n ? " selected" : ""}>${l}</option>`).join("")}`;
-    fMonth.innerHTML = `<option value=""${period.month ? "" : " selected"}>Month</option>${Array.from({ length: 12 }, (_, i) => {
-      const t = new Date(d.getFullYear(), d.getMonth() - i, 1), y = t.getFullYear(), m = t.getMonth();
-      return `<option value="${y}-${m}"${period.month && period.month.y === y && period.month.m === m ? " selected" : ""}>${monthName(y, m)}</option>`;
-    }).join("")}`;
+    const d = new Date(), pm = period.month;
+    ddRange.querySelector(".dd-label").textContent = pm ? "Date range" : RANGES.find(([n]) => n === period.days)[1];
+    ddMonth.querySelector(".dd-label").textContent = pm ? monthName(pm.y, pm.m) : "Month";
+    ddRange.classList.toggle("on", !pm); ddMonth.classList.toggle("on", !!pm);
+    ddRange.querySelector(".dd-menu").innerHTML = RANGES.map(([n, l]) => {
+      const on = !pm && period.days === n;
+      return `<button type="button" class="dd-item${on ? " on" : ""}" role="option" aria-selected="${on}" data-range="${n}"><span>${l}</span>${on ? icon("check") : ""}</button>`;
+    }).join("");
+    // The last 12 months, grouped by year (newest year first)
+    const months = Array.from({ length: 12 }, (_, i) => { const t = new Date(d.getFullYear(), d.getMonth() - i, 1); return { y: t.getFullYear(), m: t.getMonth() }; });
+    const years = [...new Set(months.map((x) => x.y))];
+    ddMonth.querySelector(".dd-menu").innerHTML = years.map((y) => `<div class="dd-year">${y}</div><div class="dd-grid">${months.filter((x) => x.y === y).sort((a, b) => a.m - b.m).map(({ m }) => {
+      const on = !!pm && pm.y === y && pm.m === m;
+      return `<button type="button" class="dd-month${on ? " on" : ""}${y === d.getFullYear() && m === d.getMonth() ? " now" : ""}" role="option" aria-selected="${on}" aria-label="${monthName(y, m)}" data-month="${y}-${m}">${SHORT[m]}</button>`;
+    }).join("")}</div>`).join("") + (pm ? `<button type="button" class="dd-clear" data-month="">Clear month · back to last 30 days</button>` : "");
   };
-  fRange.addEventListener("change", () => { if (fRange.value) { period = { days: Number(fRange.value) }; paintFilters(); go(); } });
-  fMonth.addEventListener("change", () => {
-    if (!fMonth.value) period = { days: 30 };
-    else { const [y, m] = fMonth.value.split("-").map(Number); period = { month: { y, m } }; }
-    paintFilters(); go();
+  const closeDropdowns = (except) => [ddRange, ddMonth].forEach((dd) => {
+    if (dd === except) return;
+    dd.querySelector(".dd-menu").hidden = true; dd.querySelector(".top-select").setAttribute("aria-expanded", "false");
   });
+  [ddRange, ddMonth].forEach((dd) => {
+    const btn = dd.querySelector(".top-select"), menu = dd.querySelector(".dd-menu");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = menu.hidden;
+      closeDropdowns(dd); toggleMenu(false); if (bellMenu) bellMenu.hidden = true;
+      menu.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+      if (open) (menu.querySelector(".on") || menu.querySelector("button")).focus();
+    });
+    menu.addEventListener("click", (e) => {
+      const it = e.target.closest("[data-range], [data-month]");
+      if (!it) return;
+      if (it.dataset.range) period = { days: Number(it.dataset.range) };
+      else if (!it.dataset.month) period = { days: 30 };
+      else { const [y, m] = it.dataset.month.split("-").map(Number); period = { month: { y, m } }; }
+      closeDropdowns(); paintFilters(); go(); btn.focus();
+    });
+    // Arrow keys move between options; Escape closes
+    menu.addEventListener("keydown", (e) => {
+      const items = [...menu.querySelectorAll("button")], i = items.indexOf(document.activeElement);
+      const step = { ArrowDown: dd === ddMonth ? 3 : 1, ArrowUp: dd === ddMonth ? -3 : -1, ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (step) { e.preventDefault(); items[Math.max(0, Math.min(items.length - 1, i + step))].focus(); }
+      if (e.key === "Escape") { e.stopPropagation(); closeDropdowns(); btn.focus(); }
+    });
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".dd")) closeDropdowns(); });
   paintFilters();
 
   // ---------- Notifications (bell) ----------
@@ -1204,7 +1239,7 @@
       ${items.length ? `<div class="bell-list">${items.join("")}</div>${more}` : `<div class="bell-empty">${icon("check")}<b>You're all caught up</b><span>New orders, low stock and replies show up here.</span></div>`}`;
   };
   const toggleBell = (open) => {
-    if (open) { toggleMenu(false); paintBell(); }
+    if (open) { toggleMenu(false); closeDropdowns(); paintBell(); }
     bellMenu.hidden = !open; bellBtn.setAttribute("aria-expanded", String(open));
   };
   bellBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleBell(bellMenu.hidden); });
