@@ -62,7 +62,9 @@ window.SiteEditor = (() => {
     const ctx = () => ({ site: store.site, products: store.products });
     K.ensure(store.site, store.pages, ctx());
 
-    const state = { mode: "sections", selected: null, pageId: store.pages[0].id, device: innerWidth < 900 ? "mobile" : "desktop", panelOpen: innerWidth >= 900 };
+    // #/website?page=<id> opens that page (from the Pages list)
+    const askedPage = new URLSearchParams(location.hash.split("?")[1] || "").get("page");
+    const state = { mode: "sections", selected: null, pageId: store.pages.some((p) => p.id === askedPage) ? askedPage : store.pages[0].id, device: innerWidth < 900 ? "mobile" : "desktop", panelOpen: innerWidth >= 900 };
     const page = () => store.pages.find((p) => p.id === state.pageId) || store.pages[0];
     const sectionById = (id) => page().sections.find((s) => s.id === id);
     const target = () => {
