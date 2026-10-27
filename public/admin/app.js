@@ -410,8 +410,6 @@
       .sort((a, b) => b.revenue - a.revenue || b.qty - a.qty).slice(0, 4);
     return `<ul class="top-list">${list.map(({ p, qty, revenue }) => `<li><span class="top-img" style="background:${esc(p.color || "#eee")}">${icon("products")}</span><span class="t"><b>${esc(p.name)}</b><span>${qty} sold</span></span><span class="v">${taka(revenue)}</span></li>`).join("")}</ul>`;
   };
-  const feature = (ico, title, text, action = '<button class="btn" disabled>Coming soon</button>') =>
-    `<div class="card feature"><span class="mk-ico">${icon(ico)}</span><h3>${title}</h3><p>${text}</p>${action}</div>`;
 
 
   const orderRows = (orders, compact = false) => orders.length ? orders.map((o) => `
@@ -522,8 +520,7 @@
               <div class="card"><div class="card-head"><a class="card-title card-title-link" href="#/marketing">Marketing${icon("chevronRight")}</a></div>
                 <div class="card-body"><div class="mk-list">
                   <button class="mk-item" data-action="add-discount"><span class="mk-ico">${icon("tag")}</span><span class="t"><b>Create discount</b><span>Run a promotion to boost sales</span></span>${icon("chevronRight")}</button>
-                  <a class="mk-item" href="#/marketing"><span class="mk-ico">${icon("mail")}</span><span class="t"><b>Create email campaign</b><span>Reach more customers</span></span>${icon("chevronRight")}</a>
-                  <a class="mk-item" href="#/marketing"><span class="mk-ico">${icon("megaphone")}</span><span class="t"><b>Create ad campaign</b><span>Grow your audience</span></span>${icon("chevronRight")}</a>
+                  <a class="mk-item" href="#/marketing"><span class="mk-ico">${icon("megaphone")}</span><span class="t"><b>Connect an ad pixel</b><span>Meta, Google, TikTok and more</span></span>${icon("chevronRight")}</a>
                 </div></div></div>
             </div>
           </div>
@@ -535,35 +532,47 @@
       title: "Marketing",
       render: () => {
         const mk = store.marketing;
-        const connected = PIXELS.filter((p) => mk.pixels[p.id]?.id).length;
-        return `${head("Marketing", "Connect your ad accounts so you can measure and run paid campaigns.",
-          `<button class="btn" data-action="view-code">${icon("code")}View installed code</button><button class="btn btn-primary" data-action="add-discount">${icon("plus")}Create discount</button>`)}
-          <div class="callout blue"><span class="ico">${icon("info")}</span><div>Pixels and custom code are added to <b>every page of your website</b> once it's published, so your ad platforms can count visits and build audiences.</div></div>
-          <div class="card"><div class="card-head"><span class="card-title">Ad &amp; analytics pixels<small>${connected} of ${PIXELS.length} connected</small></span></div>
-            <div class="pixel-list">${PIXELS.map((p) => {
-              const px = mk.pixels[p.id];
-              const status = !px?.id ? '<span class="tag gray">Not connected</span>' : px.on ? '<span class="tag dot green">Active</span>' : '<span class="tag dot yellow">Paused</span>';
-              return `<div class="pixel">
-                <span class="pixel-logo" style="background:${p.color}${p.id === "snapchat" ? ";color:#111" : ""}">${esc(p.letter)}</span>
-                <span class="t"><b>${esc(p.name)}</b><span>${esc(p.covers)}</span>${px?.id ? `<code>${esc(p.label)}: ${esc(px.id)}</code>` : ""}</span>
-                ${status}
-                ${px?.id ? `<label class="switch" title="${px.on ? "Pause" : "Turn on"}"><input type="checkbox" data-action="pixel-on" data-id="${p.id}" ${px.on ? "checked" : ""} aria-label="${esc(p.name)} on"><i></i></label>` : ""}
-                <button class="btn btn-sm${px?.id ? "" : " btn-primary"}" data-action="pixel-edit" data-id="${p.id}">${px?.id ? "Edit" : "Connect"}</button>
-                ${px?.id ? `<button class="icon-btn danger" data-action="pixel-remove" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon("trash")}</button>` : ""}
-              </div>`;
-            }).join("")}</div></div>
-          <div class="card"><div class="card-head"><span class="card-title">Custom code</span></div>
+        const added = PIXELS.filter((p) => mk.pixels[p.id]?.id);
+        const logo = (p) => `<span class="pixel-logo" style="background:${p.color}${p.id === "snapchat" ? ";color:#111" : ""}">${esc(p.letter)}</span>`;
+        return `${head("Marketing", "Connect your ad and analytics tools. Pick one, paste its ID, and it's added to every page of your website.",
+          `${added.length || mk.headCode || mk.bodyCode ? `<button class="btn" data-action="view-code">${icon("code")}View code</button>` : ""}<button class="btn btn-primary" data-action="pixel-add">${icon("plus")}Add pixel</button>`)}
+          <ol class="mk-steps">
+            <li class="${added.length ? "done" : ""}"><i>${added.length ? icon("check") : "1"}</i><span><b>Add a pixel</b><small>Meta, Google, TikTok and more</small></span></li>
+            <li class="${added.length ? "done" : ""}"><i>${added.length ? icon("check") : "2"}</i><span><b>Paste its ID</b><small>We show you where to find it</small></span></li>
+            <li class="${added.length && store.published ? "done" : ""}"><i>${added.length && store.published ? icon("check") : "3"}</i><span><b>Publish your website</b><small>${store.published ? "Your website is live" : "Then visits start counting"}</small></span></li>
+          </ol>
+          ${added.length ? `<div class="mk-head"><b>Connected</b><span class="muted small">${added.length} of ${PIXELS.length}</span></div>
+          <div class="mk-grid">${added.map((p) => {
+            const px = mk.pixels[p.id];
+            return `<div class="card mk-card${px.on ? "" : " paused"}">
+              <div class="mk-top">${logo(p)}<span class="mk-check" title="${px.on ? "Connected" : "Paused"}">${icon(px.on ? "check" : "clock")}</span></div>
+              <b>${esc(p.name)}</b>
+              <span class="mk-status">${px.on ? "Connected" : "Paused — not on your website"}</span>
+              <code title="${esc(p.label)}">${esc(px.id)}</code>
+              <div class="mk-actions">
+                <label class="switch" title="${px.on ? "Pause" : "Turn on"}"><input type="checkbox" data-action="pixel-on" data-id="${p.id}" ${px.on ? "checked" : ""} aria-label="${esc(p.name)} on"><i></i></label>
+                <span class="muted small">${px.on ? "On" : "Off"}</span>
+                <button class="btn btn-sm" data-action="pixel-edit" data-id="${p.id}">${icon("edit")}Edit</button>
+                <button class="icon-btn danger" data-action="pixel-remove" data-id="${p.id}" aria-label="Remove ${esc(p.name)}" title="Remove">${icon("trash")}</button>
+              </div>
+            </div>`;
+          }).join("")}</div>`
+          : `<div class="card mk-empty">
+              <span class="mk-empty-ico">${icon("barchart")}</span>
+              <b>No pixels yet</b>
+              <span class="muted">Most stores start with these:</span>
+              <div class="mk-quick">${["meta", "ga4", "tiktok"].map((id) => pixelById(id)).filter(Boolean).map((p) => `<button class="mk-chip" data-action="pixel-edit" data-id="${p.id}">${logo(p)}${esc(p.name)}</button>`).join("")}</div>
+              <button class="btn btn-primary" data-action="pixel-add">${icon("plus")}See all ${PIXELS.length}</button>
+            </div>`}
+          <details class="card mk-code"${mk.headCode || mk.bodyCode ? " open" : ""}>
+            <summary><span class="card-title">Custom code<small>For any other tool, like Hotjar or a chat widget</small></span>${icon("down")}</summary>
             <form class="card-body" id="code-form">
-              <p class="muted" style="margin-bottom:14px">For any other platform or tool (for example Quora, Taboola, Hotjar or a chat widget). Paste the code they give you. Only use code from services you trust: it runs on every page of your website.</p>
+              <p class="muted" style="margin-bottom:14px">Paste the code the service gives you. Only use code from services you trust: it runs on every page of your website.</p>
               <div class="field"><label for="head-code">Code for the &lt;head&gt; of every page</label><textarea class="textarea code" id="head-code" name="headCode" maxlength="20000" placeholder="<script>…</script>" spellcheck="false">${esc(mk.headCode)}</textarea></div>
               <div class="field"><label for="body-code">Code for the end of the &lt;body&gt;</label><textarea class="textarea code" id="body-code" name="bodyCode" maxlength="20000" placeholder="<noscript>…</noscript>" spellcheck="false">${esc(mk.bodyCode)}</textarea></div>
               <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" type="submit">Save code</button></div>
-            </form></div>
-          <div class="feature-grid" style="margin-top:20px">
-            ${feature("tag", "Discount codes", `Codes like EID20 for a percentage or Taka off. You have ${store.discounts.length}.`, `<a class="btn" href="#/discounts">Manage discounts</a>`)}
-            ${feature("mail", "Email campaigns", "Send news and offers to your customers by email.")}
-            ${feature("phone", "SMS campaigns", "Text offers straight to your customers' phones.")}
-          </div>
+            </form>
+          </details>
         </div>`;
       },
       mount: (view) => {
@@ -1243,6 +1252,22 @@
           store.marketing.pixels[p.id] = { id, on: true };
           persist(); go(); toast(p.name + (px?.id ? " saved" : " connected"));
         },
+      });
+    },
+    // Pick a platform, then connect it
+    "pixel-add": () => {
+      const mk = store.marketing, left = PIXELS.filter((p) => !mk.pixels[p.id]?.id);
+      if (!left.length) { toast("All pixels are connected"); return; }
+      const d = dialog({
+        title: "Add a pixel", submit: "", size: "lg",
+        body: `<p class="muted" style="margin-bottom:14px">Which one do you want to connect?</p>
+          <div class="mk-pick">${left.map((p) => `<button type="button" class="mk-pick-item" data-pick="${p.id}"><span class="pixel-logo" style="background:${p.color}${p.id === "snapchat" ? ";color:#111" : ""}">${esc(p.letter)}</span><span><b>${esc(p.name)}</b><small>${esc(p.covers)}</small></span>${icon("chevronRight")}</button>`).join("")}</div>`,
+        onOpen: (form) => form.addEventListener("click", (e) => {
+          const b = e.target.closest("[data-pick]");
+          if (!b) return;
+          d.close();
+          actions["pixel-edit"]({ dataset: { id: b.dataset.pick } });
+        }),
       });
     },
     "pixel-remove": async (el) => {
