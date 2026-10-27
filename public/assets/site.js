@@ -179,7 +179,7 @@ window.SiteKit = (() => {
       if (site.showAbout === false) list[3].hidden = true;
       return list;
     }
-    if (slug === "shop") { const p = make("products", ctx); Object.assign(p.content, { eyebrow: "Shop", title: "All products", subtitle: "", count: 12, viewAll: { text: "", link: "" } }); return [p]; }
+    if (slug === "shop") { const p = make("products", ctx); Object.assign(p.content, { eyebrow: "Shop", title: "All products", subtitle: "", count: 12, viewAll: { text: "", link: "" }, showFilters: true }); return [p]; }
     if (slug === "about") return [make("about", ctx), make("testimonials", ctx)];
     if (slug === "contact") return [make("contact", ctx), make("faq", ctx)];
     if (page.system === "checkout") return [make("checkout", ctx)];
@@ -223,6 +223,8 @@ window.SiteKit = (() => {
       }
       Object.keys(CHECKOUT).forEach((k) => { if (c[k] === undefined) c[k] = JSON.parse(JSON.stringify(CHECKOUT[k])); });
     }));
+    // The Shop page's products get category buttons (older stores didn't have them)
+    pages.forEach((p) => { if (p.slug === "shop") (p.sections || []).forEach((sec) => { if (sec.type === "products" && sec.content.showFilters === undefined) sec.content.showFilters = true; }); });
     // Contact sections that only copied the store details now follow them
     pages.forEach((p) => p.sections.forEach((sec) => {
       if (sec.type === "contact") ["phone", "email", "address"].forEach((k) => { if (sec.content[k] && sec.content[k] === site[k]) sec.content[k] = ""; });
@@ -294,10 +296,12 @@ window.SiteKit = (() => {
     },
     products: (c, st, ctx) => {
       const list = (ctx.products || []).filter((p) => p.status !== "draft").slice(0, Math.max(1, Math.min(24, Number(c.count) || 4)));
+      const cats = [...new Set(list.map((p) => p.category).filter(Boolean))];
       return `<div class="wrap">
         <div class="sec-head"><div>${head(c)}${c.subtitle ? `<p class="sub">${esc(c.subtitle)}</p>` : ""}</div>${c.viewAll?.text ? `<a class="more" href="${esc(safeLink(c.viewAll.link))}">${esc(c.viewAll.text)}${svg("arrow")}</a>` : ""}</div>
+        ${c.showFilters && cats.length > 1 ? `<div class="p-filters" role="group" aria-label="Categories"><button type="button" class="on" data-cat="">All</button>${cats.map((x) => `<button type="button" data-cat="${esc(x)}">${esc(x)}</button>`).join("")}</div>` : ""}
         ${list.length ? `<div class="grid cols-${Number(st.columns) || 4}">${list.map((p) => `
-          <div class="card product" data-pid="${esc(p.id)}">
+          <div class="card product" data-pid="${esc(p.id)}" data-cat="${esc(p.category || "")}">
             <button type="button" class="p-img" data-view="${esc(p.id)}" aria-label="See ${esc(p.name)}" style="background:${esc(color(p.color) || "#e9e6e1")}">${safeImg(p.image) ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : `<span>${esc((p.name || "?").slice(0, 1))}</span>`}${onSale(p) ? `<em class="p-sale">−${Math.round((1 - p.price / p.compare) * 100)}%</em>` : ""}</button>
             <div class="p-body"><button type="button" class="p-name" data-view="${esc(p.id)}">${esc(p.name)}</button><span class="price">${taka(p.price)}${onSale(p) ? ` <s>${taka(p.compare)}</s>` : ""}</span>
               ${p.stock === 0 ? '<button type="button" class="btn btn-outline p-add" disabled>Sold out</button>' : `<button type="button" class="btn btn-outline p-add" data-add="${esc(p.id)}">${svg("cart")}${(p.options || []).length ? "Choose options" : "Add to cart"}</button>`}</div>
@@ -654,6 +658,13 @@ window.SiteKit = (() => {
     var msg = function (root, text, ok) { var m = root.querySelector(".co-msg"); if (m) { m.hidden = !text; m.textContent = text; m.className = "co-msg" + (ok ? " ok" : ""); } };
     document.addEventListener("click", function (e) {
       if (e.target.closest(".qv")) return;
+      var fc = e.target.closest("[data-cat]");
+      if (fc && fc.tagName === "BUTTON") {
+        var sec = fc.closest(".s-products") || document, cat = fc.getAttribute("data-cat");
+        sec.querySelectorAll(".p-filters button").forEach(function (b) { b.classList.toggle("on", b === fc); });
+        sec.querySelectorAll(".product[data-cat]").forEach(function (card) { card.hidden = !!cat && card.getAttribute("data-cat") !== cat; });
+        return;
+      }
       var vw = e.target.closest("[data-view]");
       if (vw) { var vp = byId(vw.getAttribute("data-view")); if (vp) view(vp); return; }
       var add = e.target.closest("[data-add]");

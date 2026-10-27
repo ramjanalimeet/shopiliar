@@ -844,3 +844,54 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
   #view .table .table-empty { display: block; text-align: center; padding: 28px 8px; }
   #view .table td .sub { text-align: right; }
 }
+
+/* Categories */
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.cat-grid > .card { margin: 0; }
+.cat-card { display: grid; grid-template-rows: auto 1fr; overflow: hidden; padding: 0; }
+.cat-cover { display: grid; place-items: center; aspect-ratio: 16 / 10; padding: 0; border: 0; background: var(--accent-soft); cursor: pointer; overflow: hidden; }
+.cat-cover img { width: 100%; height: 100%; object-fit: cover; }
+.cat-cover.multi { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 2px; place-items: stretch; }
+.cat-cover span { font-size: 40px; font-weight: 700; color: var(--accent); }
+.cat-body { display: grid; align-content: start; gap: 8px; padding: 14px 16px 16px; }
+.cat-body > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cat-body b { font-size: 15.5px; color: var(--ink); }
+.cat-body p { margin: 0; }
+.cat-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.cat-new { display: grid; place-content: center; justify-items: center; gap: 6px; min-height: 230px; border: 1.5px dashed #cfd4da; border-radius: 16px; background: none; font: inherit; color: var(--muted); cursor: pointer; }
+.cat-new:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.cat-new .i { width: 24px; height: 24px; color: var(--accent); }
+.cat-new b { color: var(--ink); }
+.cat-empty { display: grid; justify-items: center; gap: 8px; padding: 40px 20px; text-align: center; }
+.cat-empty > b { font-size: 16px; color: var(--ink); }
+.cat-photo { display: flex; align-items: center; gap: 12px; }
+.cat-img { width: 120px; aspect-ratio: 16 / 10; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.cat-img img { width: 100%; height: 100%; object-fit: cover; }
+.cat-prods .thumb { width: 28px; height: 28px; }
+.dc-prods.cat-prods label span:first-of-type { flex: none; }
+.dc-prods.cat-prods label span:nth-of-type(2) { flex: 1; }
+
+/* Staff & permissions */
+.st-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+.st-head h2 { margin-bottom: 4px; }
+.st-list { padding: 4px 18px; }
+.st-row { display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: center; column-gap: 12px; row-gap: 2px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.st-row:last-child { border-bottom: 0; }
+.st-row > .avatar, .st-row > span:first-child { grid-row: span 2; }
+.st-who { display: grid; gap: 1px; min-width: 0; }
+.st-who b { color: var(--ink); font-size: 14.5px; }
+.st-who small { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; }
+.st-meta { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.st-perm-list { grid-column: 2 / -1; font-size: 12.5px; color: var(--muted); }
+.st-up { padding: 0; border: 0; background: none; font: inherit; color: var(--accent); font-weight: 600; cursor: pointer; }
+.st-roles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.dialog .st-role { position: relative; display: grid; gap: 2px; margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; }
+.st-role input { position: absolute; opacity: 0; pointer-events: none; }
+.st-role b { font-size: 14px; color: var(--ink); }
+.st-role small { font-size: 12.5px; color: var(--muted); font-weight: 400; }
+.dialog .st-role.on { border: 2px solid var(--accent); padding: 11px 13px; background: var(--accent-soft); }
+.st-role:focus-within { box-shadow: 0 0 0 3px var(--accent-soft); }
+.st-perms { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 14px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; }
+.dialog .st-perms label { display: flex; align-items: center; gap: 10px; margin: 0; padding: 6px 0; font-size: 14px; font-weight: 500; cursor: pointer; }
+.st-perms input { width: 16px; height: 16px; accent-color: var(--accent); }
+@media (max-width: 640px) { .st-roles, .st-perms { grid-template-columns: 1fr; } .st-row { grid-template-columns: auto 1fr auto auto; } .st-meta { grid-column: 2 / -1; justify-content: flex-start; } }
