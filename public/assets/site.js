@@ -730,7 +730,8 @@ window.SiteKit = (() => {
     const shopJs = `<script>window.SHOP=${JSON.stringify(shop).replace(/</g, "\\u003c")};var discountFor=(${discountFor}),discountProblem=(${discountProblem});(${storefront})();<\/script>`;
     // Pixels and custom code from Marketing: in the <head>, and at the end of the <body>
     const t = opts.tracking || {};
-    return doc.replace("</head>", () => (t.head ? t.head + "\n" : "") + "</head>")
+    // The website keeps room for its scrollbar, so moving between a short and a long page doesn't shift it sideways
+    return doc.replace("</head>", () => "<style>html{scrollbar-gutter:stable}</style>" + (t.head ? t.head + "\n" : "") + "</head>")
       .replace(/<body([^>]*)>[\s\S]*<\/body>/, (m, attrs) => `<body${attrs}>${all}${nav}${shopJs}${t.body || ""}</body>`);
   };
 

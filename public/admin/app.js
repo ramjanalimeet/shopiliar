@@ -1814,6 +1814,7 @@
     payments: () => `<form data-form="payments">
         <h2>Payments</h2><p class="muted">Choose how customers can pay you.</p>
         <div class="s-card" style="padding-top:4px;padding-bottom:4px">${Object.entries(PAYMENT_LABEL).map(([k, l]) => `<div class="set-row"><span>${l}</span><label class="switch"><input type="checkbox" name="pay_${k}" ${store.settings.payments[k] ? "checked" : ""} aria-label="${l}"><i></i></label></div>`).join("")}</div>
+        <p class="muted small" style="margin-top:10px">Want Rocket, Upay or bank transfer, or to show payment instructions? Add them on the <a class="link" href="#/website?page=${esc((store.pages.find((p) => p.system === "checkout") || {}).id || "")}" data-close>Checkout page</a>.</p>
         <div class="s-foot"><button class="btn btn-primary" type="submit">Save</button></div>
       </form>`,
     notifications: () => `<form data-form="notifications">
@@ -2107,6 +2108,11 @@
     storeToggle.classList.toggle("in", inStore);
     // The customizer belongs to Themes
     if (route === "website") document.querySelector('[data-route="themes"]').classList.add("on");
+    // On phones table rows show as cards, with each value labelled by its column
+    document.querySelectorAll("#view .table").forEach((t) => {
+      const heads = [...t.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+      t.querySelectorAll("tbody tr").forEach((tr) => [...tr.children].forEach((td, i) => { if (heads[i] && !td.hasAttribute("colspan")) td.dataset.label = heads[i]; }));
+    });
   };
 
   hydrateIcons();
