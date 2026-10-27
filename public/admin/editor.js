@@ -8,6 +8,9 @@ window.SiteEditor = (() => {
   const DEVICES = { desktop: { label: "Desktop", icon: "monitor", width: "100%" }, tablet: { label: "Tablet", icon: "tablet", width: "820px" }, mobile: { label: "Mobile", icon: "phone", width: "390px" } };
   // What each section type can edit. [type, path, label, options]
   const L = (path, label, item, opts = {}) => ["list", path, label, { item, ...opts }];
+  // A question on the Checkout form
+  const FORM_FIELD = [["text", "label", "Label"], ["text", "hint", "Hint (shown inside the box)"],
+    ["select", "type", "Answer type", { options: [["text", "Short text"], ["tel", "Phone number"], ["email", "Email"], ["number", "Number"], ["textarea", "Long text"]] }]];
   const CONTENT = {
     hero: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"], ["textarea", "subtitle", "Subtitle"], ["link", "btn1", "Button 1"], ["link", "btn2", "Button 2"], ["image", "image", "Image"],
       ["toggle", "badge.show", "Show offer badge"], ["text", "badge.top", "Badge: top line", { when: "badge.show" }], ["text", "badge.big", "Badge: big text", { when: "badge.show" }], ["text", "badge.bottom", "Badge: bottom line", { when: "badge.show" }],
@@ -31,13 +34,13 @@ window.SiteEditor = (() => {
     // Every part of the Checkout page; payment switches change Settings → Payments
     checkout: [["text", "title", "Title"], ["textarea", "subtitle", "Text"], ["toggle", "showSteps", "Step numbers (1, 2, 3)"],
       ["heading", "", "Customer details"], ["text", "detailsTitle", "Heading"],
-      ["text", "nameLabel", "Name label"], ["text", "namePh", "Name hint"], ["text", "phoneLabel", "Phone label"], ["text", "phonePh", "Phone hint"],
-      ["toggle", "showEmail", "Ask for email"], ["text", "emailLabel", "Email label", { when: "showEmail" }], ["text", "emailPh", "Email hint", { when: "showEmail" }],
-      ["heading", "", "Delivery"], ["text", "deliveryTitle", "Heading"], ["text", "addressLabel", "Address label"], ["text", "addressPh", "Address hint"],
-      L("delivery", "Delivery options", [["text", "label", "Name"], ["number", "fee", "Charge (৳)", { max: 99999 }]], { max: 5, add: { label: "Express delivery", fee: 150 }, name: "label" }),
+      L("details", "Fields", FORM_FIELD, { max: 8, add: { label: "WhatsApp number", hint: "01XXX-XXXXXX", type: "tel" }, name: "label" }),
+      ["heading", "", "Delivery"], ["text", "deliveryTitle", "Heading"],
+      L("deliveryFields", "Address fields", FORM_FIELD, { max: 6, add: { label: "City", hint: "Dhaka", type: "text" }, name: "label" }),
+      L("delivery", "Delivery options", [["text", "label", "Name"], ["number", "fee", "Charge (৳)", { max: 99999 }]], { max: 6, add: { label: "Express delivery", fee: 150 }, name: "label" }),
       ["heading", "", "Payment"], ["text", "paymentTitle", "Heading"],
-      ...Object.entries(K.PAYMENTS).map(([k, l]) => ["toggle", "payments." + k, l, { scope: "settings" }]),
-      ["note", "", "Turn on the ways customers can pay. This is the same as Settings → Payments."],
+      L("payMethods", "Payment methods", [["text", "label", "Name"], ["textarea", "info", "Instructions (optional)", { rows: 2 }]], { max: 8, add: { label: "Rocket", info: "Send money to 01XXX-XXXXXX and write the transaction ID in the order note." }, name: "label" }),
+      ["note", "", "Cash on delivery, bKash, Nagad and Card stay the same as in Settings → Payments."],
       ["heading", "", "Order note"], ["toggle", "showNote", "Order note box"], ["text", "noteLabel", "Label", { when: "showNote" }], ["text", "notePh", "Hint", { when: "showNote" }],
       ["heading", "", "Order summary"], ["text", "summaryTitle", "Heading"], ["toggle", "showCoupon", "Discount code box"], ["text", "couponPh", "Discount box hint", { when: "showCoupon" }], ["text", "couponButton", "Discount button", { when: "showCoupon" }],
       ["toggle", "showSecure", "Safety message"], ["text", "secureText", "Safety message text", { when: "showSecure" }],
@@ -104,6 +107,7 @@ window.SiteEditor = (() => {
     // Every edit: refresh the canvas, save, and remember for undo once typing pauses
     const changed = (opts = {}) => {
       store.customized = true;
+      d.syncPayments();
       d.touchSite(); d.persist();
       paintCanvas();
       if (opts.panel) paintPanel();
@@ -207,7 +211,6 @@ window.SiteEditor = (() => {
     const field = (f, obj, scope) => {
       const [type, path, label, o = {}] = f;
       if (o.when && !get(obj, o.when)) return "";
-      if (o.scope) { scope = o.scope; obj = scopeObj(scope); }
       const val = get(obj, path);
       const id = "f" + Math.random().toString(36).slice(2, 8);
       const bind = `data-scope="${scope}" data-path="${path}"`;
@@ -217,6 +220,7 @@ window.SiteEditor = (() => {
       if (type === "textarea") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><textarea class="textarea" id="${id}" rows="${o.rows || 3}" ${bind}>${esc(val)}</textarea></div>`;
       if (type === "number") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><input class="input" type="number" id="${id}" min="${o.min ?? 0}" max="${o.max ?? 99}" ${bind} data-num value="${esc(val)}"></div>`;
       if (type === "toggle") return `<div class="ed-toggle"><span>${esc(label)}</span><label class="switch"><input type="checkbox" ${bind} data-rerender ${val ? "checked" : ""} aria-label="${esc(label)}"><i></i></label></div>`;
+      if (type === "select") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><select class="select" id="${id}" ${bind} data-rerender>${o.options.map(([v, l]) => `<option value="${esc(v)}" ${v === val ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div>`;
       if (type === "icon") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><select class="select" id="${id}" ${bind}>${K.FEATURE_ICONS.map((n) => `<option ${n === val ? "selected" : ""}>${n}</option>`).join("")}</select></div>`;
       if (type === "link") return `<div class="ed-field"><label>${esc(label)}</label><div class="ed-link"><input class="input" ${bind.replace(path, path + ".text")} value="${esc(val?.text)}" placeholder="Button text" aria-label="${esc(label)} text"><input class="input" ${bind.replace(path, path + ".link")} value="${esc(val?.link)}" placeholder="Link, e.g. /shop" aria-label="${esc(label)} link"></div></div>`;
       if (type === "image") {
@@ -251,7 +255,6 @@ window.SiteEditor = (() => {
       else if (base === "style") obj = t && t.style;
       else if (base === "site") obj = store.site;
       else if (base === "page") obj = page();
-      else if (base === "settings") obj = store.settings;
       else if (base.startsWith("block:")) obj = t && t.section && t.section.blocks.find((b) => b.id === base.slice(6));
       if (listPath != null) obj = get(obj, listPath)[Number(idx)];
       return obj;
@@ -399,8 +402,6 @@ window.SiteEditor = (() => {
       let v = el.type === "checkbox" ? el.checked : el.value;
       if (el.dataset.num !== undefined) { const n = Number(v); v = Number.isFinite(n) ? Math.min(Number(el.max) || n, Math.max(Number(el.min) || 0, n)) : 0; }
       set(obj, el.dataset.path, v);
-      // Payment switches on the Checkout page are the store's payment settings
-      if (el.dataset.scope === "settings") store.site.payments = Object.keys(K.PAYMENTS).filter((k) => store.settings.payments[k]).map((k) => K.PAYMENTS[k]);
       if (el.dataset.scope === "page" && el.dataset.path === "title") $("#ed-page-name").textContent = "Pages · " + page().title;
       changed({ panel: el.dataset.rerender !== undefined });
     };

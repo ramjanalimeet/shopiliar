@@ -184,7 +184,13 @@
   const ORDER_STATUS = { Pending: "yellow", Paid: "blue", Shipped: "purple", Delivered: "green", Cancelled: "red" };
   const PAYMENT_LABEL = SiteKit.PAYMENTS;
   // The Checkout page shows the payment methods turned on in Settings → Payments
-  const syncPayments = () => { store.site.payments = Object.keys(PAYMENT_LABEL).filter((k) => store.settings.payments[k]).map((k) => PAYMENT_LABEL[k]); };
+  // ... and the store owner's own methods. Settings → Payments shows the four common ones as switches.
+  const checkoutPays = () => {
+    const pg = store.pages.find((p) => p.system === "checkout"), sec = pg && pg.sections.find((x) => x.type === "checkout");
+    return sec ? sec.content.payMethods : null;
+  };
+  const hasPay = (list, label) => list.findIndex((m) => String(m.label || "").trim().toLowerCase() === label.toLowerCase());
+  const syncPayments = () => { const list = checkoutPays(); if (list) Object.entries(PAYMENT_LABEL).forEach(([k, l]) => { store.settings.payments[k] = hasPay(list, l) >= 0; }); };
   syncPayments();
   // The Checkout page is part of every website, so it doesn't count toward the plan's pages
   const pageCount = () => store.pages.filter((p) => !p.system).length;
@@ -853,7 +859,7 @@
       title: "Edit website",
       render: () => '<div class="ed-root"></div>',
       mount: (view) => SiteEditor.mount(view.querySelector(".ed-root"), {
-        store, account, catalog, icon, toast, confirm, dialog, touchSite, persist,
+        store, account, catalog, icon, toast, confirm, dialog, touchSite, persist, syncPayments,
         publish: () => actions.publish(),
         canAddPage: () => withinLimit(plan().pages, pageCount()),
       }),
@@ -1116,7 +1122,6 @@
       const b = store.backups.find((x) => x.id === el.dataset.id);
       const data = JSON.parse(JSON.stringify(b.data));
       SiteKit.ensure(data.site, data.pages, { products: store.products });
-      data.site.payments = store.site.payments;
       const bar = `<div style="position:sticky;top:0;z-index:100;display:flex;justify-content:center;gap:8px;padding:10px 16px;background:#0e7a4b;color:#fff;font:600 14px/1.4 Inter,system-ui,sans-serif">Preview of the backup “${esc(versionTitle(b))}”. This is a backup, not your live website.</div>`;
       const html = SiteKit.storeHTML(data.site, data.pages, { products: store.products }).replace(/<body([^>]*)>/, (m) => m + bar);
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
@@ -1434,8 +1439,15 @@
         // the same details Preferences shows on the website
         store.site.phone = store.settings.phone; store.site.address = store.settings.address; touchSite();
       } else if (f.dataset.form === "payments") {
-        Object.keys(PAYMENT_LABEL).forEach((k) => { store.settings.payments[k] = f.elements["pay_" + k].checked; });
-        syncPayments(); touchSite();
+        const list = checkoutPays();
+        Object.entries(PAYMENT_LABEL).forEach(([k, l]) => {
+          const on = (store.settings.payments[k] = f.elements["pay_" + k].checked);
+          if (!list) return;
+          const i = hasPay(list, l);
+          if (on && i < 0) list.push({ label: l, info: "" });
+          if (!on && i >= 0) list.splice(i, 1);
+        });
+        touchSite();
       } else if (f.dataset.form === "notifications") {
         store.settings.orderEmails = f.elements.orderEmails.checked;
         store.settings.stockEmails = f.elements.stockEmails.checked;
