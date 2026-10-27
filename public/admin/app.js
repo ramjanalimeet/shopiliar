@@ -768,19 +768,41 @@
     pages: {
       title: "Pages",
       render: () => {
-        const canAdd = withinLimit(plan().pages, store.pages.length);
-        return `${head("Pages", "The pages of your website. Turn on “In menu” to show a page in your top menu.", `${usage("pages", store.pages.length, plan().pages)}<button class="btn btn-primary" data-action="add-page" ${canAdd ? "" : "disabled"}>${icon("plus")}Add page</button>`)}
-          ${limitCallout("pages", store.pages.length, plan().pages)}
-          <div class="card"><div class="table-wrap"><table class="table">
-            <thead><tr><th>Page</th><th>Address</th><th>In menu</th><th class="t-actions"></th></tr></thead>
-            <tbody>${store.pages.map((p) => `
-              <tr><td><button class="t-title" data-action="edit-page" data-id="${p.id}"><span class="stat-ico c1" style="width:32px;height:32px">${icon("pages")}</span>${esc(p.title)}</button></td>
-              <td class="muted">${esc(siteUrl())}/${esc(p.slug)}</td>
-              <td><label class="switch"><input type="checkbox" data-action="page-nav" data-id="${p.id}" ${p.inNav ? "checked" : ""} aria-label="Show ${esc(p.title)} in menu"><i></i></label></td>
-              <td class="t-actions"><button class="icon-btn" data-action="edit-page" data-id="${p.id}" aria-label="Rename ${esc(p.title)}">${icon("edit")}</button>${p.locked ? '<span class="icon-btn" title="The home page can\'t be deleted"></span>' : `<button class="icon-btn danger" data-action="delete-page" data-id="${p.id}" aria-label="Delete ${esc(p.title)}">${icon("trash")}</button>`}</td></tr>`).join("")}</tbody>
-          </table></div></div>
+        const lim = plan().pages, n = store.pages.length, canAdd = withinLimit(lim, n);
+        const meter = lim == null ? `<span class="pg-usage">${n} pages · unlimited</span>`
+          : `<span class="pg-usage"><span>${n} of ${lim} pages</span><i><b style="width:${Math.min(100, (n / lim) * 100)}%"></b></i></span>`;
+        return `${head("Pages", "Every page of your website. Click Edit to change what's on a page.", `${meter}<button class="btn btn-primary" data-action="add-page" ${canAdd ? "" : "disabled"}>${icon("plus")}Add page</button>`)}
+          ${limitCallout("pages", n, lim)}
+          <div class="pg-grid">${store.pages.map((p) => {
+            const count = (p.sections || []).filter((x) => !x.hidden).length;
+            return `<article class="pg-card">
+              <a class="pg-thumb th-screen" data-w="1280" href="#/website?page=${p.id}" aria-label="Edit ${esc(p.title)}" tabindex="-1">
+                <iframe class="th-canvas" style="width:1280px" srcdoc="${esc(SiteKit.documentHTML(store.site, store.pages, { page: p, products: store.products }))}" title="${esc(p.title)} preview" tabindex="-1" loading="lazy"></iframe>
+              </a>
+              <div class="pg-body">
+                <div class="pg-name"><b>${esc(p.title)}</b>${p.locked ? '<span class="tag green">Home page</span>' : ""}</div>
+                <span class="pg-link">${esc(siteUrl())}/${esc(p.slug)}</span>
+                <div class="pg-meta"><span class="pg-chip ${p.inNav ? "on" : ""}">${p.inNav ? "In menu" : "Not in menu"}</span><span class="pg-chip">${count} ${count === 1 ? "section" : "sections"}</span></div>
+              </div>
+              <div class="pg-actions">
+                <a class="btn btn-sm btn-primary" href="#/website?page=${p.id}">${icon("brush")}Edit</a>
+                <div class="v-more">
+                  <button class="icon-btn" data-action="version-menu" aria-haspopup="menu" aria-expanded="false" aria-label="More options for ${esc(p.title)}" title="More options">${icon("dots")}</button>
+                  <div class="v-menu" role="menu" hidden>
+                    <button role="menuitem" data-action="page-view" data-id="${p.id}">${icon("external")}<span><b>View</b><small>Open this page in a new tab</small></span></button>
+                    <button role="menuitem" data-action="nav-edit" data-id="${p.id}">${icon("edit")}<span><b>Rename</b><small>Change the name or link</small></span></button>
+                    <button role="menuitem" data-action="page-toggle-nav" data-id="${p.id}">${icon("menu")}<span><b>${p.inNav ? "Hide from menu" : "Show in menu"}</b><small>${p.inNav ? "The page stays, it just leaves the top menu" : "Add it to your website's top menu"}</small></span></button>
+                    ${p.locked ? "" : `<button role="menuitem" class="danger" data-action="delete-page" data-id="${p.id}">${icon("trash")}<span><b>Delete</b><small>Remove this page from your website</small></span></button>`}
+                  </div>
+                </div>
+              </div>
+            </article>`;
+          }).join("")}
+            ${canAdd ? `<button class="pg-card pg-new" data-action="add-page">${icon("plus")}<b>Add a page</b><span>About, FAQ, Size guide…</span></button>` : ""}
+          </div>
         </div>`;
       },
+      mount: (view) => { if (previewObserver) previewObserver.disconnect(); previewObserver = fitPreviews(view); },
     },
   };
 
@@ -1118,7 +1140,18 @@
       pageDialog(null);
     },
     "edit-page": (el) => pageDialog(store.pages.find((p) => p.id === el.dataset.id)),
+    "page-view": (el) => {
+      closeVersionMenus();
+      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, start: el.dataset.id });
+      window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
+    },
+    "page-toggle-nav": (el) => {
+      closeVersionMenus();
+      const pg = store.pages.find((p) => p.id === el.dataset.id);
+      pg.inNav = !pg.inNav; touchSite(); persist(); go(); toast(pg.title + (pg.inNav ? " is now in the menu" : " was hidden from the menu"));
+    },
     "delete-page": async (el) => {
+      closeVersionMenus();
       const pg = store.pages.find((x) => x.id === el.dataset.id);
       if (await confirm("Delete page?", `The “${pg.title}” page will be removed from your website.`)) { store.pages = store.pages.filter((x) => x !== pg); touchSite(); persist(); go(); }
     },

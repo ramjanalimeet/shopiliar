@@ -344,7 +344,9 @@ window.SiteKit = (() => {
   // Every page in one document; menu links switch pages without leaving it (used by "View your store")
   const storeHTML = (site, pages, opts = {}) => {
     const doc = documentHTML(site, pages, { ...opts, page: pages[0] });
-    const all = pages.map((p, i) => `<div data-slug="${esc(p.slug || "")}"${i ? " hidden" : ""}>${renderBody(site, pages, { ...opts, page: p })}</div>`).join("");
+    // opts.start: the page to open first (default: the home page)
+    const first = Math.max(0, pages.findIndex((p) => p.id === opts.start));
+    const all = pages.map((p, i) => `<div data-slug="${esc(p.slug || "")}"${i === first ? "" : " hidden"}>${renderBody(site, pages, { ...opts, page: p })}</div>`).join("");
     const nav = `<script>document.addEventListener("click",function(e){var a=e.target.closest("a[href^='/']");if(!a)return;var slug=a.getAttribute("href").slice(1),pg=document.querySelector('[data-slug="'+slug+'"]');e.preventDefault();if(!pg)return;document.querySelectorAll("[data-slug]").forEach(function(d){d.hidden=d!==pg});scrollTo(0,0)});<\/script>`;
     return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${all.replace(/\$/g, "$$$$")}${nav}</body>`);
   };
