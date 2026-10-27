@@ -75,6 +75,8 @@ window.SiteKit = (() => {
     faq: { label: "FAQ", icon: "help" },
     banner: { label: "Image banner", icon: "layout" },
     custom: { label: "Custom", icon: "plus" },
+    // Only on the Checkout page (not in the section library)
+    checkout: { label: "Checkout", icon: "cart" },
   };
   const blankStyle = () => ({ bg: "", text: "", padding: "m", align: "left" });
   const section = (type, content, style = {}) => ({ id: uid("s"), type, hidden: false, content, style: { ...blankStyle(), ...style }, blocks: [] });
@@ -116,6 +118,11 @@ window.SiteKit = (() => {
         { q: "Can I return a product?", a: "Yes, within 7 days if it's unused and in its original packaging." },
       ] });
       case "banner": return section("banner", { image: "", title: "A big statement", text: "Use an image banner to set the mood.", button: { text: "Shop Now", link: "/shop" } }, { height: "m", align: "center" });
+      case "checkout": return section("checkout", {
+        title: "Checkout", subtitle: "Almost done! Fill in your details and we'll deliver your order.",
+        insideLabel: "Inside Dhaka", insideFee: 60, outsideLabel: "Outside Dhaka", outsideFee: 120,
+        button: "Place order", note: "You can return unused items within 7 days.", showNote: true, showCoupon: true,
+      });
       case "custom": {
         const s = section("custom", {});
         s.blocks = [makeBlock("heading", "A new section"), makeBlock("text", "Add headings, text, buttons and images to build anything you like.")];
@@ -160,6 +167,7 @@ window.SiteKit = (() => {
     if (slug === "shop") { const p = make("products", ctx); Object.assign(p.content, { eyebrow: "Shop", title: "All products", subtitle: "", count: 12, viewAll: { text: "", link: "" } }); return [p]; }
     if (slug === "about") return [make("about", ctx), make("testimonials", ctx)];
     if (slug === "contact") return [make("contact", ctx), make("faq", ctx)];
+    if (page.system === "checkout") return [make("checkout", ctx)];
     const c = make("custom", ctx);
     c.blocks[0].text = page.title;
     return [c];
@@ -174,6 +182,14 @@ window.SiteKit = (() => {
     site.header ||= { logo: "", announcement: { show: false, text: "Free delivery on orders over ৳2,000" }, search: true, account: true, cart: true, style: blankStyle() };
     site.footer ||= { text: site.about || "", showMenu: true, showContact: true, showSocial: true, copyright: "", style: blankStyle() };
     pages.forEach((p) => { if (!Array.isArray(p.sections)) p.sections = pageSections(p, ctx); });
+    // Every store has a Checkout page: it can be edited or reset, but not deleted, and its link stays /checkout
+    if (!pages.some((p) => p.system === "checkout")) {
+      let co = pages.find((p) => p.slug === "checkout");
+      if (!co) { co = { id: uid("pg"), title: "Checkout", slug: "checkout", inNav: false }; pages.push(co); }
+      Object.assign(co, { system: "checkout", locked: true, inNav: false });
+      if (!Array.isArray(co.sections)) co.sections = [];
+      if (!co.sections.some((x) => x.type === "checkout")) co.sections.unshift(make("checkout", ctx));
+    }
     // Contact sections that only copied the store details now follow them
     pages.forEach((p) => p.sections.forEach((sec) => {
       if (sec.type === "contact") ["phone", "email", "address"].forEach((k) => { if (sec.content[k] && sec.content[k] === site[k]) sec.content[k] = ""; });
@@ -296,6 +312,41 @@ window.SiteKit = (() => {
         ${ctx.blocks}
       </div>`,
     banner: (c, st, ctx) => `<div class="banner h-${esc(st.height || "m")}">${img(c.image, "banner-img", c.title, ctx.ed)}<div class="wrap banner-copy">${c.title ? `<h2>${esc(c.title)}</h2>` : ""}${c.text ? `<p class="lead">${esc(c.text)}</p>` : ""}${c.button?.text ? `<div class="btns">${btn(c.button)}</div>` : ""}${ctx.blocks}</div></div>`,
+    // Checkout: details, delivery, payment and an order summary, in the website's own colors and fonts
+    checkout: (c, st, ctx) => {
+      const items = (ctx.products || []).filter((p) => p.status !== "draft").slice(0, 2);
+      const inside = Math.max(0, Number(c.insideFee) || 0), outside = Math.max(0, Number(c.outsideFee) || 0);
+      const sub = items.reduce((a, p) => a + (Number(p.price) || 0), 0), total = sub + inside;
+      const pays = (ctx.site && ctx.site.payments && ctx.site.payments.length ? ctx.site.payments : ["Cash on delivery"]);
+      const field = (label, type = "text", ph = "") => `<label class="co-field"><span>${label}</span>${type === "area" ? `<textarea rows="2" placeholder="${esc(ph)}"></textarea>` : `<input type="${type}" placeholder="${esc(ph)}">`}</label>`;
+      return `<div class="wrap checkout">
+        <div class="co-head">${c.title ? `<h1>${esc(c.title)}</h1>` : ""}${c.subtitle ? `<p class="lead">${esc(c.subtitle)}</p>` : ""}</div>
+        <div class="co-grid">
+          <form class="co-form" onsubmit="return false">
+            <div class="co-step"><h3><i>1</i>Your details</h3><div class="co-row">${field("Full name", "text", "Your name")}${field("Phone", "tel", "01XXX-XXXXXX")}</div>${field("Email (optional)", "email", "you@email.com")}</div>
+            <div class="co-step"><h3><i>2</i>Delivery</h3>${field("Full address", "area", "House, road, area, city")}
+              <div class="co-options">
+                <label class="co-option on"><input type="radio" name="delivery" checked><span>${esc(c.insideLabel || "Inside Dhaka")}</span><b>${taka(inside)}</b></label>
+                <label class="co-option"><input type="radio" name="delivery"><span>${esc(c.outsideLabel || "Outside Dhaka")}</span><b>${taka(outside)}</b></label>
+              </div></div>
+            <div class="co-step"><h3><i>3</i>Payment</h3><div class="co-options">${pays.map((p, i) => `<label class="co-option${i ? "" : " on"}"><input type="radio" name="pay"${i ? "" : " checked"}><span>${esc(p)}</span></label>`).join("")}</div></div>
+            ${c.showNote ? `<div class="co-step">${field("Order note (optional)", "area", "Anything we should know?")}</div>` : ""}
+            <button class="btn co-place" type="submit">${esc(c.button || "Place order")} · ${taka(total)}</button>
+            ${c.note ? `<p class="co-small">${esc(c.note)}</p>` : ""}
+            ${ctx.blocks}
+          </form>
+          <aside class="co-summary">
+            <h3>Order summary</h3>
+            ${items.length ? items.map((p) => `<div class="co-item"><span class="co-img" style="background:${esc(color(p.color) || "#e9e6e1")}">${safeImg(p.image) ? `<img src="${esc(p.image)}" alt="">` : ""}<em>1</em></span><span class="co-name">${esc(p.name)}</span><b>${taka(p.price)}</b></div>`).join("") : `<p class="empty">Items in the cart show here.</p>`}
+            ${c.showCoupon ? `<div class="co-coupon"><input placeholder="Discount code" aria-label="Discount code"><button class="btn btn-outline" type="button">Apply</button></div>` : ""}
+            <div class="co-line"><span>Subtotal</span><span>${taka(sub)}</span></div>
+            <div class="co-line"><span>Delivery</span><span>${taka(inside)}</span></div>
+            <div class="co-line co-total"><span>Total</span><span>${taka(total)}</span></div>
+            <p class="co-secure">${svg("shield")}Your details are safe with us</p>
+          </aside>
+        </div>
+      </div>`;
+    },
     custom: (c, st, ctx) => `<div class="wrap narrow">${ctx.blocks || (ctx.ed ? '<p class="empty">Add elements to this section from the panel.</p>' : "")}</div>`,
   };
 
@@ -309,7 +360,7 @@ window.SiteKit = (() => {
       <div class="wrap nav">
         <a class="logo" href="/">${safeImg(h.logo) ? `<img src="${esc(h.logo)}" alt="${esc(site.name)}">` : esc(site.name || "My Store")}</a>
         <nav class="menu">${navPages(pages).map((p) => `<a href="${esc(pageHref(p))}"${opts.page && p.id === opts.page.id ? ' class="on"' : ""}>${esc(p.title)}</a>`).join("")}</nav>
-        <div class="tools">${h.search ? `<span>${svg("search")}</span>` : ""}${h.account ? `<span>${svg("user")}</span>` : ""}${h.cart ? `<span>${svg("cart")}</span>` : ""}<span class="burger">${svg("menu")}</span></div>
+        <div class="tools">${h.search ? `<span>${svg("search")}</span>` : ""}${h.account ? `<span>${svg("user")}</span>` : ""}${h.cart ? `<a href="/checkout" aria-label="Cart and checkout">${svg("cart")}</a>` : ""}<span class="burger">${svg("menu")}</span></div>
       </div>
     </header>`;
   };
@@ -331,7 +382,7 @@ window.SiteKit = (() => {
     const page = opts.page || pages[0];
     const ed = !!opts.ed;
     const sections = (page.sections || []).filter((s) => ed || !s.hidden);
-    const label = (s) => ed && opts.selected === s.id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${esc((TYPES[s.type] || {}).label || s.type)}</b><button data-ed="up" title="Move up">↑</button><button data-ed="down" title="Move down">↓</button><button data-ed="duplicate" title="Duplicate">⧉</button><button data-ed="delete" title="Delete">✕</button></div></div>` : "";
+    const label = (s) => ed && opts.selected === s.id ? `<div class="ed-chip"><div class="ed-chip-in"><b>${esc((TYPES[s.type] || {}).label || s.type)}</b><button data-ed="up" title="Move up">↑</button><button data-ed="down" title="Move down">↓</button>${s.type === "checkout" ? "" : '<button data-ed="duplicate" title="Duplicate">⧉</button><button data-ed="delete" title="Delete">✕</button>'}</div></div>` : "";
     const sel = (id) => (ed && opts.selected === id ? " is-selected" : "");
     // Just the header (live menu bar preview on the Navigation page)
     if (opts.headerOnly) return `<div class="site" style="${esc(rootStyle(site))};min-height:0">${renderHeader(site, pages, { page })}</div>`;

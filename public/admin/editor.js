@@ -28,6 +28,12 @@ window.SiteEditor = (() => {
     faq: [["text", "title", "Title"], L("items", "Questions", [["text", "q", "Question"], ["textarea", "a", "Answer"]], { max: 12, add: { q: "New question?", a: "The answer." }, name: "q" })],
     banner: [["image", "image", "Background image"], ["text", "title", "Title"], ["textarea", "text", "Text"], ["link", "button", "Button"]],
     custom: [],
+    checkout: [["text", "title", "Title"], ["textarea", "subtitle", "Text"],
+      ["text", "insideLabel", "Delivery option 1"], ["number", "insideFee", "Delivery charge 1 (৳)", { max: 99999 }],
+      ["text", "outsideLabel", "Delivery option 2"], ["number", "outsideFee", "Delivery charge 2 (৳)", { max: 99999 }],
+      ["text", "button", "Button text"], ["textarea", "note", "Small text under the button", { rows: 2 }],
+      ["toggle", "showNote", "Order note box"], ["toggle", "showCoupon", "Discount code box"],
+      ["note", "", "Payment methods come from Settings → Payments. The order summary shows what's in the customer's cart."]],
     header: [["image", "logo", "Logo image (optional)"], ["toggle", "announcement.show", "Show announcement bar"], ["text", "announcement.text", "Announcement", { when: "announcement.show" }],
       ["toggle", "search", "Search icon"], ["toggle", "account", "Account icon"], ["toggle", "cart", "Cart icon"], ["note", "", 'Menu items come from <a href="#/navigation">Navigation</a>. The website name, logo and announcement can also be changed in <a href="#/preferences">Preferences</a>.']],
     footer: [["textarea", "text", "About text"], ["toggle", "showMenu", "Show pages"], ["toggle", "showContact", "Show contact details"], ["toggle", "showSocial", "Show social links"], ["text", "copyright", "Copyright line", { placeholder: "© 2026 Your store. All rights reserved." }],
@@ -245,7 +251,7 @@ window.SiteEditor = (() => {
       const p = page();
       const row = (id, label, ico, s) => `<div class="ed-row ${state.selected === id ? "on" : ""}" data-select="${id}">
         <span class="ed-row-ico">${icon(ico)}</span><span class="ed-row-label">${esc(label)}</span>
-        ${s ? `<span class="ed-row-tools"><button type="button" data-row="hide" data-id="${s.id}" aria-label="${s.hidden ? "Show" : "Hide"} section" title="${s.hidden ? "Show" : "Hide"}">${icon(s.hidden ? "eyeOff" : "eye")}</button></span>` : ""}
+        ${s && s.type !== "checkout" ? `<span class="ed-row-tools"><button type="button" data-row="hide" data-id="${s.id}" aria-label="${s.hidden ? "Show" : "Hide"} section" title="${s.hidden ? "Show" : "Hide"}">${icon(s.hidden ? "eyeOff" : "eye")}</button></span>` : ""}
       </div>`;
       return `<div class="ed-sub">Sections on ${esc(p.title)}</div>
         <div class="ed-outline">${row("header", "Header", "layout")}${p.sections.map((s) => row(s.id, (K.TYPES[s.type] || {}).label || s.type, (K.TYPES[s.type] || {}).icon || "layout", s)).join("")}${row("footer", "Footer", "layout")}</div>
@@ -308,6 +314,7 @@ window.SiteEditor = (() => {
       else if (act === "down" && i < list.length - 1) [list[i + 1], list[i]] = [list[i], list[i + 1]];
       else if (act === "duplicate") { const c = JSON.parse(JSON.stringify(s)); c.id = K.uid("s"); c.blocks.forEach((b) => { b.id = K.uid("b"); }); list.splice(i + 1, 0, c); state.selected = c.id; }
       else if (act === "delete") {
+        if (s.type === "checkout") { toast("The checkout form can't be removed — it's how customers order"); return; }
         if (!(await confirm("Delete section?", `The ${(K.TYPES[s.type] || {}).label || ""} section will be removed from this page. You can undo this.`, "Delete"))) return;
         list.splice(i, 1); state.selected = null;
       } else return;
@@ -399,7 +406,7 @@ window.SiteEditor = (() => {
       if (!b) return;
       if (b.hasAttribute("data-close")) { if (state.mode !== "sections" && innerWidth >= 900) state.mode = "sections"; else state.panelOpen = false; paintPanel(); return; }
       if (b.hasAttribute("data-deselect")) { select(null, false); return; }
-      if (b.dataset.row === "hide") { e.stopPropagation(); const s = sectionById(b.dataset.id); s.hidden = !s.hidden; changed({ panel: true }); return; }
+      if (b.dataset.row === "hide") { e.stopPropagation(); const s = sectionById(b.dataset.id); if (s.type === "checkout") { toast("The checkout form can't be hidden — it's how customers order"); return; } s.hidden = !s.hidden; changed({ panel: true }); return; }
       if (b.dataset.select) { select(b.dataset.select); return; }
       if (b.dataset.page) { state.pageId = b.dataset.page; state.selected = null; state.mode = "sections"; frame.contentWindow && frame.contentWindow.scrollTo(0, 0); paintAll(); return; }
       if (b.dataset.set !== undefined) { set(scopeObj(b.dataset.scope), b.dataset.path, b.dataset.set); changed({ panel: true }); return; }
