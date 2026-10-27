@@ -231,6 +231,22 @@
       ${cta.show ? `<div class="hb-cta"><div class="field"><label for="nx-cta">Button text</label><input class="input" id="nx-cta" data-nk="cta.text" maxlength="24" value="${esc(cta.text || "")}" placeholder="Shop now"></div><div class="field"><label for="nx-cta-link">Button link</label><input class="input" id="nx-cta-link" data-nk="cta.link" maxlength="200" value="${esc(cta.link || "")}" placeholder="/shop"></div></div>` : ""}
     </div>`;
   };
+  // Dropdown style cards: zoom in on the open dropdown. Every card is the same height;
+  // the dropdown is scaled to fit it and centred.
+  const cropStyleFrames = (view) => view.querySelectorAll(".ms-frame:not([data-crop])").forEach((f) => {
+    const shot = f.parentElement;
+    const crop = () => {
+      const d = f.contentDocument, panel = d && d.querySelector(".dd.open .dd-in");
+      if (!panel || !f.isConnected) return;
+      const r = panel.getBoundingClientRect(), W = f.parentElement.clientWidth, H = r.bottom + 18;
+      const k = Math.min(0.75, W / (r.width + 48), f.parentElement.clientHeight / H);
+      const x0 = r.left + r.width / 2 - W / (2 * k);
+      f.style.height = H + "px"; f.style.transform = `scale(${k}) translateX(${-x0}px)`;
+    };
+    f.dataset.crop = "1";
+    f.addEventListener("load", crop); crop();
+    new ResizeObserver(crop).observe(shot);
+  });
   // The menu as rows: each top item, then the items in its dropdown
   const menuRows = () => {
     const menu = store.pages.filter((p) => p.inNav);
@@ -747,25 +763,53 @@
           <div class="nv-panel" role="tabpanel">${navTab === "banner" ? navBanner() : navTab === "buttons" ? navButtons() : menuTab}</div>
         </div>`;
       },
+      // Changes on this page update it in place (no full redraw), so nothing jumps or flashes
+      update: (view) => {
+        if (!view.querySelector(".nav-live")) return false;
+        const tmp = document.createElement("div");
+        tmp.innerHTML = routes.navigation.render();
+        view.querySelector(".nv-tabs").innerHTML = tmp.querySelector(".nv-tabs").innerHTML;
+        // Style previews that didn't change keep their loaded frame
+        const panel = view.querySelector(".nv-panel"), old = new Map([...panel.querySelectorAll(".ms-frame")].map((f) => [f.getAttribute("srcdoc"), f]));
+        panel.innerHTML = tmp.querySelector(".nv-panel").innerHTML;
+        panel.querySelectorAll(".ms-frame").forEach((f) => { const o = old.get(f.getAttribute("srcdoc")); if (o) f.replaceWith(o); });
+        view.navPreview(tmp.querySelector(".nav-frame").getAttribute("srcdoc"));
+        cropStyleFrames(view);
+        return true;
+      },
       mount: (view) => {
         // Fit the 1280px-wide header into the card and size it to the header's height.
         // On small screens it stays readable (at least 55%) and the bar scrolls sideways.
-        const frame = view.querySelector(".nav-frame"), box = view.querySelector(".nav-live-frame"), inner = view.querySelector(".nav-live-inner");
-        const fit = () => {
-          const k = Math.max(box.clientWidth / 1280, 0.55), doc = frame.contentDocument;
+        const box = view.querySelector(".nav-live-frame"), inner = view.querySelector(".nav-live-inner");
+        let frame = view.querySelector(".nav-frame");
+        const fit = (f = frame) => {
+          const k = Math.max(box.clientWidth / 1280, 0.55), doc = f.contentDocument;
           const h = doc && doc.body ? doc.body.scrollHeight : 76;
-          frame.style.transform = `scale(${k})`; frame.style.height = h + "px";
+          f.style.transform = `scale(${k})`; f.style.height = h + "px";
           inner.style.width = 1280 * k + "px"; inner.style.height = h * k + "px";
         };
-        frame.addEventListener("load", fit); fit();
-        new ResizeObserver(fit).observe(box);
+        frame.addEventListener("load", () => fit()); fit();
+        new ResizeObserver(() => fit()).observe(box);
+        // A new preview loads behind the current one and takes its place when ready (no white flash)
+        let latest = frame.getAttribute("srcdoc");
+        view.navPreview = (html) => {
+          if (html === latest) return;
+          latest = html;
+          const next = frame.cloneNode(false);
+          next.style.visibility = "hidden";
+          next.addEventListener("load", () => {
+            if (latest !== html) { next.remove(); return; }
+            fit(next); next.style.visibility = ""; frame.remove(); frame = next;
+          });
+          next.srcdoc = html;
+          inner.appendChild(next);
+        };
 
         // Promotional banner and header buttons save as you go
         const nx = view.querySelector(".nv-panel");
         const hset = (k, val) => { const ks = k.split("."), last = ks.pop(); ks.reduce((o, x) => (o[x] ??= {}), store.site.header)[last] = val; };
         let nt = 0;
-        const keep = () => { const sc = document.querySelector(".scroll"), y = sc ? sc.scrollTop : 0; go(); if (sc) sc.scrollTop = y; };
-        const refresh = () => { frame.srcdoc = SiteKit.documentHTML(store.site, store.pages, { page: store.pages[0], products: store.products, headerOnly: true, ddOpenFirst: menuRows().some((r) => r.child) }); };
+        const refresh = () => view.navPreview(SiteKit.documentHTML(store.site, store.pages, { page: store.pages[0], products: store.products, headerOnly: true, ddOpenFirst: menuRows().some((r) => r.child) }));
         nx.addEventListener("input", (e) => {
           const el = e.target;
           if (el.dataset.annCustom !== undefined) { hset("announcement.bg", el.value); hset("announcement.color", ""); }
@@ -776,12 +820,12 @@
         });
         nx.addEventListener("change", (e) => {
           const el = e.target;
-          if (el.type === "checkbox" && el.dataset.nk) { hset(el.dataset.nk, el.checked); touchSite(); persist(); keep(); }
-          else if (el.dataset.annCustom !== undefined) keep();
+          if (el.type === "checkbox" && el.dataset.nk) { hset(el.dataset.nk, el.checked); touchSite(); persist(); go(); }
+          else if (el.dataset.annCustom !== undefined) go();
         });
         view.querySelector(".nv-tabs").addEventListener("click", (e) => {
           const t = e.target.closest("[data-nav-tab]");
-          if (t) { navTab = t.dataset.navTab; keep(); }
+          if (t) { navTab = t.dataset.navTab; go(); }
         });
         nx.addEventListener("click", (e) => {
           const b = e.target.closest("[data-ann]");
@@ -789,40 +833,24 @@
           const [bg, tx] = b.dataset.ann.split(",");
           hset("announcement.bg", bg); hset("announcement.color", tx);
           if (!store.site.header.announcement.show) hset("announcement.show", true);
-          touchSite(); persist(); keep();
+          touchSite(); persist(); go();
         });
-
-        // Style cards: zoom in on the open dropdown
-        view.querySelectorAll(".ms-frame").forEach((f) => {
-          const shot = f.parentElement;
-          const crop = () => {
-            const d = f.contentDocument, panel = d && d.querySelector(".dd.open .dd-in");
-            if (!panel) return;
-            // Every card is the same height; the dropdown is scaled to fit it and centred
-            const r = panel.getBoundingClientRect(), W = shot.clientWidth, H = r.bottom + 18;
-            const k = Math.min(0.75, W / (r.width + 48), shot.clientHeight / H);
-            const x0 = r.left + r.width / 2 - W / (2 * k);
-            f.style.height = H + "px"; f.style.transform = `scale(${k}) translateX(${-x0}px)`;
-          };
-          f.addEventListener("load", crop); crop();
-          new ResizeObserver(crop).observe(shot);
-        });
+        cropStyleFrames(view);
 
         // Drag ⋮⋮ up or down to reorder, and to the right or left to put an item in or out of a dropdown
-        // (mouse or touch). Arrow keys on the handle do the same.
-        const list = view.querySelector("#nav-list");
-        if (!list) return;
-        const save = () => saveMenu([...list.querySelectorAll(".nav-row")].map((r) => ({ p: store.pages.find((p) => p.id === r.dataset.id), child: r.classList.contains("nav-child") })));
+        // (mouse or touch). Arrow keys on the handle do the same. The list is redrawn after changes,
+        // so these listen on the panel around it.
+        const save = (list) => saveMenu([...list.querySelectorAll(".nav-row")].map((r) => ({ p: store.pages.find((p) => p.id === r.dataset.id), child: r.classList.contains("nav-child") })));
         // A top item's dropdown items move with it
         const kidsOf = (row) => { const out = []; let n = row.nextElementSibling; while (n && n.classList.contains("nav-child")) { out.push(n); n = n.nextElementSibling; } return row.classList.contains("nav-child") ? [] : out; };
         const STEP = 36;
         let drag = null;
-        list.addEventListener("pointerdown", (e) => {
+        nx.addEventListener("pointerdown", (e) => {
           const h = e.target.closest(".nav-handle");
           if (!h || e.button > 0) return;
           e.preventDefault();
-          const row = h.closest(".nav-row");
-          drag = { row, kids: kidsOf(row), x: e.clientX, wasChild: row.classList.contains("nav-child"), moved: false };
+          const row = h.closest(".nav-row"), list = row.parentElement;
+          drag = { list, row, kids: kidsOf(row), x: e.clientX, wasChild: row.classList.contains("nav-child"), moved: false };
           drag.kids.forEach((k) => k.classList.add("drag-hidden"));
           row.classList.add("dragging"); list.classList.add("is-dragging");
           // On the window while dragging: moving the row in the page drops the handle's pointer capture
@@ -830,6 +858,7 @@
         });
         const move = (e) => {
           if (!drag) return;
+          const { list } = drag;
           const rows = [...list.querySelectorAll(".nav-row:not(.dragging):not(.drag-hidden)")];
           const before = rows.find((r) => { const b = r.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
           if (before !== drag.row.nextElementSibling) { list.insertBefore(drag.row, before || null); drag.moved = true; }
@@ -841,17 +870,17 @@
         const drop = () => {
           removeEventListener("pointermove", move); removeEventListener("pointerup", drop); removeEventListener("pointercancel", drop);
           if (!drag) return;
-          const { row, kids, moved } = drag;
+          const { list, row, kids, moved } = drag;
           let at = row;
           kids.forEach((k) => { k.classList.remove("drag-hidden"); at.after(k); at = k; });
           row.classList.remove("dragging"); list.classList.remove("is-dragging"); drag = null;
-          if (moved) { const child = row.classList.contains("nav-child"); save(); toast(child ? "Added to the dropdown" : "Menu saved"); }
+          if (moved) { const child = row.classList.contains("nav-child"); save(list); toast(child ? "Added to the dropdown" : "Menu saved"); }
         };
-        list.addEventListener("keydown", (e) => {
+        nx.addEventListener("keydown", (e) => {
           const h = e.target.closest(".nav-handle");
           if (!h || !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
           e.preventDefault();
-          const row = h.closest(".nav-row"), id = row.dataset.id, kids = kidsOf(row);
+          const row = h.closest(".nav-row"), list = row.parentElement, id = row.dataset.id, kids = kidsOf(row);
           if (e.key === "ArrowRight") { if (!row.previousElementSibling || kids.length) return; row.classList.add("nav-child"); }
           else if (e.key === "ArrowLeft") row.classList.remove("nav-child");
           else {
@@ -861,7 +890,7 @@
             if (e.key === "ArrowUp") block.forEach((r) => list.insertBefore(r, sib));
             else { const sibBlock = [sib, ...kidsOf(sib)]; sibBlock.forEach((r) => list.insertBefore(r, row)); }
           }
-          save();
+          save(list);
           view.querySelector(`.nav-row[data-id="${id}"] .nav-handle`).focus();
         });
       },
@@ -1044,7 +1073,11 @@
 
   // ---------- Actions ----------
   // Re-render the page, and the Settings popup when it's open
-  const go = () => { rerender(); if (settingsEl) settingsEl.refresh(); };
+  const go = () => {
+    const name = location.hash.replace(/^#\/?/, "").split("?")[0], route = routes[name];
+    if (!(route && route.update && route.update(document.getElementById("view")))) rerender();
+    if (settingsEl) settingsEl.refresh();
+  };
   let rerender;
 
   const productDialog = (p) => {
