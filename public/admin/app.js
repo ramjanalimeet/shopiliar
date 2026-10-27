@@ -681,11 +681,12 @@
         const topList = Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 5);
         const sources = [["Facebook", 46], ["Google", 24], ["Direct", 18], ["Instagram", 12]];
         const done = store.orders.filter((o) => o.status !== "Cancelled");
+        const visTotal = store.visitors.reduce((a, b) => a + b, 0);
         return `${head("Analytics", "How your website and sales are doing.")}
           <div class="stats">
             <div class="stat"><div class="stat-top"><span class="stat-label">Revenue</span><span class="stat-ico c1">${icon("money")}</span></div><div class="stat-value">${taka(sales(store.orders))}</div><div class="stat-delta">All time</div></div>
-            <div class="stat"><div class="stat-top"><span class="stat-label">Average order</span><span class="stat-ico c2">${icon("orders")}</span></div><div class="stat-value">${taka(done.length ? sales(done) / done.length : 0)}</div><div class="stat-delta">${done.length} orders</div></div>
-            <div class="stat"><div class="stat-top"><span class="stat-label">Visitors · 14 days</span><span class="stat-ico c3">${icon("eye")}</span></div><div class="stat-value">${store.visitors.reduce((a, b) => a + b, 0).toLocaleString("en-IN")}</div><div class="stat-delta">Sample data</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Average order</span><span class="stat-ico c2">${icon("orders")}</span></div><div class="stat-value">${taka(done.length ? sales(done) / done.length : 0)}</div><div class="stat-delta">${done.length} ${done.length === 1 ? "order" : "orders"}</div></div>
+            <div class="stat"><div class="stat-top"><span class="stat-label">Visitors · 14 days</span><span class="stat-ico c3">${icon("eye")}</span></div><div class="stat-value">${visTotal.toLocaleString("en-IN")}</div><div class="stat-delta">${visTotal ? "Sample data" : "Counting starts when you publish"}</div></div>
             <div class="stat"><div class="stat-top"><span class="stat-label">Customers</span><span class="stat-ico c4">${icon("customers")}</span></div><div class="stat-value">${store.customers.length}</div><div class="stat-delta">All time</div></div>
           </div>
           <div class="grid-2" style="margin-top:18px">
@@ -694,7 +695,7 @@
           </div>
           <div class="grid-2" style="margin-top:18px">
             <div class="card"><div class="card-head"><span class="card-title">Top products</span></div><div class="table-wrap"><table class="table" style="min-width:0"><thead><tr><th>Product</th><th class="t-right">Sales</th></tr></thead><tbody>${topList.map(([n, v]) => `<tr><td class="t-title">${esc(n)}</td><td class="t-right">${taka(v)}</td></tr>`).join("") || '<tr><td colspan="2" class="table-empty">No sales yet</td></tr>'}</tbody></table></div></div>
-            <div class="card"><div class="card-head"><span class="card-title">Traffic sources</span><span class="muted small">Sample data</span></div><div class="card-body">${sources.map(([n, p]) => `<div class="meter"><div class="meter-top"><span>${n}</span><span class="muted">${p}%</span></div><div class="progress"><i style="width:${p}%"></i></div></div>`).join("")}</div></div>
+            <div class="card"><div class="card-head"><span class="card-title">Traffic sources</span>${visTotal ? '<span class="muted small">Sample data</span>' : ""}</div><div class="card-body">${!visTotal ? '<p class="muted" style="text-align:center;padding:28px 0">Where your visitors come from shows here once people visit your website.</p>' : sources.map(([n, p]) => `<div class="meter"><div class="meter-top"><span>${n}</span><span class="muted">${p}%</span></div><div class="progress"><i style="width:${p}%"></i></div></div>`).join("")}</div></div>
           </div>
         </div>`;
       },
@@ -1127,11 +1128,12 @@
   const orderDialog = () => {
     const active = store.products.filter((p) => p.status !== "draft");
     if (!active.length) { toast("Add a product first"); return; }
+    if (!active.some((p) => p.stock !== 0)) { toast("All your products are sold out — add stock first"); return; }
     dialog({
       title: "New order",
       body: `<div class="row"><div class="field"><label>Customer name</label><input class="input" name="customer" required list="cust-list"><datalist id="cust-list">${store.customers.map((c) => `<option value="${esc(c.name)}">`).join("")}</datalist></div>
         <div class="field"><label>Phone</label><input class="input" name="phone" placeholder="01XXX-XXXXXX"></div></div>
-        <div class="row"><div class="field"><label>Product</label><select class="select" name="product">${active.map((p) => `<option value="${p.id}">${esc(p.name)} — ${taka(p.price)}</option>`).join("")}</select></div>
+        <div class="row"><div class="field"><label>Product</label><select class="select" name="product">${active.map((p) => `<option value="${p.id}"${p.stock === 0 ? " disabled" : ""}>${esc(p.name)} — ${taka(p.price)}${p.stock === 0 ? " (sold out)" : ` (${p.stock} in stock)`}</option>`).join("")}</select></div>
         <div class="field"><label>Quantity</label><input class="input" name="qty" type="number" min="1" value="1"></div></div>
         <div class="row"><div class="field"><label>Payment</label><select class="select" name="payment">${Object.values(PAYMENT_LABEL).map((l) => `<option>${l}</option>`).join("")}</select></div>
         <div class="field"><label>Status</label><select class="select" name="status">${Object.keys(ORDER_STATUS).map((s) => `<option>${s}</option>`).join("")}</select></div></div>`,
@@ -1139,6 +1141,8 @@
       onSubmit: (v) => {
         const p = store.products.find((x) => x.id === v.product);
         const qty = Math.max(1, parseInt(v.qty, 10) || 1);
+        if (!p || p.stock === 0) { toast("That product is sold out"); return false; }
+        if (p.stock != null && qty > p.stock) { toast(`Only ${p.stock} of ${p.name} in stock`); return false; }
         const number = Math.max(1000, ...store.orders.map((o) => o.number)) + 1;
         store.orders.unshift({ id: uid("o"), number, customer: v.customer, phone: v.phone, items: [{ name: p.name, qty, price: p.price }], total: p.price * qty, payment: v.payment, status: v.status, date: new Date().toISOString() });
         if (!store.customers.some((c) => c.name.toLowerCase() === v.customer.toLowerCase())) {
@@ -1160,6 +1164,36 @@
       else { const np = { id: uid("pg"), title: v.title, slug, inNav: true }; np.sections = SiteKit.pageSections(np, { site: store.site, products: store.products }); store.pages.push(np); }
       touchSite(); persist(); go(); toast(pg ? "Page renamed" : "Page added");
     },
+  });
+
+  // An order placed on the website preview (opened from this dashboard). Prices, stock and the discount
+  // are checked again here, so the website can't set them.
+  window.addEventListener("message", (e) => {
+    if (e.origin !== location.origin || !e.data || e.data.type !== "shopilier-order") return;
+    const o = e.data.order || {};
+    const items = (Array.isArray(o.items) ? o.items : []).map((it) => ({ p: store.products.find((p) => p.id === it.id && p.status !== "draft"), qty: Math.max(1, Math.floor(Number(it.qty) || 1)) })).filter((it) => it.p);
+    if (!items.length) return;
+    const answers = (Array.isArray(o.answers) ? o.answers : []).slice(0, 20).map((a) => ({ label: String(a.label || "").slice(0, 60), type: String(a.type || ""), value: String(a.value || "").slice(0, 300) }));
+    const find = (type) => (answers.find((a) => a.type === type) || {}).value || "";
+    const name = (answers.find((a) => a.type === "text") || {}).value || "Website customer", phone = find("tel");
+    const sub = items.reduce((a, it) => a + it.p.price * it.qty, 0);
+    const d = store.discounts.find((x) => x.code === o.code && x.active !== false && sub >= (x.min || 0));
+    const off = d ? Math.min(sub, d.type === "percent" ? Math.round((sub * d.value) / 100) : d.value) : 0;
+    const co = store.pages.find((p) => p.system === "checkout"), sec = co && co.sections.find((x) => x.type === "checkout");
+    const opt = sec && (sec.content.delivery || []).find((x) => x.label === o.delivery);
+    const fee = opt ? Math.max(0, Number(opt.fee) || 0) : 0;
+    const number = Math.max(1000, ...store.orders.map((x) => x.number)) + 1;
+    store.orders.unshift({
+      id: uid("o"), number, customer: name.slice(0, 60), phone: phone.slice(0, 30),
+      items: items.map((it) => ({ name: it.p.name, qty: it.qty, price: it.p.price })), total: sub - off + fee,
+      payment: String(o.payment || "Cash on delivery").slice(0, 40), status: "Pending", date: new Date().toISOString(),
+      delivery: opt ? opt.label : "", deliveryFee: fee, discount: d ? { code: d.code, amount: off } : null, answers, source: "website",
+    });
+    items.forEach((it) => { if (it.p.stock != null) it.p.stock = Math.max(0, it.p.stock - it.qty); });
+    if (!store.customers.some((c) => (phone && c.phone === phone) || c.name.toLowerCase() === name.toLowerCase())) {
+      store.customers.unshift({ id: uid("c"), name: name.slice(0, 60), phone: phone.slice(0, 30), city: "", email: find("email").slice(0, 80), joined: new Date().toISOString() });
+    }
+    persist(); if (!location.hash.startsWith("#/website")) go(); toast(`🛒 New order #${number} from your website`);
   });
 
   const pixelById = (id) => PIXELS.find((p) => p.id === id);
@@ -1265,9 +1299,13 @@
       dialog({
         title: "Order " + orderNo(o), submit: "",
         body: `<p>${tag(o.status, ORDER_STATUS[o.status])} <span class="muted small">${day(o.date)}</span></p>
-          <div class="divider"></div><p><b>${esc(o.customer)}</b><br><span class="muted">${esc(o.phone || "No phone")}</span></p><div class="divider"></div>
-          ${o.items.map((it) => `<div style="display:flex;justify-content:space-between"><span>${esc(it.name)} × ${it.qty}</span><span>${taka(it.price * it.qty)}</span></div>`).join("")}
-          <div class="divider"></div><div style="display:flex;justify-content:space-between;font-weight:600"><span>Total · ${esc(o.payment)}</span><span>${taka(o.total)}</span></div>`,
+          <div class="divider"></div><p><b>${esc(o.customer)}</b><br><span class="muted">${esc(o.phone || "No phone")}</span>${o.source === "website" ? ' <span class="tag">From your website</span>' : ""}</p>
+          ${(o.answers || []).length ? `<dl class="order-answers">${o.answers.map((a) => `<div><dt>${esc(a.label)}</dt><dd>${esc(a.value)}</dd></div>`).join("")}</dl>` : ""}
+          <div class="divider"></div>
+          ${o.items.map((it) => `<div class="order-line"><span>${esc(it.name)} × ${it.qty}</span><span>${taka(it.price * it.qty)}</span></div>`).join("")}
+          ${o.discount ? `<div class="order-line muted"><span>Discount (${esc(o.discount.code)})</span><span>−${taka(o.discount.amount)}</span></div>` : ""}
+          ${o.delivery ? `<div class="order-line muted"><span>Delivery · ${esc(o.delivery)}</span><span>${taka(o.deliveryFee || 0)}</span></div>` : ""}
+          <div class="divider"></div><div class="order-line" style="font-weight:600"><span>Total · ${esc(o.payment)}</span><span>${taka(o.total)}</span></div>`,
       });
     },
     "delete-order": async (el) => {
@@ -1292,7 +1330,7 @@
       persist(); if (location.hash !== "#/website") go(); toast("🚀 Website published");
     },
     "view-store": () => {
-      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products });
+      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: store.discounts });
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "create-backup": () => dialog({
@@ -1314,7 +1352,7 @@
       const data = JSON.parse(JSON.stringify(b.data));
       SiteKit.ensure(data.site, data.pages, { products: store.products });
       const bar = `<div style="position:sticky;top:0;z-index:100;display:flex;justify-content:center;gap:8px;padding:10px 16px;background:#0e7a4b;color:#fff;font:600 14px/1.4 Inter,system-ui,sans-serif">Preview of the backup “${esc(versionTitle(b))}”. This is a backup, not your live website.</div>`;
-      const html = SiteKit.storeHTML(data.site, data.pages, { products: store.products }).replace(/<body([^>]*)>/, (m) => m + bar);
+      const html = SiteKit.storeHTML(data.site, data.pages, { products: store.products, discounts: store.discounts }).replace(/<body([^>]*)>/, (m) => m + bar);
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "version-menu": (el) => {
@@ -1469,7 +1507,7 @@
     "edit-page": (el) => pageDialog(store.pages.find((p) => p.id === el.dataset.id)),
     "page-view": (el) => {
       closeVersionMenus();
-      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, start: el.dataset.id });
+      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: store.discounts, start: el.dataset.id });
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "page-toggle-nav": (el) => {
@@ -1736,7 +1774,7 @@
     }
     if (el.dataset.action === "order-status") {
       const o = store.orders.find((x) => x.id === el.dataset.id);
-      o.status = el.value; persist(); toast(`Order #${o.number} marked ${o.status}`);
+      o.status = el.value; persist(); go(); toast(`Order #${o.number} marked ${o.status}`);
     }
     if (el.dataset.action === "page-nav") {
       const pg = store.pages.find((x) => x.id === el.dataset.id);

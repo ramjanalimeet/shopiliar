@@ -296,10 +296,11 @@ window.SiteKit = (() => {
       return `<div class="wrap">
         <div class="sec-head"><div>${head(c)}${c.subtitle ? `<p class="sub">${esc(c.subtitle)}</p>` : ""}</div>${c.viewAll?.text ? `<a class="more" href="${esc(safeLink(c.viewAll.link))}">${esc(c.viewAll.text)}${svg("arrow")}</a>` : ""}</div>
         ${list.length ? `<div class="grid cols-${Number(st.columns) || 4}">${list.map((p) => `
-          <a class="card product" href="#">
+          <div class="card product" data-pid="${esc(p.id)}">
             <div class="p-img" style="background:${esc(color(p.color) || "#e9e6e1")}">${safeImg(p.image) ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : `<span>${esc((p.name || "?").slice(0, 1))}</span>`}</div>
-            <div class="p-body"><b>${esc(p.name)}</b><span class="price">${taka(p.price)}</span>${p.stock === 0 ? '<span class="sold">Sold out</span>' : ""}</div>
-          </a>`).join("")}</div>` : `<p class="empty">Your products will appear here once you add them.</p>`}
+            <div class="p-body"><b>${esc(p.name)}</b><span class="price">${taka(p.price)}</span>
+              ${p.stock === 0 ? '<button type="button" class="btn btn-outline p-add" disabled>Sold out</button>' : `<button type="button" class="btn btn-outline p-add" data-add="${esc(p.id)}">${svg("cart")}Add to cart</button>`}</div>
+          </div>`).join("")}</div>` : `<p class="empty">Your products will appear here once you add them.</p>`}
         ${ctx.blocks}
       </div>`;
     },
@@ -352,7 +353,12 @@ window.SiteKit = (() => {
       const fee = opts.length ? opts[0].fee : 0;
       const sub = items.reduce((a, p) => a + (Number(p.price) || 0), 0), total = sub + fee;
       const pays = (Array.isArray(c.payMethods) ? c.payMethods : []).filter((m) => m && m.label);
-      const field = (label, type, ph, wide) => `<label class="co-field${wide ? " wide" : ""}">${label ? `<span>${esc(label)}</span>` : ""}${type === "textarea" ? `<textarea rows="2" placeholder="${esc(ph)}"></textarea>` : `<input type="${["tel", "email", "number"].includes(type) ? type : "text"}" placeholder="${esc(ph || "")}">`}</label>`;
+      // A question is required unless its label says it's optional
+      const field = (label, type, ph, wide, optional) => {
+        const req = !optional && !/optional/i.test(label || "") ? " required" : "";
+        const attrs = `data-q="${esc(label || ph || "")}" data-type="${esc(type || "text")}" placeholder="${esc(ph || "")}"${req}`;
+        return `<label class="co-field${wide ? " wide" : ""}">${label ? `<span>${esc(label)}</span>` : ""}${type === "textarea" ? `<textarea rows="2" ${attrs}></textarea>` : `<input type="${["tel", "email", "number"].includes(type) ? type : "text"}" ${attrs}>`}</label>`;
+      };
       // The store's own form fields: long answers and a last odd field take the full width
       const fields = (list) => {
         const l = (Array.isArray(list) ? list : []).filter((f) => f && (f.label || f.hint));
@@ -367,26 +373,25 @@ window.SiteKit = (() => {
       };
       let n = 0;
       const step = (title) => (title || c.showSteps ? `<h3>${c.showSteps ? `<i>${++n}</i>` : ""}${esc(title)}</h3>` : "");
-      // Picking a delivery option updates the delivery charge and total
-      const pick = `var f=+this.dataset.fee,s=+this.form.dataset.sub,q=this.closest('.checkout');q.querySelector('.co-fee').textContent=this.dataset.label;q.querySelectorAll('.co-tot').forEach(function(e){e.textContent='৳'+(s+f).toLocaleString('en-IN')})`;
       return `<div class="wrap checkout">
         <div class="co-head">${c.title ? `<h1>${esc(c.title)}</h1>` : ""}${c.subtitle ? `<p class="lead">${esc(c.subtitle)}</p>` : ""}</div>
         <div class="co-grid">
           <form class="co-form" onsubmit="return false" data-sub="${sub}">
             <div class="co-step">${step(c.detailsTitle)}${fields(c.details)}</div>
             <div class="co-step">${step(c.deliveryTitle)}${fields(c.deliveryFields)}
-              ${opts.length ? `<div class="co-options">${opts.map((d, i) => `<label class="co-option"><input type="radio" name="delivery" data-fee="${d.fee}" data-label="${esc(taka(d.fee))}" onchange="${esc(pick)}"${i ? "" : " checked"}><span>${esc(d.label)}</span><b>${taka(d.fee)}</b></label>`).join("")}</div>` : ""}</div>
-            ${pays.length ? `<div class="co-step">${step(c.paymentTitle)}<div class="co-options">${pays.map((p, i) => `<label class="co-option"><input type="radio" name="pay"${i ? "" : " checked"}><span>${esc(p.label)}${p.info ? `<small>${esc(p.info)}</small>` : ""}</span></label>`).join("")}</div></div>` : ""}
-            ${c.showNote ? `<div class="co-step">${field(c.noteLabel, "textarea", c.notePh)}</div>` : ""}
+              ${opts.length ? `<div class="co-options">${opts.map((d, i) => `<label class="co-option"><input type="radio" name="delivery" value="${esc(d.label)}" data-fee="${d.fee}"${i ? "" : " checked"}><span>${esc(d.label)}</span><b>${taka(d.fee)}</b></label>`).join("")}</div>` : ""}</div>
+            ${pays.length ? `<div class="co-step">${step(c.paymentTitle)}<div class="co-options">${pays.map((p, i) => `<label class="co-option"><input type="radio" name="pay" value="${esc(p.label)}"${i ? "" : " checked"}><span>${esc(p.label)}${p.info ? `<small>${esc(p.info)}</small>` : ""}</span></label>`).join("")}</div></div>` : ""}
+            ${c.showNote ? `<div class="co-step co-note">${field(c.noteLabel, "textarea", c.notePh, false, true)}</div>` : ""}
             <button class="btn co-place" type="submit">${esc(c.button || "Place order")}${c.buttonTotal ? ` · <span class="co-tot">${taka(total)}</span>` : ""}</button>
             ${c.note ? `<p class="co-small">${esc(c.note)}</p>` : ""}
             ${ctx.blocks}
           </form>
           <aside class="co-summary">
             ${c.summaryTitle ? `<h3>${esc(c.summaryTitle)}</h3>` : ""}
-            ${items.length ? items.map((p) => `<div class="co-item"><span class="co-img" style="background:${esc(color(p.color) || "#e9e6e1")}">${safeImg(p.image) ? `<img src="${esc(p.image)}" alt="">` : ""}<em>1</em></span><span class="co-name">${esc(p.name)}</span><b>${taka(p.price)}</b></div>`).join("") : `<p class="empty">Items in the cart show here.</p>`}
-            ${c.showCoupon ? `<div class="co-coupon"><input placeholder="${esc(c.couponPh || "Discount code")}" aria-label="${esc(c.couponPh || "Discount code")}"><button class="btn btn-outline" type="button">${esc(c.couponButton || "Apply")}</button></div>` : ""}
-            <div class="co-line"><span>Subtotal</span><span>${taka(sub)}</span></div>
+            <div class="co-items" data-items>${items.length ? items.map((p) => `<div class="co-item"><span class="co-img" style="background:${esc(color(p.color) || "#e9e6e1")}">${safeImg(p.image) ? `<img src="${esc(p.image)}" alt="">` : ""}<em>1</em></span><span class="co-name">${esc(p.name)}</span><b>${taka(p.price)}</b></div>`).join("") : `<p class="empty">Items in the cart show here.</p>`}</div>
+            ${c.showCoupon ? `<div class="co-coupon"><input class="co-code" placeholder="${esc(c.couponPh || "Discount code")}" aria-label="${esc(c.couponPh || "Discount code")}"><button class="btn btn-outline co-apply" type="button">${esc(c.couponButton || "Apply")}</button></div><p class="co-msg" hidden></p>` : ""}
+            <div class="co-line"><span>Subtotal</span><span class="co-sub">${taka(sub)}</span></div>
+            <div class="co-line co-disc" hidden><span>Discount</span><span class="co-disc-v"></span></div>
             ${opts.length ? `<div class="co-line"><span>Delivery</span><span class="co-fee">${taka(fee)}</span></div>` : ""}
             <div class="co-line co-total"><span>Total</span><span class="co-tot">${taka(total)}</span></div>
             ${c.showSecure && c.secureText ? `<p class="co-secure">${svg("shield")}${esc(c.secureText)}</p>` : ""}
@@ -520,13 +525,105 @@ window.SiteKit = (() => {
   };
 
   // Every page in one document; menu links switch pages without leaving it (used by "View your store")
+  // The website's shopping: add to cart, the cart on the checkout page, discount codes and placing an order.
+  // Runs on the website only (not in the editor). Orders go to the dashboard that opened the preview.
+  const storefront = function () {
+    var D = window.SHOP || { products: [], discounts: [] }, cart = [], code = null;
+    try { cart = JSON.parse(sessionStorage.getItem("shop-cart") || "[]"); } catch (e) {}
+    var byId = function (id) { return D.products.filter(function (p) { return p.id === id; })[0]; };
+    cart = cart.filter(function (it) { return byId(it.id); });
+    var taka = function (n) { return "\u09f3" + Number(n || 0).toLocaleString("en-IN"); };
+    var esc = function (x) { return String(x == null ? "" : x).replace(/[&<>"']/g, function (c) { return "&#" + c.charCodeAt(0) + ";"; }); };
+    var note = function (text) {
+      var t = document.createElement("div"); t.className = "shop-toast"; t.textContent = text; document.body.appendChild(t);
+      setTimeout(function () { t.remove(); }, 2200);
+    };
+    var subtotal = function () { return cart.reduce(function (a, it) { return a + byId(it.id).price * it.qty; }, 0); };
+    var discountOf = function (sub) {
+      if (!code || sub < (code.min || 0)) return 0;
+      return Math.min(sub, code.type === "percent" ? Math.round(sub * code.value / 100) : code.value);
+    };
+    var save = function () { try { sessionStorage.setItem("shop-cart", JSON.stringify(cart)); } catch (e) {} draw(); };
+    var draw = function () {
+      var count = cart.reduce(function (a, it) { return a + it.qty; }, 0);
+      document.querySelectorAll('.tools a[href="/checkout"]').forEach(function (a) { if (count) a.setAttribute("data-count", count); else a.removeAttribute("data-count"); });
+      document.querySelectorAll(".checkout").forEach(function (root) {
+        var box = root.querySelector("[data-items]"), sub = subtotal(), d = root.querySelector('input[name="delivery"]:checked');
+        var fee = d ? Number(d.getAttribute("data-fee")) || 0 : 0, off = discountOf(sub), total = Math.max(0, sub - off) + (cart.length ? fee : 0);
+        box.innerHTML = cart.length ? cart.map(function (it) {
+          var p = byId(it.id);
+          return '<div class="co-item"><span class="co-img" style="background:' + esc(p.color || "#e9e6e1") + '">' + (p.image ? '<img src="' + esc(p.image) + '" alt="">' : "") + "<em>" + it.qty + '</em></span><span class="co-name">' + esc(p.name) +
+            '<span class="co-qty"><button type="button" data-qty="-1" data-id="' + esc(p.id) + '" aria-label="One less">\u2212</button><b>' + it.qty + '</b><button type="button" data-qty="1" data-id="' + esc(p.id) + '" aria-label="One more">+</button><button type="button" class="co-rm" data-rm="' + esc(p.id) + '">Remove</button></span></span><b>' + taka(p.price * it.qty) + "</b></div>";
+        }).join("") : '<p class="empty">Your cart is empty. <a href="/shop">Continue shopping</a></p>';
+        root.querySelectorAll(".co-sub").forEach(function (e) { e.textContent = taka(sub); });
+        root.querySelectorAll(".co-fee").forEach(function (e) { e.textContent = taka(cart.length ? fee : 0); });
+        root.querySelectorAll(".co-tot").forEach(function (e) { e.textContent = taka(total); });
+        var dl = root.querySelector(".co-disc");
+        if (dl) { dl.hidden = !off; dl.querySelector(".co-disc-v").textContent = "\u2212" + taka(off) + (code ? " (" + code.code + ")" : ""); }
+        var btn = root.querySelector(".co-place"); if (btn) btn.disabled = !cart.length;
+      });
+    };
+    var msg = function (root, text, ok) { var m = root.querySelector(".co-msg"); if (m) { m.hidden = !text; m.textContent = text; m.className = "co-msg" + (ok ? " ok" : ""); } };
+    document.addEventListener("click", function (e) {
+      var add = e.target.closest("[data-add]");
+      if (add) {
+        var p = byId(add.getAttribute("data-add")), it = cart.filter(function (x) { return x.id === p.id; })[0];
+        if (it && p.stock != null && it.qty >= p.stock) { note("Only " + p.stock + " left in stock"); return; }
+        if (it) it.qty++; else cart.push({ id: p.id, qty: 1 });
+        save(); note(p.name + " added to your cart"); return;
+      }
+      var q = e.target.closest("[data-qty]");
+      if (q) {
+        var x = cart.filter(function (c) { return c.id === q.getAttribute("data-id"); })[0], pr = byId(x.id);
+        x.qty += Number(q.getAttribute("data-qty"));
+        if (pr.stock != null && x.qty > pr.stock) { x.qty = pr.stock; note("Only " + pr.stock + " left in stock"); }
+        if (x.qty < 1) cart = cart.filter(function (c) { return c !== x; });
+        save(); return;
+      }
+      var rm = e.target.closest("[data-rm]");
+      if (rm) { cart = cart.filter(function (c) { return c.id !== rm.getAttribute("data-rm"); }); save(); return; }
+      var ap = e.target.closest(".co-apply");
+      if (ap) {
+        var root = ap.closest(".checkout"), val = (root.querySelector(".co-code").value || "").trim().toUpperCase();
+        var found = D.discounts.filter(function (d) { return d.code === val; })[0];
+        if (!val) { code = null; msg(root, "", false); }
+        else if (!found) { code = null; msg(root, "That code doesn't work", false); }
+        else if (subtotal() < (found.min || 0)) { code = null; msg(root, "This code needs an order of " + taka(found.min) + " or more", false); }
+        else { code = found; msg(root, "Code " + found.code + " applied", true); }
+        draw();
+      }
+    });
+    document.addEventListener("change", function (e) { if (e.target.name === "delivery") draw(); });
+    document.addEventListener("submit", function (e) {
+      var form = e.target.closest(".co-form");
+      if (!form) return;
+      e.preventDefault();
+      if (!cart.length) { note("Your cart is empty"); return; }
+      var root = form.closest(".checkout"), answers = [];
+      form.querySelectorAll("[data-q]").forEach(function (f) { if (f.value.trim()) answers.push({ label: f.getAttribute("data-q"), type: f.getAttribute("data-type"), value: f.value.trim() }); });
+      var pick = function (n) { var r = form.querySelector('input[name="' + n + '"]:checked'); return r ? r.value : ""; };
+      var order = { items: cart.map(function (it) { return { id: it.id, qty: it.qty }; }), answers: answers, delivery: pick("delivery"), payment: pick("pay"), code: code ? code.code : "" };
+      if (window.opener) { try { window.opener.postMessage({ type: "shopilier-order", order: order }, location.origin === "null" ? "*" : location.origin); } catch (err) {} }
+      cart = []; code = null; save();
+      root.innerHTML = '<div class="co-done"><span>\u2713</span><h1>Thank you!</h1><p class="lead">Your order is placed. We\'ll call you soon to confirm it.</p><a class="btn" href="/">Back to the shop</a></div>';
+      scrollTo(0, 0);
+    });
+    draw();
+  };
+
   const storeHTML = (site, pages, opts = {}) => {
     const doc = documentHTML(site, pages, { ...opts, page: pages[0] });
     // opts.start: the page to open first (default: the home page)
     const first = Math.max(0, pages.findIndex((p) => p.id === opts.start));
     const all = pages.map((p, i) => `<div data-slug="${esc(p.slug || "")}"${i === first ? "" : " hidden"}>${renderBody(site, pages, { ...opts, page: p })}</div>`).join("");
     const nav = `<script>document.addEventListener("click",function(e){var m=e.target.closest(".burger");if(m){m.closest(".s-header").classList.toggle("m-open");return}document.querySelectorAll(".m-open").forEach(function(h){h.classList.remove("m-open")});var a=e.target.closest("a[href^='/']");if(!a)return;var slug=a.getAttribute("href").slice(1),pg=document.querySelector('[data-slug="'+slug+'"]');e.preventDefault();if(!pg)return;document.querySelectorAll("[data-slug]").forEach(function(d){d.hidden=d!==pg});scrollTo(0,0)});<\/script>`;
-    return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${all.replace(/\$/g, "$$$$")}${nav}</body>`);
+    // What the shop script needs: products that are for sale and the discount codes that work
+    const shop = {
+      products: (opts.products || []).filter((p) => p.status !== "draft").map((p) => ({ id: p.id, name: p.name, price: Number(p.price) || 0, stock: p.stock == null ? null : Number(p.stock), color: color(p.color), image: safeImg(p.image) ? p.image : "" })),
+      discounts: (opts.discounts || []).filter((d) => d.active !== false).map((d) => ({ code: d.code, type: d.type, value: Number(d.value) || 0, min: Number(d.min) || 0 })),
+    };
+    const shopJs = `<script>window.SHOP=${JSON.stringify(shop).replace(/</g, "\\u003c")};(${storefront})();<\/script>`;
+    return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${(all + nav + shopJs).replace(/\$/g, "$$$$")}</body>`);
   };
 
   return { ANNOUNCE_COLORS, announceStyle, HEADER_BUTTONS, DROPDOWNS, CHECKOUT, PAYMENTS, SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
