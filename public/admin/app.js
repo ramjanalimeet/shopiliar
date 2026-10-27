@@ -263,8 +263,14 @@
   };
   // What a version is called in the list; automatic ones always get the same short name
   // A name you give a version (Rename) wins; otherwise automatic ones get a plain name
-  const versionTitle = (b) => b.title || (b.kind === "auto" ? "Auto-saved copy" : b.kind === "publish" ? "Published version" : b.name);
+  // A backup's title is the name you gave it, or else its date in large text
+  // (names the app used to fill in by itself count as no name)
+  const DEFAULT_NAME = /^(backup|my saved copy|backup \d.*)$/i;
+  const named = (b) => b.title || (b.kind === "manual" && b.name && !DEFAULT_NAME.test(b.name) ? b.name : "");
+  const versionTitle = (b) => named(b) || new Date(b.at).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).replace(" at ", ", ");
   const versionHow = (b) => (b.kind === "auto" ? "Saved automatically" : b.kind === "publish" ? "Saved when you published" : "Saved by you");
+  // The active backup: the one your website matches; with unsaved edits, the one that's live
+  const activeBackup = () => currentBackup() || (store.published ? store.backups.find((b) => b.id === store.liveVersion) || store.backups.find((b) => b.kind === "publish") : null);
   // "Today at 3:56 pm", "Yesterday at …", "25 Oct 2026 at …"
   const versionWhen = (d) => {
     const t = new Date(d), start = new Date(d); start.setHours(0, 0, 0, 0);
@@ -328,40 +334,38 @@
   // ---------- Views ----------
   let orderFilter = "All", orderSearch = "", productView = "table", productSearch = "";
 
-  // Version history: newest first. The version your website matches now is highlighted in green;
-  // each row has Preview (opens it in a new tab) and a ⋯ menu with Publish, Rename and Delete.
+  // Backups, newest first. The active one is highlighted in the brand green; each row has
+  // Preview (opens it in a new tab) and a ⋯ menu with Publish, Rename and Delete.
   const versionList = () => {
-    if (!store.backups.length) return `<div class="versions-empty">${icon("history")}<b>No saved copies yet</b><span>Click <b>Save a copy</b> to keep your website as it is now. A copy is also saved every time you publish.</span></div>`;
-    const list = showAllVersions ? store.backups : store.backups.slice(0, 6), current = currentBackup();
+    if (!store.backups.length) return `<div class="versions-empty">${icon("history")}<b>No backups yet</b><span>Click <b>Save a backup</b> to keep your website as it is now. A backup is also saved every time you publish.</span></div>`;
+    const list = showAllVersions ? store.backups : store.backups.slice(0, 6), active = activeBackup();
     const rows = list.map((b) => {
-      const cur = b === current, live = store.published && b.id === store.liveVersion;
-      return `<div class="version${cur ? " current" : ""}">
-        <span class="v-dot ${b.kind}">${icon(cur ? "check" : b.kind === "publish" ? "rocket" : b.kind === "auto" ? "history" : "archive")}</span>
+      const on = b === active;
+      return `<div class="version${on ? " current" : ""}">
+        <span class="v-dot ${b.kind}">${icon(on ? "check" : b.kind === "publish" ? "rocket" : b.kind === "auto" ? "history" : "archive")}</span>
         <div class="v-text">
-          <span class="v-title"><b>${esc(versionTitle(b))}</b>${cur ? '<span class="v-badge">Current version</span>' : ""}${live ? '<span class="v-live">Live on your website</span>' : ""}</span>
-          <span class="muted small">${versionHow(b)} · ${versionWhen(b.at)}</span>
+          <span class="v-title"><b>${esc(versionTitle(b))}</b>${on ? '<span class="v-badge">Active</span>' : ""}</span>
+          <span class="muted small">${versionHow(b)}${named(b) ? ` · ${versionWhen(b.at)}` : ""}</span>
         </div>
         <div class="v-actions">
-          <button class="btn btn-sm" data-action="preview-version" data-id="${b.id}" title="Open this version in a new tab">${icon("external")}Preview</button>
+          <button class="btn btn-sm" data-action="preview-version" data-id="${b.id}" title="Open this backup in a new tab">${icon("external")}Preview</button>
           <div class="v-more">
             <button class="icon-btn" data-action="version-menu" data-id="${b.id}" aria-haspopup="menu" aria-expanded="false" aria-label="More options for ${esc(versionTitle(b))}" title="More options">${icon("dots")}</button>
             <div class="v-menu" role="menu" hidden>
-              <button role="menuitem" data-action="publish-version" data-id="${b.id}">${icon("rocket")}<span><b>Publish</b><small>${cur ? "Put your website live as it is now" : "Bring this version back and put it live"}</small></span></button>
-              <button role="menuitem" data-action="rename-version" data-id="${b.id}">${icon("edit")}<span><b>Rename</b><small>Give it a name you'll remember</small></span></button>
-              <button role="menuitem" class="danger" data-action="delete-version" data-id="${b.id}">${icon("trash")}<span><b>Delete</b><small>Remove this copy for good</small></span></button>
+              <button role="menuitem" data-action="publish-version" data-id="${b.id}">${icon("rocket")}<span><b>Publish</b><small>${b === currentBackup() ? "Put your website live as it is now" : "Bring this backup back and put it live"}</small></span></button>
+              <button role="menuitem" data-action="rename-version" data-id="${b.id}">${icon("edit")}<span><b>Rename</b><small>Give this backup a name</small></span></button>
+              <button role="menuitem" class="danger" data-action="delete-version" data-id="${b.id}">${icon("trash")}<span><b>Delete</b><small>Remove this backup for good</small></span></button>
             </div>
           </div>
         </div>
       </div>`;
     }).join("");
-    const more = store.backups.length > 6 ? `<button class="versions-more" data-action="toggle-versions">${showAllVersions ? "Show fewer" : `Show all ${store.backups.length} copies`}${icon("chevronDown")}</button>` : "";
-    // Edited since the last copy: say so, so it's clear why nothing is highlighted
-    const unsaved = current ? "" : `<div class="v-unsaved">${icon("info")}<span>Your website has changes that aren't in any saved copy yet. <b>Publish</b> or click <b>Save a copy</b> to keep them.</span></div>`;
-    return `<div class="versions">${unsaved}${rows}</div>${more}`;
+    const more = store.backups.length > 6 ? `<button class="versions-more" data-action="toggle-versions">${showAllVersions ? "Show fewer" : `Show all ${store.backups.length} backups`}${icon("chevronDown")}</button>` : "";
+    return `<div class="versions">${rows}</div>${more}`;
   };
   // Make the website a saved version (the current website is kept first, unless it's already saved)
   const restoreVersion = (b) => {
-    if (!currentBackup()) addBackup("Auto-saved copy", "auto");
+    if (!currentBackup()) addBackup("", "auto");
     const data = JSON.parse(JSON.stringify(b.data));
     store.site = data.site; store.pages = data.pages;
     store.site.social ||= {}; store.site.seo ||= { title: "", description: "" };
@@ -617,13 +621,8 @@
           </div>
 
           <div class="card versions-card">
-            <div class="card-head"><div class="versions-title"><span class="card-title">Saved copies of your website</span><span class="muted small">Go back to an older look any time. Your products and orders never change.</span></div>
-              <button class="btn" data-action="create-backup">${icon("archive")}Save a copy</button></div>
-            <ol class="v-steps">
-              <li><span>1</span><div><b>Save</b>A copy is saved every time you publish, or when you click Save a copy.</div></li>
-              <li><span>2</span><div><b>Preview</b>Opens that copy in a new tab so you can look around.</div></li>
-              <li><span>3</span><div><b>Bring it back</b>Click ⋯ then Publish to make that copy your live website again.</div></li>
-            </ol>
+            <div class="card-head"><div class="versions-title"><span class="card-title">Website backups</span><span class="muted small">Go back to an older look any time. Your products and orders never change.</span></div>
+              <button class="btn" data-action="create-backup">${icon("archive")}Save a backup</button></div>
             ${versionList()}
           </div>
         </div>`;
@@ -924,16 +923,16 @@
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "create-backup": () => dialog({
-      title: "Save a copy of your website",
+      title: "Save a backup of your website",
       body: `<p class="muted" style="margin-bottom:14px">Keeps your website exactly as it looks now, so you can come back to it later.</p>
-        <div class="field"><label>Name (optional)</label><input class="input" name="name" maxlength="60" placeholder="e.g. Before Eid sale changes"></div>`,
-      submit: "Save copy",
+        <div class="field"><label>Name (optional, the date is used if you leave it empty)</label><input class="input" name="name" maxlength="60" placeholder="e.g. Before Eid sale changes"></div>`,
+      submit: "Save backup",
       onSubmit: (v) => {
         const same = currentBackup();
         if (same && same.kind === "manual") { toast(`Already saved as “${versionTitle(same)}”`); return; }
         // An automatic copy of this exact website becomes the named backup instead of a duplicate
         if (same) store.backups = store.backups.filter((x) => x !== same);
-        addBackup(v.name || "My saved copy", "manual"); persist(); go(); toast("Copy saved");
+        addBackup(v.name || "", "manual"); persist(); go(); toast("Backup saved");
       },
     }),
     // Opens the saved version as a website in a new tab, with a bar saying what it is
@@ -941,7 +940,7 @@
       const b = store.backups.find((x) => x.id === el.dataset.id);
       const data = JSON.parse(JSON.stringify(b.data));
       SiteKit.ensure(data.site, data.pages, { products: store.products });
-      const bar = `<div style="position:sticky;top:0;z-index:100;display:flex;justify-content:center;gap:8px;padding:10px 16px;background:#0e7a4b;color:#fff;font:600 14px/1.4 Inter,system-ui,sans-serif">Preview of “${esc(versionTitle(b))}” · ${esc(versionWhen(b.at))}. This is a saved copy, not your live website.</div>`;
+      const bar = `<div style="position:sticky;top:0;z-index:100;display:flex;justify-content:center;gap:8px;padding:10px 16px;background:#0e7a4b;color:#fff;font:600 14px/1.4 Inter,system-ui,sans-serif">Preview of the backup “${esc(versionTitle(b))}”. This is a backup, not your live website.</div>`;
       const html = SiteKit.storeHTML(data.site, data.pages, { products: store.products }).replace(/<body([^>]*)>/, (m) => m + bar);
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
@@ -957,7 +956,7 @@
     "publish-version": async (el) => {
       closeVersionMenus();
       const b = store.backups.find((x) => x.id === el.dataset.id), cur = b === currentBackup();
-      const ok = await confirm(cur ? "Publish your website?" : "Publish this copy?",
+      const ok = await confirm(cur ? "Publish your website?" : "Publish this backup?",
         cur ? "Your website goes live exactly as it is now." : `Your website will change back to “${versionTitle(b)}” (${versionWhen(b.at)}) and go live. Your current website stays in this list, so you can switch back.`, "Publish");
       if (!ok) return;
       if (!cur) restoreVersion(b);
@@ -968,19 +967,20 @@
       const b = store.backups.find((x) => x.id === el.dataset.id);
       dialog({
         title: "Rename",
-        body: `<div class="field"><label>Name</label><input class="input" name="name" required maxlength="60" value="${esc(versionTitle(b))}"></div>`,
+        body: `<div class="field"><label>Backup name</label><input class="input" name="name" maxlength="60" value="${esc(named(b))}" placeholder="${esc(versionTitle({ at: b.at }))}"></div>
+          <p class="muted small" style="margin:-6px 0 14px">Leave it empty to show the date instead.</p>`,
         submit: "Save",
-        onSubmit: (v) => { b.title = v.name; persist(); go(); toast("Renamed"); },
+        onSubmit: (v) => { b.title = v.name; if (!v.name && b.kind === "manual") b.name = ""; persist(); go(); toast(v.name ? "Backup renamed" : "Name removed"); },
       });
     },
     "delete-version": async (el) => {
       closeVersionMenus();
       const b = store.backups.find((x) => x.id === el.dataset.id);
-      if (await confirm("Delete this copy?", `“${versionTitle(b)}” (${versionWhen(b.at)}) will be deleted. You can't undo this.`)) {
+      if (await confirm("Delete this backup?", `“${versionTitle(b)}” (${versionWhen(b.at)}) will be deleted. You can't undo this.`)) {
         store.backups = store.backups.filter((x) => x !== b);
         if (store.currentVersion === b.id) store.currentVersion = null;
         // (if another saved version has the same content, it shows as Current instead)
-        persist(); go(); toast("Copy deleted");
+        persist(); go(); toast("Backup deleted");
       }
     },
     "toggle-versions": () => { showAllVersions = !showAllVersions; go(); },
@@ -1127,7 +1127,7 @@
           ["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."],
           ["How do I change how my website looks?", "Open Online Store → Themes and click Customize. Click any part of your website to edit it, add sections, and preview it on desktop, tablet and mobile."],
           ["How do I publish my website?", "In the website editor, click Publish website. Your site goes live at your free shopilier.com address."],
-          ["Can I go back to an earlier version of my website?", "Yes. Online Store → Themes → Versions & backups. Create a backup any time, and switch to any saved version. A copy is also saved every time you publish."],
+          ["Can I go back to an earlier version of my website?", "Yes. Online Store → Themes → Website backups. Click Save a backup any time; a backup is also saved every time you publish. Click Preview to look at a backup, or ⋯ → Publish to bring it back."],
           ["Can I use my own domain?", "Yes. Open Settings → Domain and add your domain. Yearly Business and Pro plans include a free domain."],
           ["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."],
           ["How do I change my plan?", "Open Settings → Plan & billing and choose Switch next to the plan you want."],
