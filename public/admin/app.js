@@ -743,26 +743,27 @@
         const SOC = [["facebook", "Facebook", "https://facebook.com/yourpage", "#1877f2", "f"], ["instagram", "Instagram", "https://instagram.com/yourname", "#e1306c", "◎"], ["youtube", "YouTube", "https://youtube.com/@yourchannel", "#ff0000", "▶"], ["tiktok", "TikTok", "https://tiktok.com/@yourname", "#111111", "♪"]];
         return `${head("Preferences", "Your website's important settings in one place. Changes save automatically.", `<span class="pf-saved" id="pf-saved">${icon("check")}All changes saved</span>`)}
           <form id="prefs-form" autocomplete="off" onsubmit="return false">
-            <div class="pf-top">
-              <div class="card"><div class="card-head"><span class="card-title">Search engine listing</span></div><div class="card-body">
-                  <div class="serp"><span class="serp-url">${esc(siteUrl())}</span><b class="serp-title" id="serp-title">${esc(title)}</b><span class="serp-desc" id="serp-desc">${esc(desc || "Add a description so people know what you sell.")}</span></div>
-                  ${text("seo.title", "Title in Google", seo.title, { max: 70, ph: s.name || "My Store", hint: `<span data-count="seo.title">${seo.title.length}</span> of 70 characters` })}
-                  <div class="field"><label for="p-desc">Description</label><textarea class="textarea" id="p-desc" data-k="seo.description" maxlength="160" placeholder="e.g. Handmade furniture delivered across Bangladesh.">${esc(seo.description)}</textarea><span class="pf-hint"><span data-count="seo.description">${seo.description.length}</span> of 160 characters</span></div>
-                  ${image("seo.image", "Share image", seo.image, "Shown when your link is shared on Facebook, WhatsApp or Messenger. 1200 × 630 works best.")}
-              </div></div>
-              <div class="card"><div class="card-head"><span class="card-title">Social media<small>Shown in your website's footer</small></span></div><div class="card-body">
-                  ${SOC.map(([k, l, ph, c, g]) => `<div class="pf-social"><span class="pf-social-ico" style="background:${c}">${g}</span><div class="field"><label for="p-${k}">${l}</label><input class="input" id="p-${k}" data-k="social.${k}" type="url" maxlength="200" value="${v(so[k])}" placeholder="${ph}"></div></div>`).join("")}
-                  ${text("footer.copyright", "Footer copyright line", f.copyright, { max: 120, ph: `© ${new Date().getFullYear()} ${s.name || "My Store"}. All rights reserved.` })}
-              </div></div>
-            </div>
-
-            <h2 class="pf-group">Important settings</h2>
             <div class="pf-stack">
               <div class="card"><div class="card-head"><span class="card-title">Store details<small>Header, footer and Contact section</small></span></div><div class="card-body">
                   ${text("name", "Website name", s.name, { max: 40, ph: "My Store" })}
                   ${image("header.logo", "Logo", h.logo, "Shown instead of the name in the header. A wide PNG with a clear background works best.")}
                   <div class="row">${text("phone", "Phone", s.phone, { max: 30, ph: "01XXX-XXXXXX" })}${text("email", "Email", s.email, { max: 120, ph: "hello@yourstore.com", type: "email" })}</div>
                   ${text("address", "Address", s.address, { max: 160, ph: "House, road, area, city" })}
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Social media<small>Shown in your website's footer</small></span></div><div class="card-body">
+                  ${SOC.map(([k, l, ph, c, g]) => `<div class="pf-social"><span class="pf-social-ico" style="background:${c}">${g}</span><div class="field"><label for="p-${k}">${l}</label><input class="input" id="p-${k}" data-k="social.${k}" type="url" maxlength="200" value="${v(so[k])}" placeholder="${ph}"></div></div>`).join("")}
+                  ${text("footer.copyright", "Footer copyright line", f.copyright, { max: 120, ph: `© ${new Date().getFullYear()} ${s.name || "My Store"}. All rights reserved.` })}
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Search engine listing</span></div><div class="card-body">
+                  <div class="serp"><span class="serp-url">${esc(siteUrl())}</span><b class="serp-title" id="serp-title">${esc(title)}</b><span class="serp-desc" id="serp-desc">${esc(desc || "Add a description so people know what you sell.")}</span></div>
+                  ${text("seo.title", "Title in Google", seo.title, { max: 70, ph: s.name || "My Store", hint: `<span data-count="seo.title">${seo.title.length}</span> of 70 characters` })}
+                  <div class="field"><label for="p-desc">Description</label><textarea class="textarea" id="p-desc" data-k="seo.description" maxlength="160" placeholder="e.g. Handmade furniture delivered across Bangladesh.">${esc(seo.description)}</textarea><span class="pf-hint"><span data-count="seo.description">${seo.description.length}</span> of 160 characters</span></div>
+                  ${image("seo.image", "Share image", seo.image, "Shown when your link is shared on Facebook, WhatsApp or Messenger. 1200 × 630 works best.")}
+              </div></div>
+              <div class="card"><div class="card-head"><span class="card-title">Announcement bar<small>A short message at the very top of every page</small></span>
+                <label class="switch" style="margin-left:auto"><input type="checkbox" data-k="header.announcement.show" ${h.announcement.show ? "checked" : ""} aria-label="Show the announcement bar"><i></i></label></div><div class="card-body">
+                  <div class="pf-announce-demo ${h.announcement.show ? "" : "off"}" style="background:${esc(s.accent)};color:${SiteKit.isDark(s.accent) ? "#fff" : "#111"}" id="pf-announce-demo">${esc(h.announcement.text || "Your message")}</div>
+                  ${text("header.announcement.text", "Message", h.announcement.text, { max: 90, ph: "Free delivery on orders over ৳2,000" })}
               </div></div>
               <div class="card"><div class="card-head"><span class="card-title">Look &amp; feel<small>Colors, fonts and buttons for your whole website</small></span></div>
                 <div class="card-body pf-look">
@@ -776,11 +777,6 @@
                   <div class="pf-preview"><span class="pf-preview-label">Live preview</span><div class="th-screen" data-w="1280"><iframe class="th-canvas" style="width:1280px" id="pf-frame" srcdoc="${esc(SiteKit.documentHTML(s, store.pages, { page: store.pages[0], products: store.products }))}" title="Website preview" tabindex="-1"></iframe></div></div>
                 </div>
               </div>
-              <div class="card"><div class="card-head"><span class="card-title">Announcement bar<small>A short message at the very top of every page</small></span>
-                <label class="switch" style="margin-left:auto"><input type="checkbox" data-k="header.announcement.show" ${h.announcement.show ? "checked" : ""} aria-label="Show the announcement bar"><i></i></label></div><div class="card-body">
-                  <div class="pf-announce-demo ${h.announcement.show ? "" : "off"}" style="background:${esc(s.accent)};color:${SiteKit.isDark(s.accent) ? "#fff" : "#111"}" id="pf-announce-demo">${esc(h.announcement.text || "Your message")}</div>
-                  ${text("header.announcement.text", "Message", h.announcement.text, { max: 90, ph: "Free delivery on orders over ৳2,000" })}
-              </div></div>
               <div class="card pf-status ${store.published ? "live" : ""}">
                 <span class="pf-status-ico">${icon(store.published ? "check" : "rocket")}</span>
                 <div class="pf-status-text"><b>${store.published ? "Your website is live" : "Your website isn't live yet"}</b>
