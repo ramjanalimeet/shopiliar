@@ -89,6 +89,19 @@
   store.orders ||= []; store.products ||= []; store.customers ||= [];
   store.marketing ||= { pixels: {}, headCode: "", bodyCode: "" };
   store.backups ||= [];
+  // Older versions of the history saved identical copies over and over. For each distinct website keep
+  // your named backups; with none, the newest published copy; with neither, the newest automatic copy.
+  {
+    const groups = new Map();
+    store.backups.forEach((b) => { const k = JSON.stringify(b.data); groups.set(k, [...(groups.get(k) || []), b]); });
+    const keep = new Set();
+    groups.forEach((list) => {
+      const manual = list.filter((b) => b.kind === "manual");
+      if (manual.length) manual.forEach((b) => keep.add(b));
+      else keep.add(list.find((b) => b.kind === "publish") || list[0]); // the list is newest first
+    });
+    store.backups = store.backups.filter((b) => keep.has(b));
+  }
   store.site.social ||= {};
   store.site.seo ||= { title: "", description: "" };
   // Pages are built from sections (hero, products, …) edited in the website editor
@@ -223,20 +236,36 @@
   // Website preview with the store's products
   const stamp = (d) => d ? new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "Not yet";
   // Any change to the website itself (design, text, pages, menu, preferences)
-  const touchSite = () => { store.siteSavedAt = new Date().toISOString(); };
+  // It also means the website no longer matches any saved version
+  const touchSite = () => { store.siteSavedAt = new Date().toISOString(); store.currentVersion = null; };
 
   // ---------- Versions & backups of the website ----------
   const MAX_BACKUPS = 20;
   const snapshot = () => JSON.parse(JSON.stringify({ site: store.site, pages: store.pages }));
+  // store.currentVersion: id of the saved version the website matches right now (cleared by any edit)
+  // Falls back to comparing content, so it's known even right after the page loads
+  const currentBackup = () => {
+    const byId = store.backups.find((b) => b.id === store.currentVersion);
+    if (byId) return byId;
+    const now = JSON.stringify({ site: store.site, pages: store.pages });
+    return store.backups.find((b) => JSON.stringify(b.data) === now);
+  };
   const addBackup = (name, kind) => {
-    store.backups.unshift({ id: uid("v"), name, kind, at: new Date().toISOString(), template: store.site.template, data: snapshot() });
+    const b = { id: uid("v"), name, kind, at: new Date().toISOString(), template: store.site.template, data: snapshot() };
+    store.backups.unshift(b);
+    store.currentVersion = b.id;
     // Over the limit: drop the oldest automatic copy first, then the oldest backup
     while (store.backups.length > MAX_BACKUPS) {
       const i = store.backups.map((b) => b.kind).lastIndexOf("auto");
       store.backups.splice(i >= 0 ? i : store.backups.length - 1, 1);
     }
+    return b;
   };
-  const KIND = { manual: ["Backup", "blue"], publish: ["Published", "green"], auto: ["Automatic", "gray"] };
+  const KIND = { manual: ["Backup", "blue"], publish: ["Published", "green"], auto: ["Auto-save", "gray"] };
+  // What a version is called in the list; automatic ones always get the same short name
+  const versionTitle = (b) => (b.kind === "auto" ? "Auto-saved copy" : b.kind === "publish" ? "Published version" : b.name);
+  const versionNote = (b) => (b.kind === "auto" ? "Saved automatically before you restored another version" : b.kind === "publish" ? "Saved automatically when you published" : "Saved by you");
+  let showAllVersions = false;
   // Full-size and phone previews scale a real-width page down to fit their frame
   const fitPreviews = (root) => {
     const screens = root.querySelectorAll(".th-screen");
@@ -290,6 +319,37 @@
 
   // ---------- Views ----------
   let orderFilter = "All", orderSearch = "", productView = "table", productSearch = "";
+
+  // Version history: grouped by day, newest first; the version that matches the website is marked Current
+  const versionList = () => {
+    if (!store.backups.length) return `<div class="versions-empty">${icon("history")}<b>No saved versions yet</b><span>Create a backup before big changes. A copy is also saved every time you publish.</span></div>`;
+    const dayName = (d) => {
+      const t = new Date(d); t.setHours(0, 0, 0, 0);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const diff = Math.round((today - t) / 864e5);
+      return diff === 0 ? "Today" : diff === 1 ? "Yesterday" : day(d);
+    };
+    const time = (d) => new Date(d).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true });
+    const list = showAllVersions ? store.backups : store.backups.slice(0, 6), current = currentBackup();
+    let lastDay = "";
+    const rows = list.map((b) => {
+      const d = dayName(b.at), cur = b === current;
+      const header = d !== lastDay ? `<div class="v-day">${esc(d)}</div>` : "";
+      lastDay = d;
+      return `${header}<div class="version${cur ? " current" : ""}">
+        <span class="v-dot ${b.kind}">${icon(b.kind === "publish" ? "rocket" : b.kind === "auto" ? "history" : "archive")}</span>
+        <div class="v-text"><span class="v-title"><b>${esc(versionTitle(b))}</b><span class="tag ${KIND[b.kind][1]}">${KIND[b.kind][0]}</span>${cur ? '<span class="tag dot green">Current</span>' : ""}</span>
+          <span class="muted small">${time(b.at)} · ${esc(findTemplate(b.template).name)} · ${versionNote(b)}</span></div>
+        <div class="v-actions">
+          <button class="btn btn-sm" data-action="preview-version" data-id="${b.id}">${icon("eye")}Preview</button>
+          ${cur ? "" : `<button class="btn btn-sm btn-primary" data-action="restore-version" data-id="${b.id}">${icon("history")}Restore</button>`}
+          <button class="icon-btn danger" data-action="delete-version" data-id="${b.id}" aria-label="Delete ${esc(versionTitle(b))}" title="Delete">${icon("trash")}</button>
+        </div>
+      </div>`;
+    }).join("");
+    const more = store.backups.length > 6 ? `<button class="versions-more" data-action="toggle-versions">${showAllVersions ? "Show fewer" : `Show all ${store.backups.length} versions`}${icon("chevronDown")}</button>` : "";
+    return `<div class="versions">${rows}</div>${more}`;
+  };
 
   const routes = {
     home: {
@@ -538,27 +598,9 @@
           </div>
 
           <div class="card versions-card">
-            <div class="card-head"><span class="card-title">Versions &amp; backups</span><span class="muted small versions-hint">Save a backup before big changes. You can switch to any version later.</span>
+            <div class="card-head"><div class="versions-title"><span class="card-title">Version history</span><span class="muted small">Restore your website to any saved version. Products and orders are never changed.</span></div>
               <button class="btn" data-action="create-backup">${icon("archive")}Create backup</button></div>
-            <div class="versions">
-              <div class="version current">
-                <span class="v-ico">${icon("check")}</span>
-                <div class="v-text"><b>Current version</b><span class="muted small">${esc(t.name)} · Last saved ${stamp(store.siteSavedAt || store.publishedAt)}</span></div>
-                <span class="tag green">Current</span>
-              </div>
-              ${store.backups.map((b) => `
-              <div class="version">
-                <span class="v-ico">${icon(b.kind === "publish" ? "rocket" : "history")}</span>
-                <div class="v-text"><b>${esc(b.name)}</b><span class="muted small">${esc(findTemplate(b.template).name)} · ${stamp(b.at)}</span></div>
-                <span class="tag ${KIND[b.kind][1]}">${KIND[b.kind][0]}</span>
-                <div class="v-actions">
-                  <button class="icon-btn" data-action="preview-version" data-id="${b.id}" aria-label="Preview ${esc(b.name)}" title="Preview">${icon("eye")}</button>
-                  <button class="btn btn-sm" data-action="restore-version" data-id="${b.id}">Switch to this</button>
-                  <button class="icon-btn danger" data-action="delete-version" data-id="${b.id}" aria-label="Delete ${esc(b.name)}" title="Delete">${icon("trash")}</button>
-                </div>
-              </div>`).join("")}
-              ${store.backups.length ? "" : `<p class="empty-note versions-empty">No backups yet. A copy is also saved automatically every time you publish.</p>`}
-            </div>
+            ${versionList()}
           </div>
         </div>`;
       },
@@ -848,7 +890,8 @@
     },
     "publish": () => {
       store.published = true; store.publishedAt = new Date().toISOString();
-      addBackup("Published " + stamp(store.publishedAt), "publish");
+      // Only keep a copy when this exact website isn't saved already
+      if (!currentBackup()) addBackup("Published version", "publish");
       persist(); if (location.hash !== "#/website") go(); toast("🚀 Website published");
     },
     "view-store": () => {
@@ -860,32 +903,45 @@
       body: `<p class="muted" style="margin-bottom:14px">Saves a copy of your website as it is now: design, text, pages, menu and preferences. Products and orders aren't affected.</p>
         <div class="field"><label>Backup name</label><input class="input" name="name" maxlength="60" placeholder="e.g. Before Eid sale changes"></div>`,
       submit: "Create backup",
-      onSubmit: (v) => { addBackup(v.name || "Backup " + stamp(new Date()), "manual"); persist(); go(); toast("Backup created"); },
+      onSubmit: (v) => {
+        const same = currentBackup();
+        if (same && same.kind === "manual") { toast(`This version is already saved as “${same.name}”`); return; }
+        // An automatic copy of this exact website becomes the named backup instead of a duplicate
+        if (same) store.backups = store.backups.filter((x) => x !== same);
+        addBackup(v.name || "Backup", "manual"); persist(); go(); toast("Backup created");
+      },
     }),
     "preview-version": (el) => {
       const b = store.backups.find((x) => x.id === el.dataset.id);
       dialog({
-        title: b.name, size: "lg", submit: "",
+        title: versionTitle(b), size: "lg", submit: "",
         body: `<p class="muted small" style="margin-bottom:12px">${esc(findTemplate(b.template).name)} · ${stamp(b.at)}</p><div class="version-preview">${devicePreviews(b.data.site, b.data.pages)}</div>`,
         onOpen: (wrap) => fitPreviews(wrap),
       });
     },
     "restore-version": async (el) => {
       const b = store.backups.find((x) => x.id === el.dataset.id);
-      if (!(await confirm(`Switch to “${b.name}”?`, "Your website will change to this version. The current version is saved as a backup first, so you can switch back any time.", "Switch version"))) return;
-      addBackup("Before switching to " + b.name, "auto");
+      if (!(await confirm(`Restore this version?`, `Your website will change to the version from ${stamp(b.at)}. Your current website stays in the history, so you can go back to it.`, "Restore"))) return;
+      // Keep the current website first, unless it's already saved
+      if (!currentBackup()) addBackup("Auto-saved copy", "auto");
       const data = JSON.parse(JSON.stringify(b.data));
       store.site = data.site; store.pages = data.pages;
       store.site.social ||= {}; store.site.seo ||= { title: "", description: "" };
       SiteKit.ensure(store.site, store.pages, { products: store.products });
       account.template = store.site.template;
-      store.customized = true; touchSite(); persist(); go();
-      toast(`Switched to “${b.name}”` + (store.published ? ". Publish to put it live." : ""));
+      store.customized = true; touchSite(); store.currentVersion = b.id; persist(); go();
+      toast("Version restored" + (store.published ? ". Publish to put it live." : ""));
     },
     "delete-version": async (el) => {
       const b = store.backups.find((x) => x.id === el.dataset.id);
-      if (await confirm("Delete backup?", `“${b.name}” will be deleted. You can't undo this.`)) { store.backups = store.backups.filter((x) => x !== b); persist(); go(); toast("Backup deleted"); }
+      if (await confirm("Delete this version?", `“${versionTitle(b)}” from ${stamp(b.at)} will be deleted. You can't undo this.`)) {
+        store.backups = store.backups.filter((x) => x !== b);
+        if (store.currentVersion === b.id) store.currentVersion = null;
+        // (if another saved version has the same content, it shows as Current instead)
+        persist(); go(); toast("Version deleted");
+      }
     },
+    "toggle-versions": () => { showAllVersions = !showAllVersions; go(); },
     "nav-move": (el) => {
       const menu = store.pages.filter((p) => p.inNav);
       const i = menu.findIndex((p) => p.id === el.dataset.id), other = menu[i + Number(el.dataset.dir)];
