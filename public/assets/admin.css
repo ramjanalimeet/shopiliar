@@ -799,3 +799,26 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
 .dialog .dc-check { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; cursor: pointer; font-size: 14px; color: var(--ink); }
 .dc-check input { accent-color: var(--accent); width: 16px; height: 16px; margin-top: 2px; }
 .dc-check small { display: block; font-size: 12.5px; color: var(--muted); }
+
+/* Products */
+.thumb { overflow: hidden; display: inline-grid; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.g-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.g-cover .tag { position: relative; }
+.pd-photos { display: flex; flex-wrap: wrap; gap: 10px; }
+.pd-photo { position: relative; width: 92px; height: 92px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.pd-photo.pd-first { width: 120px; height: 120px; border: 2px solid var(--accent); }
+.pd-photo > button:first-child { width: 100%; height: 100%; padding: 0; border: 0; cursor: pointer; background: #f3f4f6; }
+.pd-photo img { width: 100%; height: 100%; object-fit: cover; }
+.pd-main { position: absolute; left: 6px; bottom: 6px; padding: 2px 7px; border-radius: 6px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; }
+.pd-x { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; cursor: pointer; }
+.pd-x .i { width: 13px; height: 13px; }
+.dialog .pd-up { width: 92px; height: 92px; display: grid; place-content: center; justify-items: center; gap: 4px; margin: 0; border: 1.5px dashed #cfd4da; border-radius: 12px; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
+.pd-up:hover { border-color: var(--accent); background: var(--accent-soft); }
+.pd-up .i { width: 20px; height: 20px; }
+.pd-up.busy { opacity: .6; pointer-events: none; }
+.pd-opts { display: grid; gap: 8px; }
+.pd-opt { display: grid; grid-template-columns: 140px 1fr auto; gap: 8px; }
+.pd-opt-add { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.t-title .sub { display: block; font-weight: 400; }
+@media (max-width: 640px) { .pd-opt { grid-template-columns: 1fr auto; } .pd-opt input:first-child { grid-column: 1 / -1; } }

@@ -243,6 +243,7 @@ window.SiteKit = (() => {
     const n = parseInt(m[1], 16);
     return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 < 128;
   };
+  const onSale = (p) => Number(p.compare) > Number(p.price);
   const color = (c) => (/^#[0-9a-f]{3,8}$/i.test(String(c || "")) ? c : "");
   const RADIUS = { sharp: "0px", soft: "8px", round: "999px" };
   const rootStyle = (site) => {
@@ -297,9 +298,9 @@ window.SiteKit = (() => {
         <div class="sec-head"><div>${head(c)}${c.subtitle ? `<p class="sub">${esc(c.subtitle)}</p>` : ""}</div>${c.viewAll?.text ? `<a class="more" href="${esc(safeLink(c.viewAll.link))}">${esc(c.viewAll.text)}${svg("arrow")}</a>` : ""}</div>
         ${list.length ? `<div class="grid cols-${Number(st.columns) || 4}">${list.map((p) => `
           <div class="card product" data-pid="${esc(p.id)}">
-            <div class="p-img" style="background:${esc(color(p.color) || "#e9e6e1")}">${safeImg(p.image) ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : `<span>${esc((p.name || "?").slice(0, 1))}</span>`}</div>
-            <div class="p-body"><b>${esc(p.name)}</b><span class="price">${taka(p.price)}</span>
-              ${p.stock === 0 ? '<button type="button" class="btn btn-outline p-add" disabled>Sold out</button>' : `<button type="button" class="btn btn-outline p-add" data-add="${esc(p.id)}">${svg("cart")}Add to cart</button>`}</div>
+            <button type="button" class="p-img" data-view="${esc(p.id)}" aria-label="See ${esc(p.name)}" style="background:${esc(color(p.color) || "#e9e6e1")}">${safeImg(p.image) ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : `<span>${esc((p.name || "?").slice(0, 1))}</span>`}${onSale(p) ? `<em class="p-sale">−${Math.round((1 - p.price / p.compare) * 100)}%</em>` : ""}</button>
+            <div class="p-body"><button type="button" class="p-name" data-view="${esc(p.id)}">${esc(p.name)}</button><span class="price">${taka(p.price)}${onSale(p) ? ` <s>${taka(p.compare)}</s>` : ""}</span>
+              ${p.stock === 0 ? '<button type="button" class="btn btn-outline p-add" disabled>Sold out</button>' : `<button type="button" class="btn btn-outline p-add" data-add="${esc(p.id)}">${svg("cart")}${(p.options || []).length ? "Choose options" : "Add to cart"}</button>`}</div>
           </div>`).join("")}</div>` : `<p class="empty">Your products will appear here once you add them.</p>`}
         ${ctx.blocks}
       </div>`;
@@ -513,7 +514,8 @@ window.SiteKit = (() => {
   // A full HTML document for an iframe or a new tab
   const documentHTML = (site, pages, opts = {}) => {
     const origin = opts.origin || location.origin;
-    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    // <base> so uploaded photos (/media/…) load in previews too (srcdoc and blob pages have no address of their own)
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="${esc(origin)}/">
       <title>${esc((site.seo && site.seo.title) || site.name || "My Store")}</title>
       ${site.seo && site.seo.description ? `<meta name="description" content="${esc(site.seo.description)}">` : ""}
       <meta property="og:title" content="${esc((site.seo && site.seo.title) || site.name || "My Store")}">
@@ -580,7 +582,53 @@ window.SiteKit = (() => {
         if (w.uetq && ev === "buy") w.uetq.push("event", "purchase", { revenue_value: value, currency: cur });
       } catch (e) {}
     };
-    var lines = function () { return cart.map(function (it) { var p = byId(it.id); return { id: p.id, name: p.name, price: p.price, qty: it.qty }; }); };
+    var lines = function () { return cart.map(function (it) { var p = byId(it.id); return { id: p.id, name: p.name + (it.v ? " (" + it.v + ")" : ""), price: p.price, qty: it.qty }; }); };
+    // How many of a product are in the cart, in all its sizes/colors
+    var inCart = function (id) { return cart.reduce(function (a, it) { return a + (it.id === id ? it.qty : 0); }, 0); };
+    var addToCart = function (p, v, qty) {
+      if (p.stock != null && inCart(p.id) + qty > p.stock) { note(p.stock > inCart(p.id) ? "Only " + (p.stock - inCart(p.id)) + " more left in stock" : "No more left in stock"); return false; }
+      var it = cart.filter(function (x) { return x.id === p.id && (x.v || "") === (v || ""); })[0];
+      if (it) it.qty += qty; else cart.push({ id: p.id, v: v || "", qty: qty });
+      save(); note(p.name + (v ? " (" + v + ")" : "") + " added to your cart");
+      track("add", p.price * qty, [{ id: p.id, name: p.name, price: p.price, qty: qty }]);
+      return true;
+    };
+    // Product details: photos, description, sizes/colors and quantity
+    var view = function (p) {
+      var imgs = p.images.length ? p.images : p.image ? [p.image] : [], pick = {}, qty = 1;
+      var box = document.createElement("div");
+      box.className = "qv"; box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("aria-label", p.name);
+      box.innerHTML = '<div class="qv-in"><button type="button" class="qv-x" aria-label="Close">\u00d7</button>' +
+        '<div class="qv-media"><div class="qv-main" style="background:' + esc(p.color || "#e9e6e1") + '">' + (imgs[0] ? '<img src="' + esc(imgs[0]) + '" alt="">' : "<span>" + esc(p.name.slice(0, 1)) + "</span>") + "</div>" +
+        (imgs.length > 1 ? '<div class="qv-thumbs">' + imgs.map(function (u, i) { return '<button type="button" data-img="' + i + '"' + (i ? "" : ' class="on"') + '><img src="' + esc(u) + '" alt=""></button>'; }).join("") + "</div>" : "") + "</div>" +
+        '<div class="qv-info"><h2>' + esc(p.name) + '</h2><p class="qv-price">' + taka(p.price) + (p.compare ? " <s>" + taka(p.compare) + "</s>" : "") + "</p>" +
+        p.options.map(function (o, i) { return '<div class="qv-opt"><b>' + esc(o.name) + '</b><div>' + o.values.map(function (val) { return '<button type="button" data-opt="' + i + '" data-val="' + esc(val) + '">' + esc(val) + "</button>"; }).join("") + "</div></div>"; }).join("") +
+        '<div class="qv-buy"><span class="qv-qty"><button type="button" data-q="-1" aria-label="One less">\u2212</button><b>1</b><button type="button" data-q="1" aria-label="One more">+</button></span>' +
+        '<button type="button" class="btn qv-add"' + (p.stock === 0 ? " disabled" : "") + ">" + (p.stock === 0 ? "Sold out" : "Add to cart") + "</button></div>" +
+        '<p class="qv-msg" hidden></p>' + (p.description ? '<div class="qv-desc">' + esc(p.description).replace(/\n/g, "<br>") + "</div>" : "") + "</div></div>";
+      var site = document.querySelector(".site");
+      (site ? site.parentNode : document.body).appendChild(box);
+      box.setAttribute("style", site ? site.getAttribute("style") || "" : "");
+      var close = function () { box.remove(); document.removeEventListener("keydown", key); };
+      var key = function (e) { if (e.key === "Escape") close(); };
+      document.addEventListener("keydown", key);
+      box.addEventListener("click", function (e) {
+        if (e.target === box || e.target.closest(".qv-x")) { close(); return; }
+        var th = e.target.closest("[data-img]");
+        if (th) { box.querySelector(".qv-main").innerHTML = '<img src="' + esc(imgs[+th.getAttribute("data-img")]) + '" alt="">'; box.querySelectorAll("[data-img]").forEach(function (b) { b.classList.toggle("on", b === th); }); return; }
+        var op = e.target.closest("[data-opt]");
+        if (op) { pick[op.getAttribute("data-opt")] = op.getAttribute("data-val"); box.querySelectorAll('[data-opt="' + op.getAttribute("data-opt") + '"]').forEach(function (b) { b.classList.toggle("on", b === op); }); box.querySelector(".qv-msg").hidden = true; return; }
+        var dq = e.target.closest("[data-q]");
+        if (dq) { qty = Math.max(1, Math.min(99, qty + Number(dq.getAttribute("data-q")))); box.querySelector(".qv-qty b").textContent = qty; return; }
+        if (e.target.closest(".qv-add")) {
+          var missing = p.options.filter(function (o, i) { return !pick[i]; })[0];
+          if (missing) { var m = box.querySelector(".qv-msg"); m.hidden = false; m.textContent = "Please choose a " + missing.name.toLowerCase(); return; }
+          var v = p.options.map(function (o, i) { return o.name + ": " + pick[i]; }).join(" / ");
+          if (addToCart(p, v, qty)) close();
+        }
+      });
+      var first = box.querySelector(".qv-add"); if (first) first.focus();
+    };
     var draw = function () {
       var count = cart.reduce(function (a, it) { return a + it.qty; }, 0);
       document.querySelectorAll('.tools a[href="/checkout"]').forEach(function (a) { if (count) a.setAttribute("data-count", count); else a.removeAttribute("data-count"); });
@@ -590,10 +638,10 @@ window.SiteKit = (() => {
         // A code stops working when the cart changes so it no longer fits
         if (code) { var why = discountProblem(code, lines(), Date.now()); if (why) { code = null; msg(root, why, false); } }
         var off = code ? discountFor(code, lines(), fee) : 0, total = Math.max(0, sub + fee - off);
-        box.innerHTML = cart.length ? cart.map(function (it) {
+        box.innerHTML = cart.length ? cart.map(function (it, i) {
           var p = byId(it.id);
-          return '<div class="co-item"><span class="co-img" style="background:' + esc(p.color || "#e9e6e1") + '">' + (p.image ? '<img src="' + esc(p.image) + '" alt="">' : "") + "<em>" + it.qty + '</em></span><span class="co-name">' + esc(p.name) +
-            '<span class="co-qty"><button type="button" data-qty="-1" data-id="' + esc(p.id) + '" aria-label="One less">\u2212</button><b>' + it.qty + '</b><button type="button" data-qty="1" data-id="' + esc(p.id) + '" aria-label="One more">+</button><button type="button" class="co-rm" data-rm="' + esc(p.id) + '">Remove</button></span></span><b>' + taka(p.price * it.qty) + "</b></div>";
+          return '<div class="co-item"><span class="co-img" style="background:' + esc(p.color || "#e9e6e1") + '">' + (p.image ? '<img src="' + esc(p.image) + '" alt="">' : "") + "<em>" + it.qty + '</em></span><span class="co-name">' + esc(p.name) + (it.v ? '<small class="co-v">' + esc(it.v) + "</small>" : "") +
+            '<span class="co-qty"><button type="button" data-qty="-1" data-i="' + i + '" aria-label="One less">\u2212</button><b>' + it.qty + '</b><button type="button" data-qty="1" data-i="' + i + '" aria-label="One more">+</button><button type="button" class="co-rm" data-rm="' + i + '">Remove</button></span></span><b>' + taka(p.price * it.qty) + "</b></div>";
         }).join("") : '<p class="empty">Your cart is empty. <a href="/shop">Continue shopping</a></p>';
         root.querySelectorAll(".co-sub").forEach(function (e) { e.textContent = taka(sub); });
         root.querySelectorAll(".co-fee").forEach(function (e) { e.textContent = taka(cart.length ? fee : 0); });
@@ -605,24 +653,26 @@ window.SiteKit = (() => {
     };
     var msg = function (root, text, ok) { var m = root.querySelector(".co-msg"); if (m) { m.hidden = !text; m.textContent = text; m.className = "co-msg" + (ok ? " ok" : ""); } };
     document.addEventListener("click", function (e) {
+      if (e.target.closest(".qv")) return;
+      var vw = e.target.closest("[data-view]");
+      if (vw) { var vp = byId(vw.getAttribute("data-view")); if (vp) view(vp); return; }
       var add = e.target.closest("[data-add]");
       if (add) {
-        var p = byId(add.getAttribute("data-add")), it = cart.filter(function (x) { return x.id === p.id; })[0];
-        if (it && p.stock != null && it.qty >= p.stock) { note("Only " + p.stock + " left in stock"); return; }
-        if (it) it.qty++; else cart.push({ id: p.id, qty: 1 });
-        save(); note(p.name + " added to your cart");
-        track("add", p.price, [{ id: p.id, name: p.name, price: p.price, qty: 1 }]); return;
+        var p = byId(add.getAttribute("data-add"));
+        // Products with sizes/colors open their details so the customer can choose
+        if (p.options.length) view(p); else addToCart(p, "", 1);
+        return;
       }
       var q = e.target.closest("[data-qty]");
       if (q) {
-        var x = cart.filter(function (c) { return c.id === q.getAttribute("data-id"); })[0], pr = byId(x.id);
-        x.qty += Number(q.getAttribute("data-qty"));
-        if (pr.stock != null && x.qty > pr.stock) { x.qty = pr.stock; note("Only " + pr.stock + " left in stock"); }
+        var x = cart[+q.getAttribute("data-i")], pr = byId(x.id), step = Number(q.getAttribute("data-qty"));
+        if (step > 0 && pr.stock != null && inCart(pr.id) >= pr.stock) { note("No more left in stock"); return; }
+        x.qty += step;
         if (x.qty < 1) cart = cart.filter(function (c) { return c !== x; });
         save(); return;
       }
       var rm = e.target.closest("[data-rm]");
-      if (rm) { cart = cart.filter(function (c) { return c.id !== rm.getAttribute("data-rm"); }); save(); return; }
+      if (rm) { cart.splice(+rm.getAttribute("data-rm"), 1); save(); return; }
       var ap = e.target.closest(".co-apply");
       if (ap) {
         var root = ap.closest(".checkout"), val = (root.querySelector(".co-code").value || "").trim().toUpperCase();
@@ -650,7 +700,7 @@ window.SiteKit = (() => {
       var pick = function (n) { var r = form.querySelector('input[name="' + n + '"]:checked'); return r ? r.value : ""; };
       var fee = feeNow(), paid = Math.max(0, subtotal() + fee - (code ? discountFor(code, lines(), fee) : 0));
       track("buy", paid, lines());
-      var order = { items: cart.map(function (it) { return { id: it.id, qty: it.qty }; }), answers: answers, delivery: pick("delivery"), payment: pick("pay"), code: code ? code.code : "" };
+      var order = { items: cart.map(function (it) { return { id: it.id, qty: it.qty, v: it.v || "" }; }), answers: answers, delivery: pick("delivery"), payment: pick("pay"), code: code ? code.code : "" };
       if (window.opener) { try { window.opener.postMessage({ type: "shopilier-order", order: order }, location.origin === "null" ? "*" : location.origin); } catch (err) {} }
       cart = []; code = null; save();
       root.innerHTML = '<div class="co-done"><span>\u2713</span><h1>Thank you!</h1><p class="lead">Your order is placed. We\'ll call you soon to confirm it.</p><a class="btn" href="/">Back to the shop</a></div>';
@@ -667,7 +717,11 @@ window.SiteKit = (() => {
     const nav = `<script>document.addEventListener("click",function(e){var m=e.target.closest(".burger");if(m){m.closest(".s-header").classList.toggle("m-open");return}document.querySelectorAll(".m-open").forEach(function(h){h.classList.remove("m-open")});var a=e.target.closest("a[href^='/']");if(!a)return;var slug=a.getAttribute("href").slice(1),pg=document.querySelector('[data-slug="'+slug+'"]');e.preventDefault();if(!pg)return;document.querySelectorAll("[data-slug]").forEach(function(d){d.hidden=d!==pg});scrollTo(0,0)});<\/script>`;
     // What the shop script needs: products that are for sale and the discount codes that work
     const shop = {
-      products: (opts.products || []).filter((p) => p.status !== "draft").map((p) => ({ id: p.id, name: p.name, price: Number(p.price) || 0, stock: p.stock == null ? null : Number(p.stock), color: color(p.color), image: safeImg(p.image) ? p.image : "" })),
+      products: (opts.products || []).filter((p) => p.status !== "draft").map((p) => ({
+        id: p.id, name: p.name, price: Number(p.price) || 0, compare: onSale(p) ? Number(p.compare) : 0, stock: p.stock == null ? null : Number(p.stock), color: color(p.color),
+        image: safeImg(p.image) ? p.image : "", images: (p.images || []).filter((u) => safeImg(u)).slice(0, 8), description: String(p.description || "").slice(0, 2000),
+        options: (p.options || []).filter((o) => o && o.name && (o.values || []).length).slice(0, 2).map((o) => ({ name: o.name, values: o.values.slice(0, 20) })),
+      })),
       discounts: (opts.discounts || []).filter((d) => d.active !== false).map((d) => ({
         code: d.code, type: d.type, value: Number(d.value) || 0, min: Number(d.min) || 0, max: Number(d.max) || 0, products: d.products || [],
         starts: d.starts || "", ends: d.ends || "", limit: Number(d.limit) || 0, used: Number(d.used) || 0, once: !!d.once,

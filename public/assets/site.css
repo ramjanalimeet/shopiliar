@@ -137,6 +137,42 @@ h2 { font-size: clamp(28px, 3.4vw, 42px); }
 .p-body b { font-weight: 500; }
 .price { font-weight: 700; }
 .sold { font-size: 13px; color: #b42318; font-weight: 600; }
+button.p-img { width: 100%; padding: 0; border: 0; cursor: pointer; position: relative; font: inherit; }
+.p-name { padding: 0; border: 0; background: none; font: inherit; font-weight: 500; color: inherit; text-align: left; cursor: pointer; }
+.p-name:hover { text-decoration: underline; }
+.p-sale { position: absolute; top: 10px; left: 10px; padding: 3px 8px; border-radius: 999px; background: #dc2626; color: #fff; font-style: normal; font-size: 12px; font-weight: 700; }
+.price s { margin-left: 6px; font-weight: 400; opacity: .55; }
+.co-v { display: block; font-size: 12.5px; opacity: .7; }
+/* Product details */
+.qv { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.45); font-family: var(--bfont); color: var(--text); }
+.qv-in { position: relative; width: min(920px, 100%); max-height: calc(100vh - 40px); overflow: auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; padding: 24px; border-radius: 18px; background: var(--bg); box-shadow: 0 30px 80px rgba(0,0,0,.35); }
+.qv-x { position: absolute; top: 10px; right: 12px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(0,0,0,.06); color: inherit; font-size: 22px; cursor: pointer; }
+.qv-main { aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; border-radius: 14px; }
+.qv-main img { width: 100%; height: 100%; object-fit: cover; }
+.qv-main span { font-family: var(--hfont); font-size: 64px; color: rgba(255,255,255,.85); }
+.qv-thumbs { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; }
+.qv-thumbs button { width: 64px; height: 64px; flex: none; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: 10px; cursor: pointer; background: none; }
+.qv-thumbs button.on { border-color: var(--accent); }
+.qv-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+.qv-info { display: grid; align-content: start; gap: 16px; padding-top: 8px; }
+.qv-info h2 { font-family: var(--hfont); font-size: clamp(24px, 3vw, 32px); line-height: 1.15; padding-right: 30px; }
+.qv-price { font-size: 22px; font-weight: 700; }
+.qv-price s { margin-left: 8px; font-size: 16px; font-weight: 400; opacity: .55; }
+.qv-opt { display: grid; gap: 8px; }
+.qv-opt b { font-size: 14px; font-weight: 600; }
+.qv-opt div { display: flex; flex-wrap: wrap; gap: 8px; }
+.qv-opt button { min-width: 44px; padding: 9px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+.qv-opt button.on { border: 2px solid var(--accent); padding: 8px 13px; font-weight: 600; }
+.qv-buy { display: flex; gap: 10px; }
+.qv-qty { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 12px; }
+.qv-qty button { width: 40px; height: 48px; border: 0; background: none; color: inherit; font-size: 18px; cursor: pointer; }
+.qv-qty b { min-width: 24px; text-align: center; }
+.qv-add { flex: 1; min-height: 50px; }
+.qv-add:disabled { opacity: .5; cursor: not-allowed; }
+.qv-msg { font-size: 14px; color: #b42318; }
+.qv-msg[hidden] { display: none; }
+.qv-desc { padding-top: 14px; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.6; opacity: .85; }
+@media (max-width: 760px) { .qv { padding: 0; align-items: end; } .qv-in { grid-template-columns: 1fr; gap: 16px; max-height: 92vh; padding: 18px; border-radius: 18px 18px 0 0; } }
 .p-add { margin-top: 8px; min-height: 40px; padding: 0 14px; font-size: 14px; gap: 8px; }
 .p-add .ic { width: 17px; height: 17px; }
 .p-add:disabled { opacity: .5; cursor: not-allowed; }
