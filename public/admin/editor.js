@@ -482,5 +482,5 @@ window.SiteEditor = (() => {
     paintSide();
   };
 
-  return { mount };
+  return { mount, upload };
 })();
