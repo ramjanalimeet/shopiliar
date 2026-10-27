@@ -36,6 +36,12 @@ h2 { font-size: clamp(28px, 3.4vw, 42px); }
 /* Header */
 .s-header { position: relative; background: var(--bg); border-bottom: 1px solid var(--line); }
 .announce { background: var(--accent); color: var(--on-accent); text-align: center; font-size: 13px; font-weight: 500; padding: 8px 16px; }
+.announce a { display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-underline-offset: 3px; }
+.announce .ic { width: 14px; height: 14px; }
+.tools .soc { width: 20px; height: 20px; }
+.t-wa { color: #25d366; }
+.t-cta { min-height: 40px; padding: 0 18px; font-size: 14px; }
+@media (max-width: 760px) { .t-cta { display: none; } }
 .nav { display: flex; align-items: center; gap: 28px; min-height: 76px; }
 .logo { font-family: var(--hfont); font-size: 28px; font-weight: 600; letter-spacing: -.02em; }
 .logo img { max-height: 44px; width: auto; }

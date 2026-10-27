@@ -179,6 +179,8 @@ const Dash = (() => {
     tablet: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/>',
     palette: '<path d="M12 3a9 9 0 0 0 0 18c1 0 1.5-.8 1.5-1.5 0-1.2-1-1.5-1-2.5s.8-1.5 2-1.5H17a4 4 0 0 0 4-4c0-4.7-4-8.5-9-8.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>',
     arrowLeft: '<path d="M19 12H5M11 18l-6-6 6-6"/>',
+    heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+    truck: '<path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>',
     nest: '<path d="M4 4v7a3 3 0 0 0 3 3h13"/><path d="m16 10 4 4-4 4"/>',
     unnest: '<path d="M20 20v-7a3 3 0 0 0-3-3H4"/><path d="m8 6-4 4 4 4"/>',
     up: '<path d="m6 15 6-6 6 6"/>',

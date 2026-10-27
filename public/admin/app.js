@@ -194,6 +194,43 @@
   syncPayments();
   // The Checkout page is part of every website, so it doesn't count toward the plan's pages
   const pageCount = () => store.pages.filter((p) => !p.system).length;
+  // Navigation: the promotional banner and the buttons on the right of the header
+  const navExtras = () => {
+    const h = store.site.header, a = h.announcement, b = (h.buttons ||= {}), cta = (h.cta ||= { show: false, text: "Shop now", link: "/shop" });
+    const cur = SiteKit.ANNOUNCE_COLORS.find(([, , bg]) => (bg || "") === (a.bg || "")) ? a.bg || "" : "custom";
+    const demo = SiteKit.announceStyle(a) || `background:${esc(store.site.accent)};color:${SiteKit.isDark(store.site.accent) ? "#fff" : "#111"}`;
+    const sw = (k, on, label) => `<label class="switch"><input type="checkbox" data-nk="${k}" ${on ? "checked" : ""} aria-label="${esc(label)}"><i></i></label>`;
+    const row = (ico, name, text, k, on, extra = "") => `<div class="hb-row${on ? " on" : ""}"><span class="hb-ico">${ico}</span><span class="hb-text"><b>${name}</b><small>${text}</small></span>${extra}${sw(k, on, name)}</div>`;
+    const waOk = (store.site.social && store.site.social.whatsapp) || store.site.phone, phoneOk = store.site.phone;
+    return `<div class="nav-extras">
+      <div class="card">
+        <div class="card-head"><span class="card-title">Promotional banner<small>A short message at the very top of every page</small></span>${sw("announcement.show", a.show, "Show the promotional banner")}</div>
+        <div class="card-body nx-body">
+          <div class="nx-demo ${a.show ? "" : "off"}" id="nx-demo" style="${esc(demo)}">${esc(a.text || "Your message")}${a.link ? " →" : ""}</div>
+          <div class="field"><label for="nx-text">Message</label><input class="input" id="nx-text" data-nk="announcement.text" maxlength="90" value="${esc(a.text || "")}" placeholder="Free delivery on orders over ৳2,000"></div>
+          <div class="field"><label for="nx-link">Link <span class="muted">(optional)</span></label><input class="input" id="nx-link" data-nk="announcement.link" maxlength="200" value="${esc(a.link || "")}" placeholder="/shop or https://…"><span class="pf-hint">Customers go here when they tap the banner.</span></div>
+          <div class="field"><label>Color</label><div class="nx-colors">
+            ${SiteKit.ANNOUNCE_COLORS.map(([id, name, bg, tx]) => `<button type="button" class="${cur === (bg || "") ? "on" : ""}" data-ann="${bg},${tx}" title="${name}"><i style="background:${bg || esc(store.site.accent)};color:${tx || (SiteKit.isDark(store.site.accent) ? "#fff" : "#111")}">Aa</i><span>${name}</span></button>`).join("")}
+            <label class="nx-custom ${cur === "custom" ? "on" : ""}" title="Pick your own"><input type="color" data-ann-custom value="${esc(a.bg || store.site.accent)}"><i style="background:conic-gradient(#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7,#f43f5e)"></i><span>Custom</span></label>
+          </div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Header buttons<small>The icons and button on the right of your menu</small></span></div>
+        <div class="card-body nx-body hb-list">
+          ${row(icon("search"), "Search", "Customers search your products", "search", h.search)}
+          ${row(icon("user"), "Account", "Sign in and see past orders", "account", h.account)}
+          ${row(icon("cart"), "Cart", "Opens your checkout page", "cart", h.cart)}
+          <p class="hb-sub">Popular extras</p>
+          ${SiteKit.HEADER_BUTTONS.map((x) => row(x.id === "whatsapp" ? SiteKit.socialIcon("whatsapp") : icon({ wishlist: "heart", track: "truck", phone: "phone" }[x.id] || "plus"), x.name,
+            x.id === "whatsapp" && !waOk ? 'Add your WhatsApp in <a href="#/preferences">Preferences</a> first' : x.id === "phone" && !phoneOk ? 'Add your phone in <a href="#/preferences">Preferences</a> first' : x.text,
+            "buttons." + x.id, b[x.id])).join("")}
+          ${row(`<span class="hb-btn"></span>`, "Button", "A button like “Shop now” or “Sale”", "cta.show", cta.show)}
+          ${cta.show ? `<div class="hb-cta"><div class="field"><label for="nx-cta">Button text</label><input class="input" id="nx-cta" data-nk="cta.text" maxlength="24" value="${esc(cta.text || "")}" placeholder="Shop now"></div><div class="field"><label for="nx-cta-link">Link</label><input class="input" id="nx-cta-link" data-nk="cta.link" maxlength="200" value="${esc(cta.link || "")}" placeholder="/shop"></div></div>` : ""}
+        </div>
+      </div>
+    </div>`;
+  };
   // The menu as rows: each top item, then the items in its dropdown
   const menuRows = () => {
     const menu = store.pages.filter((p) => p.inNav);
@@ -666,7 +703,7 @@
           `<button class="btn btn-primary" data-action="nav-add-item">${icon("plus")}Add menu item</button>`)}
           <div class="card nav-live">
             <div class="nav-live-head"><span class="nav-live-dot">Live preview</span><span class="muted small">This is how the menu looks on your website${hasDd ? " — the dropdown opens when customers point at it" : ""}</span></div>
-            <div class="nav-live-frame"><div class="nav-live-inner"><iframe class="nav-frame" srcdoc="${doc()}" title="Menu preview" tabindex="-1"></iframe></div></div>
+            <div class="nav-live-frame"><div class="nav-live-inner"><iframe class="nav-frame" srcdoc="${doc()}" title="Menu preview" tabindex="-1" scrolling="no"></iframe></div></div>
           </div>
           <div class="card">
             <div class="card-head"><span class="card-title">Main menu</span><span class="muted small">${rows.length} ${rows.length === 1 ? "item" : "items"} · the first 5 show on your website</span></div>
@@ -697,6 +734,7 @@
             }).join("")}</ul>`
               : `<div class="versions-empty">${icon("menu")}<b>Your menu is empty</b><span>Click <b>Add menu item</b> to put a page in the top menu.</span></div>`}
           </div>
+          ${navExtras()}
           ${hasDd ? `<div class="card ms-styles">
             <div class="card-head"><span class="card-title">Dropdown style</span><span class="muted small">How your dropdown menus look. Pick one — the preview above changes too.</span></div>
             <div class="ms-grid">${SiteKit.DROPDOWNS.map((d) => `
@@ -720,6 +758,37 @@
         };
         frame.addEventListener("load", fit); fit();
         new ResizeObserver(fit).observe(box);
+
+        // Promotional banner and header buttons save as you go
+        const nx = view.querySelector(".nav-extras");
+        const hset = (k, val) => { const ks = k.split("."), last = ks.pop(); ks.reduce((o, x) => (o[x] ??= {}), store.site.header)[last] = val; };
+        let nt = 0;
+        const keep = () => { const sc = document.querySelector(".scroll"), y = sc ? sc.scrollTop : 0; go(); if (sc) sc.scrollTop = y; };
+        const refresh = () => { frame.srcdoc = SiteKit.documentHTML(store.site, store.pages, { page: store.pages[0], products: store.products, headerOnly: true, ddOpenFirst: menuRows().some((r) => r.child) }); };
+        nx.addEventListener("input", (e) => {
+          const el = e.target;
+          if (el.dataset.annCustom !== undefined) { hset("announcement.bg", el.value); hset("announcement.color", ""); }
+          else if (el.dataset.nk && el.type !== "checkbox") hset(el.dataset.nk, el.value);
+          else return;
+          const demo = view.querySelector("#nx-demo"), a = store.site.header.announcement;
+          demo.textContent = (a.text || "Your message") + (a.link ? " →" : "");
+          if (a.bg) demo.style.cssText = SiteKit.announceStyle(a);
+          touchSite(); persist();
+          clearTimeout(nt); nt = setTimeout(refresh, 350);
+        });
+        nx.addEventListener("change", (e) => {
+          const el = e.target;
+          if (el.type === "checkbox" && el.dataset.nk) { hset(el.dataset.nk, el.checked); touchSite(); persist(); keep(); }
+          else if (el.dataset.annCustom !== undefined) keep();
+        });
+        nx.addEventListener("click", (e) => {
+          const b = e.target.closest("[data-ann]");
+          if (!b) return;
+          const [bg, tx] = b.dataset.ann.split(",");
+          hset("announcement.bg", bg); hset("announcement.color", tx);
+          if (!store.site.header.announcement.show) hset("announcement.show", true);
+          touchSite(); persist(); keep();
+        });
 
         // Style cards: zoom in on the open dropdown
         view.querySelectorAll(".ms-frame").forEach((f) => {
@@ -841,7 +910,7 @@
               </div></div>
               <div class="card"><div class="card-head"><span class="card-title">Announcement bar<small>A short message at the very top of every page</small></span>
                 <label class="switch" style="margin-left:auto"><input type="checkbox" data-k="header.announcement.show" ${h.announcement.show ? "checked" : ""} aria-label="Show the announcement bar"><i></i></label></div><div class="card-body">
-                  <div class="pf-announce-demo ${h.announcement.show ? "" : "off"}" style="background:${esc(s.accent)};color:${SiteKit.isDark(s.accent) ? "#fff" : "#111"}" id="pf-announce-demo">${esc(h.announcement.text || "Your message")}</div>
+                  <div class="pf-announce-demo ${h.announcement.show ? "" : "off"}" style="${esc(SiteKit.announceStyle(h.announcement) || `background:${s.accent};color:${SiteKit.isDark(s.accent) ? "#fff" : "#111"}`)}" id="pf-announce-demo">${esc(h.announcement.text || "Your message")}</div>
                   ${text("header.announcement.text", "Message", h.announcement.text, { max: 90, ph: "Free delivery on orders over ৳2,000" })}
               </div></div>
               <div class="card"><div class="card-head"><span class="card-title">Look &amp; feel<small>Colors, fonts and buttons for your whole website</small></span></div>

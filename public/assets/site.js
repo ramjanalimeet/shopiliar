@@ -22,6 +22,7 @@ window.SiteKit = (() => {
   const TEMPLATE_FONTS = { "luxe-store": "elegant", "bistro-restaurant": "elegant", "writely-blog": "classic", "mia-personal": "friendly" };
 
   const ICONS = {
+    heart: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
     truck: '<path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>',
     shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
     headset: '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/>',
@@ -409,6 +410,21 @@ window.SiteKit = (() => {
     { id: "cards", name: "Image cards", text: "A picture for each page — great for collections." },
     { id: "mega", name: "Mega menu", text: "Full width, with links and a featured product." },
   ];
+  // Promotional banner colors (empty = the website's accent color)
+  const ANNOUNCE_COLORS = [
+    ["", "Brand", "", ""], ["black", "Black", "#111111", "#ffffff"], ["sale", "Sale red", "#dc2626", "#ffffff"], ["green", "Green", "#15803d", "#ffffff"],
+    ["gold", "Gold", "#f5c542", "#1a1a1a"], ["blush", "Blush", "#fde2e4", "#7a1f2b"], ["sky", "Sky", "#e0f2fe", "#0c4a6e"], ["cream", "Cream", "#f6efe3", "#3d2f1f"],
+  ];
+  const announceStyle = (a) => (color(a.bg) ? `background:${a.bg};color:${color(a.color) || (isDark(a.bg) ? "#ffffff" : "#111111")}` : "");
+  // Extra buttons on the right of the header
+  const HEADER_BUTTONS = [
+    { id: "wishlist", name: "Wishlist", text: "A heart for saved products" },
+    { id: "track", name: "Track order", text: "Customers check where their order is" },
+    { id: "whatsapp", name: "WhatsApp", text: "Chat with you on WhatsApp" },
+    { id: "phone", name: "Call us", text: "Calls your store phone" },
+  ];
+  const digits = (x) => String(x || "").replace(/\D/g, "");
+  const waLink = (site) => (site.social && safeLink(site.social.whatsapp)) || (digits(site.phone) ? "https://wa.me/" + (digits(site.phone).startsWith("0") ? "88" : "") + digits(site.phone) : "");
   // A picture for a page: the first image in its sections
   const pageImage = (p) => {
     for (const sec of p.sections || []) {
@@ -435,9 +451,10 @@ window.SiteKit = (() => {
 
   const renderHeader = (site, pages, opts) => {
     const h = site.header;
+    const x = h.buttons || {};
     const firstDd = opts.ddOpenFirst ? navPages(pages).find((p) => navChildren(pages, p).length) : null;
     return `<header class="s-header" data-sid="header" style="${sectionStyle(h.style)}">
-      ${h.announcement?.show && h.announcement.text ? `<div class="announce">${esc(h.announcement.text)}</div>` : ""}
+      ${h.announcement?.show && h.announcement.text ? `<div class="announce" style="${esc(announceStyle(h.announcement))}">${h.announcement.link ? `<a href="${esc(safeLink(h.announcement.link))}">${esc(h.announcement.text)}${svg("arrow")}</a>` : esc(h.announcement.text)}</div>` : ""}
       <div class="wrap nav">
         <a class="logo" href="/">${safeImg(h.logo) ? `<img src="${esc(h.logo)}" alt="${esc(site.name)}">` : esc(site.name || "My Store")}</a>
         <nav class="menu">${navPages(pages).map((p, i) => {
@@ -446,7 +463,7 @@ window.SiteKit = (() => {
           if (!kids.length) return a;
           return `<div class="dd${p === firstDd ? " open" : ""}">${a.replace("</a>", `${svg("chevron", "dd-arrow")}</a>`)}${renderDropdown(site, p, kids, opts)}</div>`;
         }).join("")}</nav>
-        <div class="tools">${h.search ? `<span>${svg("search")}</span>` : ""}${h.account ? `<span>${svg("user")}</span>` : ""}${h.cart ? `<a href="/checkout" aria-label="Cart and checkout">${svg("cart")}</a>` : ""}<span class="burger">${svg("menu")}</span></div>
+        <div class="tools">${h.search ? `<span title="Search">${svg("search")}</span>` : ""}${x.wishlist ? `<span title="Wishlist">${svg("heart")}</span>` : ""}${x.track ? `<a href="/contact" title="Track order">${svg("truck")}</a>` : ""}${h.account ? `<span title="Account">${svg("user")}</span>` : ""}${x.whatsapp && waLink(site) ? `<a href="${esc(waLink(site))}" target="_blank" rel="noopener" title="WhatsApp" class="t-wa">${socialIcon("whatsapp")}</a>` : ""}${x.phone && digits(site.phone) ? `<a href="tel:${esc(digits(site.phone))}" title="Call us">${svg("phone")}</a>` : ""}${h.cart ? `<a href="/checkout" aria-label="Cart and checkout" title="Cart">${svg("cart")}</a>` : ""}${h.cta && h.cta.show && h.cta.text ? `<a class="btn t-cta" href="${esc(safeLink(h.cta.link) || "/shop")}">${esc(h.cta.text)}</a>` : ""}<span class="burger">${svg("menu")}</span></div>
       </div>
     </header>`;
   };
@@ -512,5 +529,5 @@ window.SiteKit = (() => {
     return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${all.replace(/\$/g, "$$$$")}${nav}</body>`);
   };
 
-  return { DROPDOWNS, CHECKOUT, PAYMENTS, SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
+  return { ANNOUNCE_COLORS, announceStyle, HEADER_BUTTONS, DROPDOWNS, CHECKOUT, PAYMENTS, SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
 })();
