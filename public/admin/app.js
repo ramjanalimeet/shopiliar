@@ -154,7 +154,8 @@
   const refreshChrome = () => {
     const pending = store.orders.filter((o) => o.status === "Pending").length;
     document.querySelectorAll("[data-badge]").forEach((el) => { el.textContent = pending || ""; });
-    const alerts = pending + lowStock().length + unreadReplies;
+    // Same things the bell list shows, so the number matches it
+    const alerts = pending + lowStock().length + (unreadReplies ? 1 : 0) + (store.published ? 0 : 1);
     document.getElementById("bell-count").textContent = alerts ? (alerts > 9 ? "9+" : alerts) : "";
     if (bellMenu && !bellMenu.hidden) paintBell();
     document.getElementById("me-avatar").innerHTML = avatar(account.name);
@@ -1140,7 +1141,9 @@
   // Re-render the page, and the Settings popup when it's open
   const go = () => {
     const name = location.hash.replace(/^#\/?/, "").split("?")[0], route = routes[name];
-    if (!(route && route.update && route.update(document.getElementById("view")))) rerender();
+    // Redrawing the same page keeps where you were scrolled to (only moving to another page starts at the top)
+    const sc = document.querySelector(".scroll"), y = sc ? sc.scrollTop : 0;
+    if (!(route && route.update && route.update(document.getElementById("view")))) { rerender(); if (sc) sc.scrollTop = y; }
     if (settingsEl) settingsEl.refresh();
   };
   let rerender;
@@ -2073,7 +2076,7 @@
       store.published ? "" : `<a class="bell-item" href="#/website" data-close-bell><span class="bell-ico c3">${icon("rocket")}</span><span><b>Your website isn't live yet</b><small>Customize it, then publish</small></span></a>`,
     ].filter(Boolean);
     const more = pending.length > 5 ? `<a class="bell-more" href="#/orders" data-close-bell>See all ${pending.length} pending orders</a>` : "";
-    bellMenu.innerHTML = `<div class="bell-head"><b>Notifications</b>${items.length ? `<span class="muted small">${items.length}</span>` : ""}</div>
+    bellMenu.innerHTML = `<div class="bell-head"><b>Notifications</b>${items.length ? `<span class="muted small">${pending.length + low.length + (unreadReplies ? 1 : 0) + (store.published ? 0 : 1)}</span>` : ""}</div>
       ${items.length ? `<div class="bell-list">${items.join("")}</div>${more}` : `<div class="bell-empty">${icon("check")}<b>You're all caught up</b><span>New orders, low stock and replies show up here.</span></div>`}`;
   };
   const toggleBell = (open) => {
