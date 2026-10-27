@@ -354,16 +354,10 @@
 .versions-card .card-head .btn { margin-left: auto; flex: none; }
 .menu-item { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--border); }
 
-/* Saved copies of the website */
-.v-steps { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; padding: 14px 20px 4px; }
-.v-steps li { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 12px; background: #f7f8f9; font-size: 13px; color: var(--muted); line-height: 1.45; }
-.v-steps li > span { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12.5px; font-weight: 700; }
-.v-steps b { display: block; color: var(--ink); font-size: 13.5px; }
+/* Website backups */
 .versions { display: grid; gap: 8px; padding: 14px 20px 18px; }
 .version { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px; background: #fff; transition: border-color .15s; }
 .version:hover { border-color: #d5d9de; }
-.v-unsaved { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border-radius: 12px; background: #fff8e6; border: 1px solid #fde6a7; color: #7a4d00; font-size: 13.5px; line-height: 1.45; }
-.v-unsaved .i { width: 18px; height: 18px; flex: none; margin-top: 1px; }
 /* The version the website is right now: brand green */
 .version.current { border: 2px solid var(--accent); background: #f1f9f4; padding: 11px 13px; box-shadow: 0 4px 14px rgba(14, 122, 75, .1); }
 .v-dot { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 12px; background: var(--hover); color: var(--muted); }
@@ -371,10 +365,8 @@
 .version.current .v-dot { background: var(--accent); color: #fff; }
 .v-text { flex: 1; min-width: 0; display: grid; gap: 3px; }
 .v-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.v-title b { color: var(--ink); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.v-title b { color: var(--ink); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .v-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; }
-.v-live { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; border: 1px solid #b9dcc8; color: var(--accent); font-size: 12px; font-weight: 600; }
-.v-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
 .v-actions { display: flex; align-items: center; gap: 6px; flex: none; }
 .v-actions .btn .i { width: 15px; height: 15px; }
 .v-more { position: relative; }
@@ -427,8 +419,7 @@
   .theme-info { flex-wrap: wrap; padding: 16px; }
   .theme-info .btn-dark { width: 100%; justify-content: center; }
   .menu-item { flex-wrap: wrap; padding: 12px 14px; }
-  .v-steps { grid-template-columns: 1fr; padding: 12px 14px 0; }
-  .versions { padding: 12px 14px 14px; }
+    .versions { padding: 12px 14px 14px; }
   .version { flex-wrap: wrap; }
   .v-text { width: calc(100% - 52px); flex: none; }
   .version .v-actions { width: 100%; padding-left: 52px; }
