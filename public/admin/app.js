@@ -193,6 +193,24 @@
   const syncPayments = () => { const list = checkoutPays(); if (list) Object.entries(PAYMENT_LABEL).forEach(([k, l]) => { store.settings.payments[k] = hasPay(list, l) >= 0; }); };
   syncPayments();
   // The Checkout page is part of every website, so it doesn't count toward the plan's pages
+  // ---------- Customers ----------
+  const DISTRICTS = ["Dhaka", "Chattogram", "Gazipur", "Narayanganj", "Sylhet", "Rajshahi", "Khulna", "Barishal", "Rangpur", "Mymensingh", "Cumilla", "Cox's Bazar", "Bogura", "Jashore", "Narsingdi", "Savar", "Tangail", "Feni", "Noakhali", "Brahmanbaria", "Dinajpur", "Pabna", "Kushtia", "Faridpur", "Manikganj", "Munshiganj", "Kishoreganj", "Jamalpur", "Habiganj", "Moulvibazar", "Sunamganj", "Chandpur", "Lakshmipur", "Bhola", "Patuakhali", "Pirojpur", "Satkhira", "Bagerhat", "Natore", "Naogaon", "Chapainawabganj", "Sirajganj", "Joypurhat", "Gaibandha", "Kurigram", "Lalmonirhat", "Nilphamari", "Thakurgaon", "Panchagarh", "Netrokona", "Sherpur", "Madaripur", "Shariatpur", "Gopalganj", "Rajbari", "Magura", "Narail", "Jhenaidah", "Chuadanga", "Meherpur", "Barguna", "Jhalokathi", "Rangamati", "Khagrachari", "Bandarban"];
+  const CUSTOMER_TAGS = ["VIP", "Wholesale", "Repeat buyer", "Facebook", "Problem"];
+  // Phone numbers compare as 01XXXXXXXXX (drops +88 and spaces/dashes)
+  const normPhone = (x) => { const d = String(x || "").replace(/\D/g, ""); return d.startsWith("880") ? d.slice(2) : d; };
+  const validBDPhone = (x) => /^01[3-9]\d{8}$/.test(normPhone(x));
+  // A customer's orders: same phone number, or the same name when there's no phone to go by
+  const customerOrders = (c) => {
+    const ph = normPhone(c.phone);
+    return store.orders.filter((o) => (ph && normPhone(o.phone) === ph) || (!(ph && normPhone(o.phone)) && String(o.customer || "").toLowerCase() === String(c.name || "").toLowerCase()));
+  };
+  const customerStats = (c) => {
+    const os = customerOrders(c), kept = os.filter((o) => o.status !== "Cancelled");
+    const last = os.reduce((a, o) => (!a || o.date > a ? o.date : a), "");
+    return { orders: os, count: kept.length, spent: sales(os), last };
+  };
+  const waLinkFor = (phone) => { const d = normPhone(phone); return d ? "https://wa.me/88" + d : ""; };
+
   // ---------- Discounts ----------
   // How many orders used a code (cancelled ones don't count)
   const discountUses = (d) => store.orders.filter((o) => o.status !== "Cancelled" && o.discount && o.discount.code === d.code).length;
@@ -442,7 +460,7 @@
       <tbody>${orderRows(orders, compact)}</tbody></table></div>`;
 
   // ---------- Views ----------
-  let orderFilter = "All", orderSearch = "", productView = "table", productSearch = "";
+  let orderFilter = "All", orderSearch = "", productView = "table", productSearch = "", customerSearch = "", customerTag = "";
 
   // Backups, newest first. The active one is highlighted in the brand green; each row has
   // Preview (opens it in a new tab) and a ⋯ menu with Publish, Rename and Delete.
@@ -677,16 +695,37 @@
     customers: {
       title: "Customers",
       render: () => {
-        const stats = (c) => { const os = store.orders.filter((o) => o.customer === c.name); return { count: os.length, spent: sales(os) }; };
-        return `${head("Customers", "People who bought from you. Totals update automatically from your orders.", `<button class="btn btn-primary" data-action="add-customer">${icon("plus")}Add customer</button>`)}
-          <div class="card"><div class="card-head"><span class="card-title">All customers<small>${store.customers.length}</small></span></div>
-          <div class="table-wrap"><table class="table">
-            <thead><tr><th>Customer</th><th>Phone</th><th>City</th><th class="t-right">Orders</th><th class="t-right">Total spent</th><th>Since</th><th class="t-actions"></th></tr></thead>
-            <tbody>${store.customers.length ? store.customers.map((c) => { const s = stats(c); return `
-              <tr><td><span class="t-title">${avatar(c.name)}<span>${esc(c.name)}<span class="sub">${esc(c.email || "")}</span></span></span></td><td class="muted">${esc(c.phone)}</td><td>${c.city ? tag(c.city, "blue") : '<span class="muted">—</span>'}</td>
-              <td class="t-right">${s.count}</td><td class="t-right" style="font-weight:600;color:var(--ink)">${taka(s.spent)}</td><td class="muted">${day(c.joined)}</td>
-              <td class="t-actions"><button class="icon-btn danger" data-action="delete-customer" data-id="${c.id}" aria-label="Delete ${esc(c.name)}">${icon("trash")}</button></td></tr>`; }).join("") : '<tr><td colspan="7" class="table-empty">No customers yet.</td></tr>'}</tbody>
-          </table></div></div>
+        const q = customerSearch.toLowerCase().trim(), qPhone = normPhone(customerSearch);
+        const all = store.customers.map((c) => ({ c, s: customerStats(c) }));
+        const list = all.filter(({ c }) => (!customerTag || (c.tags || []).includes(customerTag))
+          && (!q || `${c.name} ${c.email || ""} ${c.city || ""} ${c.address || ""}`.toLowerCase().includes(q) || (qPhone.length >= 3 && normPhone(c.phone).includes(qPhone))));
+        const repeat = all.filter(({ s }) => s.count >= 2).length, spent = all.reduce((a, { s }) => a + s.spent, 0);
+        const tags = [...new Set([...CUSTOMER_TAGS, ...store.customers.flatMap((c) => c.tags || [])])].filter((t) => store.customers.some((c) => (c.tags || []).includes(t)));
+        return `${head("Customers", "Everyone who bought from you. Orders and totals update by themselves.", `${store.customers.length ? `<button class="btn" data-action="export-customers">${icon("archive")}Export</button>` : ""}<button class="btn btn-primary" data-action="add-customer">${icon("plus")}Add customer</button>`)}
+          <div class="cu-stats">
+            <div class="card"><span>Customers</span><b>${store.customers.length}</b></div>
+            <div class="card"><span>Bought more than once</span><b>${repeat}${store.customers.length ? `<small>${Math.round((repeat / store.customers.length) * 100)}%</small>` : ""}</b></div>
+            <div class="card"><span>Average spent</span><b>${taka(store.customers.length ? Math.round(spent / store.customers.length) : 0)}</b></div>
+          </div>
+          <div class="card">
+            <div class="card-head cu-head">
+              <div class="seg"><button class="${customerTag ? "" : "on"}" data-action="customer-tag" data-tag="">All<span>${store.customers.length}</span></button>${tags.map((t) => `<button class="${customerTag === t ? "on" : ""}" data-action="customer-tag" data-tag="${esc(t)}">${esc(t)}<span>${store.customers.filter((c) => (c.tags || []).includes(t)).length}</span></button>`).join("")}</div>
+              ${searchBox("customer-search", customerSearch, "Search name, phone, city")}
+            </div>
+            <div class="table-wrap"><table class="table">
+              <thead><tr><th>Customer</th><th>Contact</th><th>City</th><th class="t-right">Orders</th><th class="t-right">Total spent</th><th>Last order</th><th class="t-actions"></th></tr></thead>
+              <tbody>${list.length ? list.map(({ c, s }) => `
+                <tr>
+                  <td><button class="t-title" data-action="view-customer" data-id="${c.id}">${avatar(c.name)}<span>${esc(c.name)}${(c.tags || []).length ? `<span class="cu-tags">${c.tags.map((t) => `<i class="${t === "VIP" ? "vip" : t === "Problem" ? "bad" : ""}">${esc(t)}</i>`).join("")}</span>` : ""}</span></button></td>
+                  <td>${c.phone ? `<span class="cu-contact"><a href="tel:${esc(normPhone(c.phone))}" title="Call">${esc(c.phone)}</a><a class="cu-wa" href="${esc(waLinkFor(c.phone))}" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp ${esc(c.name)}">${SiteKit.socialIcon("whatsapp")}</a></span>` : ""}${c.email ? `<span class="sub">${esc(c.email)}</span>` : ""}${!c.phone && !c.email ? '<span class="muted">—</span>' : ""}</td>
+                  <td>${c.city ? tag(c.city, "blue") : '<span class="muted">—</span>'}</td>
+                  <td class="t-right">${s.count}</td>
+                  <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(s.spent)}</td>
+                  <td class="muted">${s.last ? day(s.last) : "—"}</td>
+                  <td class="t-actions"><button class="icon-btn" data-action="view-customer" data-id="${c.id}" aria-label="View ${esc(c.name)}" title="View">${icon("eye")}</button><button class="icon-btn" data-action="edit-customer" data-id="${c.id}" aria-label="Edit ${esc(c.name)}" title="Edit">${icon("edit")}</button><button class="icon-btn danger" data-action="delete-customer" data-id="${c.id}" aria-label="Delete ${esc(c.name)}" title="Delete">${icon("trash")}</button></td>
+                </tr>`).join("") : `<tr><td colspan="7" class="table-empty">${store.customers.length ? "No customers match." : "No customers yet. They're added by themselves when someone orders, or click Add customer."}</td></tr>`}</tbody>
+            </table></div>
+          </div>
         </div>`;
       },
     },
@@ -1242,6 +1281,52 @@
     });
   };
 
+  // Add or edit a customer
+  const customerDialog = (c) => {
+    let tags = [...(c?.tags || [])];
+    dialog({
+      title: c ? "Edit customer" : "New customer",
+      size: "lg",
+      submit: c ? "Save" : "Add customer",
+      body: `<div class="field"><label for="cu-name">Name</label><input class="input" id="cu-name" name="name" required maxlength="60" value="${esc(c?.name || "")}" placeholder="e.g. Rahima Akter"></div>
+        <div class="row"><div class="field"><label for="cu-phone">Phone</label><input class="input" id="cu-phone" name="phone" type="tel" maxlength="20" value="${esc(c?.phone || "")}" placeholder="01XXX-XXXXXX"><span class="pf-hint">Used to match their orders and for WhatsApp.</span></div>
+          <div class="field"><label for="cu-email">Email <span class="muted">(optional)</span></label><input class="input" id="cu-email" name="email" type="email" maxlength="80" value="${esc(c?.email || "")}" placeholder="name@email.com"></div></div>
+        <div class="field"><label for="cu-address">Address <span class="muted">(optional)</span></label><textarea class="textarea" id="cu-address" name="address" rows="2" maxlength="300" placeholder="House, road, area">${esc(c?.address || "")}</textarea></div>
+        <div class="field"><label for="cu-city">City / district</label><input class="input" id="cu-city" name="city" list="cu-cities" maxlength="40" value="${esc(c?.city || "")}" placeholder="Dhaka"><datalist id="cu-cities">${DISTRICTS.map((d) => `<option value="${esc(d)}">`).join("")}</datalist></div>
+        <div class="field"><label>Tags <span class="muted">(optional)</span></label><div class="cu-tagpick" data-tags></div><span class="pf-hint">Group customers, e.g. VIP or Wholesale. Filter by them on the Customers page.</span></div>
+        <div class="field"><label for="cu-note">Note <span class="muted">(only you see this)</span></label><textarea class="textarea" id="cu-note" name="note" rows="2" maxlength="500" placeholder="Likes size L, prefers evening delivery…">${esc(c?.note || "")}</textarea></div>
+        <label class="dc-check"><input type="checkbox" name="marketing" ${c?.marketing ? "checked" : ""}><span>Happy to get offers by SMS or email<small>Only tick this if the customer agreed</small></span></label>`,
+      onOpen: (form) => {
+        const box = form.querySelector("[data-tags]");
+        const draw = () => {
+          const all = [...new Set([...CUSTOMER_TAGS, ...tags])];
+          box.innerHTML = all.map((t) => `<button type="button" class="${tags.includes(t) ? "on" : ""}" data-tag="${esc(t)}">${tags.includes(t) ? icon("check") : ""}${esc(t)}</button>`).join("")
+            + `<input class="input" data-newtag maxlength="20" placeholder="+ New tag" aria-label="New tag">`;
+        };
+        draw();
+        box.addEventListener("click", (e) => { const b = e.target.closest("[data-tag]"); if (!b) return; const t = b.dataset.tag; tags = tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t]; draw(); });
+        box.addEventListener("keydown", (e) => {
+          if (!e.target.matches("[data-newtag]") || e.key !== "Enter") return;
+          e.preventDefault();
+          const t = e.target.value.trim();
+          if (t && !tags.includes(t)) tags.push(t);
+          draw(); box.querySelector("[data-newtag]").focus();
+        });
+      },
+      onSubmit: (v, close, form) => {
+        const extra = form.querySelector("[data-newtag]").value.trim();
+        if (extra && !tags.includes(extra)) tags.push(extra);
+        const phone = v.phone.trim();
+        if (phone && !validBDPhone(phone)) { toast("That phone number doesn't look right — it should be like 01712-345678"); return false; }
+        if (phone && store.customers.some((x) => x !== c && normPhone(x.phone) === normPhone(phone))) { toast("Another customer already has this phone number"); return false; }
+        const data = { name: v.name, phone, email: v.email || "", address: v.address || "", city: v.city || "", note: v.note || "", tags: tags.slice(0, 10), marketing: !!v.marketing };
+        if (c) Object.assign(c, data);
+        else store.customers.unshift({ id: uid("c"), ...data, joined: new Date().toISOString() });
+        persist(); go(); toast(c ? "Customer saved" : "Customer added");
+      },
+    });
+  };
+
   // Create or edit a discount code
   const discountDialog = (d) => {
     const prods = store.products.filter((p) => p.status !== "draft"), type = d?.type || "percent", scoped = !!(d?.products && d.products.length);
@@ -1353,9 +1438,11 @@
       delivery: opt ? opt.label : "", deliveryFee: fee, discount: d ? { code: d.code, amount: off, free: d.type === "shipping" } : null, discountNote, answers, source: "website",
     });
     items.forEach((it) => { if (it.p.stock != null) it.p.stock = Math.max(0, it.p.stock - it.qty); });
-    if (!store.customers.some((c) => (phone && c.phone === phone) || c.name.toLowerCase() === name.toLowerCase())) {
-      store.customers.unshift({ id: uid("c"), name: name.slice(0, 60), phone: phone.slice(0, 30), city: "", email: find("email").slice(0, 80), joined: new Date().toISOString() });
-    }
+    // The customer: found by phone (or name), filled in with what they typed at checkout
+    const address = find("textarea").slice(0, 300), city = ((answers.find((a) => /city|district|town|শহর|জেলা/i.test(a.label)) || {}).value || "").slice(0, 40);
+    const known = store.customers.find((c) => (phone && normPhone(c.phone) === normPhone(phone)) || (!phone && c.name.toLowerCase() === name.toLowerCase()));
+    if (known) { known.address ||= address; known.city ||= city; known.email ||= find("email").slice(0, 80); }
+    else store.customers.unshift({ id: uid("c"), name: name.slice(0, 60), phone: phone.slice(0, 30), city, address, email: find("email").slice(0, 80), tags: [], joined: new Date().toISOString() });
     persist(); if (!location.hash.startsWith("#/website")) go(); toast(`🛒 New order #${number} from your website`);
   });
 
@@ -1476,12 +1563,40 @@
       const o = store.orders.find((x) => x.id === el.dataset.id);
       if (await confirm("Delete order?", `Order ${orderNo(o)} from ${o.customer} will be deleted.`)) { store.orders = store.orders.filter((x) => x !== o); persist(); go(); toast("Order deleted"); }
     },
-    "add-customer": () => dialog({
-      title: "New customer",
-      body: `<div class="field"><label>Name</label><input class="input" name="name" required></div><div class="row"><div class="field"><label>Phone</label><input class="input" name="phone"></div><div class="field"><label>City</label><input class="input" name="city"></div></div><div class="field"><label>Email</label><input class="input" type="email" name="email"></div>`,
-      submit: "Add customer",
-      onSubmit: (v) => { store.customers.unshift({ id: uid("c"), ...v, joined: new Date().toISOString() }); persist(); go(); toast("Customer added"); },
-    }),
+    "add-customer": () => customerDialog(),
+    "edit-customer": (el) => customerDialog(store.customers.find((x) => x.id === el.dataset.id)),
+    "customer-tag": (el) => { customerTag = el.dataset.tag; go(); },
+    // A customer's details: contact buttons, address, note and every order
+    "view-customer": (el) => {
+      const c = store.customers.find((x) => x.id === el.dataset.id), s = customerStats(c);
+      const d = dialog({
+        title: c.name, submit: "", size: "lg",
+        body: `<div class="cu-top">${avatar(c.name)}<div><b>${esc(c.name)}</b><span class="muted small">Customer since ${day(c.joined)}</span>${(c.tags || []).length ? `<span class="cu-tags">${c.tags.map((t) => `<i class="${t === "VIP" ? "vip" : t === "Problem" ? "bad" : ""}">${esc(t)}</i>`).join("")}</span>` : ""}</div>
+            <div class="cu-btns">${c.phone ? `<a class="btn btn-sm" href="tel:${esc(normPhone(c.phone))}">${icon("phone")}Call</a><a class="btn btn-sm" href="${esc(waLinkFor(c.phone))}" target="_blank" rel="noopener">${SiteKit.socialIcon("whatsapp")}WhatsApp</a>` : ""}${c.email ? `<a class="btn btn-sm" href="mailto:${esc(c.email)}">${icon("mail")}Email</a>` : ""}<button type="button" class="btn btn-sm" data-cu-edit>${icon("edit")}Edit</button></div></div>
+          <div class="cu-facts"><div><span>Orders</span><b>${s.count}</b></div><div><span>Total spent</span><b>${taka(s.spent)}</b></div><div><span>Average order</span><b>${taka(s.count ? Math.round(s.spent / s.count) : 0)}</b></div><div><span>Last order</span><b>${s.last ? day(s.last) : "—"}</b></div></div>
+          <dl class="order-answers">${[["Phone", c.phone], ["Email", c.email], ["Address", [c.address, c.city].filter(Boolean).join(", ")], ["Note", c.note], ["Offers", c.marketing ? "Happy to get offers by SMS/email" : ""]].filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("") || '<div><dt>Details</dt><dd class="muted">No contact details yet</dd></div>'}</dl>
+          <p class="cu-sub">Orders</p>
+          ${s.orders.length ? `<div class="cu-orders">${s.orders.map((o) => `<button type="button" class="cu-order" data-order="${o.id}"><b>${orderNo(o)}</b><span>${esc(o.items.map((i) => i.name + " × " + i.qty).join(", "))}</span><span class="muted small">${day(o.date)}</span><span class="pill ${esc(o.status)}">${esc(o.status)}</span><b>${taka(o.total)}</b></button>`).join("")}</div>` : '<p class="muted" style="padding-bottom:14px">No orders yet.</p>'}`,
+        onOpen: (form) => form.addEventListener("click", (e) => {
+          if (e.target.closest("[data-cu-edit]")) { d.close(); customerDialog(c); }
+          const ob = e.target.closest("[data-order]");
+          if (ob) { d.close(); actions["view-order"]({ dataset: { id: ob.dataset.order } }); }
+        }),
+      });
+    },
+    // Download the customer list as a spreadsheet (CSV)
+    "export-customers": () => {
+      const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const rows = [["Name", "Phone", "Email", "Address", "City", "Tags", "Orders", "Total spent", "Last order", "Customer since", "Note"]].concat(store.customers.map((c) => {
+        const s = customerStats(c);
+        return [c.name, c.phone, c.email, c.address, c.city, (c.tags || []).join("; "), s.count, s.spent, s.last ? s.last.slice(0, 10) : "", String(c.joined || "").slice(0, 10), c.note];
+      }));
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob(["\ufeff" + rows.map((r) => r.map(cell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" }));
+      a.download = `customers-${todayISO()}.csv`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      toast(`${store.customers.length} customers exported`);
+    },
     "delete-customer": async (el) => {
       const c = store.customers.find((x) => x.id === el.dataset.id);
       if (await confirm("Delete customer?", `${c.name} will be removed from your customer list. Their past orders stay.`)) { store.customers = store.customers.filter((x) => x !== c); persist(); go(); }
@@ -1953,8 +2068,8 @@
   });
   view.addEventListener("input", (e) => {
     const el = e.target;
-    if (el.dataset.action === "order-search" || el.dataset.action === "product-search") {
-      if (el.dataset.action === "order-search") orderSearch = el.value; else productSearch = el.value;
+    if (el.dataset.action === "order-search" || el.dataset.action === "product-search" || el.dataset.action === "customer-search") {
+      if (el.dataset.action === "order-search") orderSearch = el.value; else if (el.dataset.action === "customer-search") customerSearch = el.value; else productSearch = el.value;
       const pos = el.selectionStart;
       go();
       const again = view.querySelector(`[data-action="${el.dataset.action}"]`);
