@@ -28,12 +28,21 @@ window.SiteEditor = (() => {
     faq: [["text", "title", "Title"], L("items", "Questions", [["text", "q", "Question"], ["textarea", "a", "Answer"]], { max: 12, add: { q: "New question?", a: "The answer." }, name: "q" })],
     banner: [["image", "image", "Background image"], ["text", "title", "Title"], ["textarea", "text", "Text"], ["link", "button", "Button"]],
     custom: [],
-    checkout: [["text", "title", "Title"], ["textarea", "subtitle", "Text"],
-      ["text", "insideLabel", "Delivery option 1"], ["number", "insideFee", "Delivery charge 1 (৳)", { max: 99999 }],
-      ["text", "outsideLabel", "Delivery option 2"], ["number", "outsideFee", "Delivery charge 2 (৳)", { max: 99999 }],
-      ["text", "button", "Button text"], ["textarea", "note", "Small text under the button", { rows: 2 }],
-      ["toggle", "showNote", "Order note box"], ["toggle", "showCoupon", "Discount code box"],
-      ["note", "", "Payment methods come from Settings → Payments. The order summary shows what's in the customer's cart."]],
+    // Every part of the Checkout page; payment switches change Settings → Payments
+    checkout: [["text", "title", "Title"], ["textarea", "subtitle", "Text"], ["toggle", "showSteps", "Step numbers (1, 2, 3)"],
+      ["heading", "", "Customer details"], ["text", "detailsTitle", "Heading"],
+      ["text", "nameLabel", "Name label"], ["text", "namePh", "Name hint"], ["text", "phoneLabel", "Phone label"], ["text", "phonePh", "Phone hint"],
+      ["toggle", "showEmail", "Ask for email"], ["text", "emailLabel", "Email label", { when: "showEmail" }], ["text", "emailPh", "Email hint", { when: "showEmail" }],
+      ["heading", "", "Delivery"], ["text", "deliveryTitle", "Heading"], ["text", "addressLabel", "Address label"], ["text", "addressPh", "Address hint"],
+      L("delivery", "Delivery options", [["text", "label", "Name"], ["number", "fee", "Charge (৳)", { max: 99999 }]], { max: 5, add: { label: "Express delivery", fee: 150 }, name: "label" }),
+      ["heading", "", "Payment"], ["text", "paymentTitle", "Heading"],
+      ...Object.entries(K.PAYMENTS).map(([k, l]) => ["toggle", "payments." + k, l, { scope: "settings" }]),
+      ["note", "", "Turn on the ways customers can pay. This is the same as Settings → Payments."],
+      ["heading", "", "Order note"], ["toggle", "showNote", "Order note box"], ["text", "noteLabel", "Label", { when: "showNote" }], ["text", "notePh", "Hint", { when: "showNote" }],
+      ["heading", "", "Order summary"], ["text", "summaryTitle", "Heading"], ["toggle", "showCoupon", "Discount code box"], ["text", "couponPh", "Discount box hint", { when: "showCoupon" }], ["text", "couponButton", "Discount button", { when: "showCoupon" }],
+      ["toggle", "showSecure", "Safety message"], ["text", "secureText", "Safety message text", { when: "showSecure" }],
+      ["heading", "", "Order button"], ["text", "button", "Button text"], ["toggle", "buttonTotal", "Show total on the button"], ["textarea", "note", "Small text under the button", { rows: 2 }],
+      ["note", "", "The order summary shows what's in the customer's cart."]],
     header: [["image", "logo", "Logo image (optional)"], ["toggle", "announcement.show", "Show announcement bar"], ["text", "announcement.text", "Announcement", { when: "announcement.show" }],
       ["toggle", "search", "Search icon"], ["toggle", "account", "Account icon"], ["toggle", "cart", "Cart icon"], ["note", "", 'Menu items come from <a href="#/navigation">Navigation</a>. The website name, logo and announcement can also be changed in <a href="#/preferences">Preferences</a>.']],
     footer: [["textarea", "text", "About text"], ["toggle", "showMenu", "Show pages"], ["toggle", "showContact", "Show contact details"], ["toggle", "showSocial", "Show social links"], ["text", "copyright", "Copyright line", { placeholder: "© 2026 Your store. All rights reserved." }],
@@ -198,10 +207,12 @@ window.SiteEditor = (() => {
     const field = (f, obj, scope) => {
       const [type, path, label, o = {}] = f;
       if (o.when && !get(obj, o.when)) return "";
+      if (o.scope) { scope = o.scope; obj = scopeObj(scope); }
       const val = get(obj, path);
       const id = "f" + Math.random().toString(36).slice(2, 8);
       const bind = `data-scope="${scope}" data-path="${path}"`;
       if (type === "note") return `<p class="ed-note">${label}</p>`;
+      if (type === "heading") return `<h4 class="ed-subhead">${esc(label)}</h4>`;
       if (type === "text" || type === "url") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><input class="input" id="${id}" ${bind} value="${esc(val)}" placeholder="${esc(o.placeholder || (type === "url" ? "/shop or https://…" : ""))}"></div>`;
       if (type === "textarea") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><textarea class="textarea" id="${id}" rows="${o.rows || 3}" ${bind}>${esc(val)}</textarea></div>`;
       if (type === "number") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><input class="input" type="number" id="${id}" min="${o.min ?? 0}" max="${o.max ?? 99}" ${bind} data-num value="${esc(val)}"></div>`;
@@ -240,6 +251,7 @@ window.SiteEditor = (() => {
       else if (base === "style") obj = t && t.style;
       else if (base === "site") obj = store.site;
       else if (base === "page") obj = page();
+      else if (base === "settings") obj = store.settings;
       else if (base.startsWith("block:")) obj = t && t.section && t.section.blocks.find((b) => b.id === base.slice(6));
       if (listPath != null) obj = get(obj, listPath)[Number(idx)];
       return obj;
@@ -387,6 +399,8 @@ window.SiteEditor = (() => {
       let v = el.type === "checkbox" ? el.checked : el.value;
       if (el.dataset.num !== undefined) { const n = Number(v); v = Number.isFinite(n) ? Math.min(Number(el.max) || n, Math.max(Number(el.min) || 0, n)) : 0; }
       set(obj, el.dataset.path, v);
+      // Payment switches on the Checkout page are the store's payment settings
+      if (el.dataset.scope === "settings") store.site.payments = Object.keys(K.PAYMENTS).filter((k) => store.settings.payments[k]).map((k) => K.PAYMENTS[k]);
       if (el.dataset.scope === "page" && el.dataset.path === "title") $("#ed-page-name").textContent = "Pages · " + page().title;
       changed({ panel: el.dataset.rerender !== undefined });
     };
