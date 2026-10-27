@@ -183,6 +183,11 @@
   // ---------- Helpers ----------
   const ORDER_STATUS = { Pending: "yellow", Paid: "blue", Shipped: "purple", Delivered: "green", Cancelled: "red" };
   const PAYMENT_LABEL = { cod: "Cash on delivery", bkash: "bKash", nagad: "Nagad", card: "Card" };
+  // The Checkout page shows the payment methods turned on in Settings → Payments
+  const syncPayments = () => { store.site.payments = Object.keys(PAYMENT_LABEL).filter((k) => store.settings.payments[k]).map((k) => PAYMENT_LABEL[k]); };
+  syncPayments();
+  // The Checkout page is part of every website, so it doesn't count toward the plan's pages
+  const pageCount = () => store.pages.filter((p) => !p.system).length;
   const PAY_COLOR = { "Cash on delivery": "gray", bKash: "pink", Nagad: "orange", Card: "blue" };
   const sales = (orders) => orders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
   const siteUrl = () => store.settings.domain && store.settings.domainStatus === "connected" ? store.settings.domain : store.settings.subdomain + ".shopilier.com";
@@ -369,6 +374,7 @@
     store.site = data.site; store.pages = data.pages;
     store.site.social ||= {}; store.site.seo ||= { title: "", description: "" };
     SiteKit.ensure(store.site, store.pages, { products: store.products });
+    syncPayments();
     account.template = store.site.template;
     store.customized = true; touchSite(); store.currentVersion = b.id;
   };
@@ -849,14 +855,14 @@
       mount: (view) => SiteEditor.mount(view.querySelector(".ed-root"), {
         store, account, catalog, icon, toast, confirm, dialog, touchSite, persist,
         publish: () => actions.publish(),
-        canAddPage: () => withinLimit(plan().pages, store.pages.length),
+        canAddPage: () => withinLimit(plan().pages, pageCount()),
       }),
     },
 
     pages: {
       title: "Pages",
       render: () => {
-        const lim = plan().pages, n = store.pages.length, canAdd = withinLimit(lim, n);
+        const lim = plan().pages, n = pageCount(), canAdd = withinLimit(lim, n);
         const meter = lim == null ? `<span class="pg-usage">${n} pages · unlimited</span>`
           : `<span class="pg-usage"><span>${n} of ${lim} pages</span><i><b style="width:${Math.min(100, (n / lim) * 100)}%"></b></i></span>`;
         return `${head("Pages", "Every page of your website. Click Edit to change what's on a page.", `${meter}<button class="btn btn-primary" data-action="add-page" ${canAdd ? "" : "disabled"}>${icon("plus")}Add page</button>`)}
@@ -868,9 +874,9 @@
                 <iframe class="th-canvas" style="width:1280px" srcdoc="${esc(SiteKit.documentHTML(store.site, store.pages, { page: p, products: store.products }))}" title="${esc(p.title)} preview" tabindex="-1" loading="lazy"></iframe>
               </a>
               <div class="pg-body">
-                <div class="pg-name"><b>${esc(p.title)}</b>${p.locked ? '<span class="tag green">Home page</span>' : ""}</div>
+                <div class="pg-name"><b>${esc(p.title)}</b>${p.system === "checkout" ? '<span class="tag">Checkout</span>' : p.locked ? '<span class="tag green">Home page</span>' : ""}</div>
                 <span class="pg-link">${esc(siteUrl())}/${esc(p.slug)}</span>
-                <div class="pg-meta"><span class="pg-chip ${p.inNav ? "on" : ""}">${p.inNav ? "In menu" : "Not in menu"}</span><span class="pg-chip">${count} ${count === 1 ? "section" : "sections"}</span></div>
+                <div class="pg-meta"><span class="pg-chip ${p.inNav ? "on" : ""}">${p.system ? "Opens from the cart" : p.inNav ? "In menu" : "Not in menu"}</span><span class="pg-chip">${count} ${count === 1 ? "section" : "sections"}</span></div>
               </div>
               <div class="pg-actions">
                 <a class="btn btn-sm btn-primary" href="#/website?page=${p.id}">${icon("brush")}Edit</a>
@@ -879,7 +885,8 @@
                   <div class="v-menu" role="menu" hidden>
                     <button role="menuitem" data-action="page-view" data-id="${p.id}">${icon("external")}<span><b>View</b><small>Open this page in a new tab</small></span></button>
                     <button role="menuitem" data-action="nav-edit" data-id="${p.id}">${icon("edit")}<span><b>Rename</b><small>Change the name or link</small></span></button>
-                    <button role="menuitem" data-action="page-toggle-nav" data-id="${p.id}">${icon("menu")}<span><b>${p.inNav ? "Hide from menu" : "Show in menu"}</b><small>${p.inNav ? "The page stays, it just leaves the top menu" : "Add it to your website's top menu"}</small></span></button>
+                    ${p.system ? "" : `<button role="menuitem" data-action="page-toggle-nav" data-id="${p.id}">${icon("menu")}<span><b>${p.inNav ? "Hide from menu" : "Show in menu"}</b><small>${p.inNav ? "The page stays, it just leaves the top menu" : "Add it to your website's top menu"}</small></span></button>`}
+                    ${p.system ? `<button role="menuitem" data-action="page-reset" data-id="${p.id}">${icon("undo")}<span><b>Reset</b><small>Go back to the original checkout page</small></span></button>` : ""}
                     ${p.locked ? "" : `<button role="menuitem" class="danger" data-action="delete-page" data-id="${p.id}">${icon("trash")}<span><b>Delete</b><small>Remove this page from your website</small></span></button>`}
                   </div>
                 </div>
@@ -1109,6 +1116,7 @@
       const b = store.backups.find((x) => x.id === el.dataset.id);
       const data = JSON.parse(JSON.stringify(b.data));
       SiteKit.ensure(data.site, data.pages, { products: store.products });
+      data.site.payments = store.site.payments;
       const bar = `<div style="position:sticky;top:0;z-index:100;display:flex;justify-content:center;gap:8px;padding:10px 16px;background:#0e7a4b;color:#fff;font:600 14px/1.4 Inter,system-ui,sans-serif">Preview of the backup “${esc(versionTitle(b))}”. This is a backup, not your live website.</div>`;
       const html = SiteKit.storeHTML(data.site, data.pages, { products: store.products }).replace(/<body([^>]*)>/, (m) => m + bar);
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
@@ -1177,8 +1185,8 @@
       dialog({
         title: "Edit menu item",
         body: `<div class="field"><label>Name</label><input class="input" name="title" required maxlength="40" value="${esc(pg.title)}"></div>
-          <div class="field"><label>Link</label><div class="slug-field"><span>${esc(siteUrl())}/</span><input class="input" name="slug" maxlength="60" value="${esc(pg.slug)}" ${pg.locked ? 'disabled title="The home page always stays at /"' : 'placeholder="about-us"'} spellcheck="false" autocomplete="off"></div>
-          <p class="muted small" style="margin-top:6px">${pg.locked ? "The home page's link can't change." : "Use lowercase letters, numbers and dashes."}</p></div>`,
+          <div class="field"><label>Link</label><div class="slug-field"><span>${esc(siteUrl())}/</span><input class="input" name="slug" maxlength="60" value="${esc(pg.slug)}" ${pg.locked ? `disabled title="${pg.system ? "The checkout page always stays at /checkout" : "The home page always stays at /"}"` : 'placeholder="about-us"'} spellcheck="false" autocomplete="off"></div>
+          <p class="muted small" style="margin-top:6px">${pg.locked ? (pg.system ? "The checkout page's link can't change." : "The home page's link can't change.") : "Use lowercase letters, numbers and dashes."}</p></div>`,
         submit: "Save",
         onSubmit: (v) => {
           if (!pg.locked) {
@@ -1193,7 +1201,7 @@
     },
     // Put a hidden page in the menu, or make a new page for it
     "nav-add-item": () => {
-      const hidden = store.pages.filter((p) => !p.inNav), canNew = withinLimit(plan().pages, store.pages.length);
+      const hidden = store.pages.filter((p) => !p.inNav && !p.system), canNew = withinLimit(plan().pages, pageCount());
       if (!hidden.length && !canNew) { toast(`Your ${plan().name} plan allows ${plan().pages} pages — upgrade to add more`); return; }
       dialog({
         title: "Add menu item",
@@ -1227,7 +1235,7 @@
       });
     },
     "add-page": () => {
-      if (!withinLimit(plan().pages, store.pages.length)) { toast(`Your ${plan().name} plan allows ${plan().pages} pages — upgrade to add more`); return; }
+      if (!withinLimit(plan().pages, pageCount())) { toast(`Your ${plan().name} plan allows ${plan().pages} pages — upgrade to add more`); return; }
       pageDialog(null);
     },
     "edit-page": (el) => pageDialog(store.pages.find((p) => p.id === el.dataset.id)),
@@ -1241,9 +1249,18 @@
       const pg = store.pages.find((p) => p.id === el.dataset.id);
       pg.inNav = !pg.inNav; touchSite(); persist(); go(); toast(pg.title + (pg.inNav ? " is now in the menu" : " was hidden from the menu"));
     },
+    // The Checkout page can't be deleted, only put back to how it started
+    "page-reset": async (el) => {
+      closeVersionMenus();
+      const pg = store.pages.find((x) => x.id === el.dataset.id);
+      if (!(await confirm("Reset checkout page?", "Your changes to the checkout page will be undone and it goes back to the original design. Your website's colors and fonts stay.", "Reset"))) return;
+      pg.sections = SiteKit.pageSections(pg, { site: store.site, products: store.products });
+      touchSite(); persist(); go(); toast("Checkout page reset");
+    },
     "delete-page": async (el) => {
       closeVersionMenus();
       const pg = store.pages.find((x) => x.id === el.dataset.id);
+      if (pg.locked) return;
       if (await confirm("Delete page?", `The “${pg.title}” page will be removed from your website.`)) { store.pages = store.pages.filter((x) => x !== pg); touchSite(); persist(); go(); }
     },
     "connect-domain": () => {
@@ -1306,7 +1323,7 @@
             <div class="stat-value" style="margin-top:8px">${yearly ? taka(p.price * 12) + '<span class="muted" style="font-size:14px;font-weight:500"> /year</span>' : taka(p.price) + '<span class="muted" style="font-size:14px;font-weight:500"> /month</span>'}</div>
             <p class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${hasFreeDomain() ? " · includes a free custom domain" : ""}</p></div>
             <button class="btn btn-primary" type="button" data-action="change-plan">Change plan</button></div>
-          ${[["Pages", store.pages.length, p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
+          ${[["Pages", pageCount(), p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
             <div class="meter" style="margin-top:14px"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
             <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
         </div>
@@ -1418,6 +1435,7 @@
         store.site.phone = store.settings.phone; store.site.address = store.settings.address; touchSite();
       } else if (f.dataset.form === "payments") {
         Object.keys(PAYMENT_LABEL).forEach((k) => { store.settings.payments[k] = f.elements["pay_" + k].checked; });
+        syncPayments(); touchSite();
       } else if (f.dataset.form === "notifications") {
         store.settings.orderEmails = f.elements.orderEmails.checked;
         store.settings.stockEmails = f.elements.stockEmails.checked;
