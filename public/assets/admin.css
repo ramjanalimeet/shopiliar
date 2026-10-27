@@ -479,7 +479,13 @@
 .pf-announce-demo.off { opacity: .35; }
 .pf-social { display: flex; align-items: flex-end; gap: 12px; }
 .pf-social .field { flex: 1; }
-.pf-social-ico { width: 40px; height: 40px; flex: none; display: grid; place-items: center; margin-bottom: 16px; border-radius: 10px; color: #fff; font-weight: 800; font-size: 17px; }
+.pf-social-ico { width: 40px; height: 40px; flex: none; display: grid; place-items: center; margin-bottom: 16px; border-radius: 50%; border: 1px solid var(--border); background: #fff; color: #111; }
+.pf-social-ico .soc, .pf-menu-ico .soc { width: 18px; height: 18px; }
+.pf-social-x { margin-bottom: 20px; }
+.pf-add-social { display: inline-block; margin: 2px 0 18px; }
+.pf-add-social .v-menu { left: 0; right: auto; width: 230px; max-height: 380px; overflow-y: auto; }
+.pf-add-social .v-menu button { align-items: center; }
+.pf-menu-ico { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--border); color: #111; }
 
 @media (max-width: 1100px) {
       }

@@ -154,7 +154,6 @@
   const refreshChrome = () => {
     const pending = store.orders.filter((o) => o.status === "Pending").length;
     document.querySelectorAll("[data-badge]").forEach((el) => { el.textContent = pending || ""; });
-    document.getElementById("count-pages").textContent = store.pages.length;
     const alerts = pending + lowStock().length + unreadReplies;
     document.getElementById("bell-count").textContent = alerts ? (alerts > 9 ? "9+" : alerts) : "";
     if (bellMenu && !bellMenu.hidden) paintBell();
@@ -740,7 +739,10 @@
         const seg = (k, label, opts, val) => `<div class="field"><label>${label}</label><div class="pf-seg">${opts.map(([x, l, st]) => `<button type="button" class="${val === x ? "on" : ""}" data-set="${k}" data-v="${x}"${st ? ` style="${st}"` : ""}>${l}</button>`).join("")}</div></div>`;
         const color = (k, label, val) => `<label class="pf-color"><input type="color" data-k="${k}" value="${v(val)}"><span><b>${label}</b><small>${v(val)}</small></span></label>`;
         const PALETTES = [["Classic", "#ffffff", "#111111", "#111111"], ["Sand", "#f7f4f0", "#2b211a", "#8a5a3b"], ["Ocean", "#eef6fb", "#0b2a3f", "#0b6e99"], ["Forest", "#f3f7f1", "#1c3326", "#2f6b2a"], ["Berry", "#fdf3f6", "#3d1527", "#ad1a72"], ["Night", "#14141c", "#ffffff", "#ff7a59"]];
-        const SOC = [["facebook", "Facebook", "https://facebook.com/yourpage", "#1877f2", "f"], ["instagram", "Instagram", "https://instagram.com/yourname", "#e1306c", "◎"], ["youtube", "YouTube", "https://youtube.com/@yourchannel", "#ff0000", "▶"], ["tiktok", "TikTok", "https://tiktok.com/@yourname", "#111111", "♪"]];
+        // The first four always show; others are added with "Add social media"
+        const BASE = ["facebook", "instagram", "youtube", "tiktok"];
+        const shown = [...BASE, ...Object.keys(so).filter((k) => !BASE.includes(k) && SiteKit.SOCIALS[k])];
+        const more = Object.keys(SiteKit.SOCIALS).filter((k) => !shown.includes(k));
         return `${head("Preferences", "Your website's important settings in one place. Changes save automatically.", `<span class="pf-saved" id="pf-saved">${icon("check")}All changes saved</span>`)}
           <form id="prefs-form" autocomplete="off" onsubmit="return false">
             <div class="pf-stack">
@@ -751,7 +753,9 @@
                   ${text("address", "Address", s.address, { max: 160, ph: "House, road, area, city" })}
               </div></div>
               <div class="card"><div class="card-head"><span class="card-title">Social media<small>Shown in your website's footer</small></span></div><div class="card-body">
-                  ${SOC.map(([k, l, ph, c, g]) => `<div class="pf-social"><span class="pf-social-ico" style="background:${c}">${g}</span><div class="field"><label for="p-${k}">${l}</label><input class="input" id="p-${k}" data-k="social.${k}" type="url" maxlength="200" value="${v(so[k])}" placeholder="${ph}"></div></div>`).join("")}
+                  ${shown.map((k) => `<div class="pf-social"><span class="pf-social-ico">${SiteKit.socialIcon(k)}</span><div class="field"><label for="p-${k}">${SiteKit.SOCIALS[k].name}</label><input class="input" id="p-${k}" data-k="social.${k}" type="url" maxlength="200" value="${v(so[k])}" placeholder="${SiteKit.SOCIALS[k].ph}"></div>${BASE.includes(k) ? "" : `<button type="button" class="icon-btn pf-social-x" data-remove-social="${k}" aria-label="Remove ${SiteKit.SOCIALS[k].name}" title="Remove">${icon("x")}</button>`}</div>`).join("")}
+                  ${more.length ? `<div class="v-more pf-add-social"><button type="button" class="btn" data-action="version-menu" aria-haspopup="menu" aria-expanded="false">${icon("plus")}Add social media</button>
+                    <div class="v-menu" role="menu" hidden>${more.map((k) => `<button type="button" role="menuitem" data-add-social="${k}"><span class="pf-menu-ico">${SiteKit.socialIcon(k)}</span><span><b>${SiteKit.SOCIALS[k].name}</b></span></button>`).join("")}</div></div>` : ""}
                   ${text("footer.copyright", "Footer copyright line", f.copyright, { max: 120, ph: `© ${new Date().getFullYear()} ${s.name || "My Store"}. All rights reserved.` })}
               </div></div>
               <div class="card"><div class="card-head"><span class="card-title">Search engine listing</span></div><div class="card-body">
@@ -805,7 +809,8 @@
         form.addEventListener("input", (e) => {
           const el = e.target, k = el.dataset.k;
           if (!k || el.type === "checkbox") return;
-          set(store.site, k, el.type === "color" ? el.value : el.value);
+          set(store.site, k, el.value);
+          if (k === "phone" || k === "address") store.settings[k] = el.value;
           if (k === "seo.title" || k === "name") view.querySelector("#serp-title").textContent = store.site.seo.title || store.site.name || "My Store";
           if (k === "seo.description") view.querySelector("#serp-desc").textContent = store.site.seo.description || "Add a description so people know what you sell.";
           if (k === "header.announcement.text") view.querySelector("#pf-announce-demo").textContent = el.value || "Your message";
@@ -829,6 +834,11 @@
           if (b.dataset.set) { set(store.site, b.dataset.set, b.dataset.v); changed(true); }
           else if (b.dataset.palette) { const [bg, tx, ac] = b.dataset.palette.split(","); Object.assign(store.site, { bg, text: tx, accent: ac }); changed(true); }
           else if (b.dataset.clear) { set(store.site, b.dataset.clear, ""); changed(true); }
+          else if (b.dataset.addSocial) {
+            const k = b.dataset.addSocial;
+            store.site.social[k] = ""; changed(true);
+            setTimeout(() => document.getElementById("p-" + k)?.focus(), 0);
+          } else if (b.dataset.removeSocial) { delete store.site.social[b.dataset.removeSocial]; changed(true); }
         });
       },
     },
@@ -1108,8 +1118,11 @@
       closeVersionMenus();
       menu.hidden = !open; el.setAttribute("aria-expanded", String(open));
       menu.classList.remove("up");
-      // Open upwards when there's no room below
-      if (open && menu.getBoundingClientRect().bottom > document.querySelector(".scroll").getBoundingClientRect().bottom - 8) menu.classList.add("up");
+      // Open upwards when there's no room below but there is above
+      if (open) {
+        const box = document.querySelector(".scroll").getBoundingClientRect(), m = menu.getBoundingClientRect(), b = el.getBoundingClientRect();
+        if (m.bottom > box.bottom - 8 && b.top - box.top > m.height + 8) menu.classList.add("up");
+      }
       if (open) menu.querySelector("button").focus();
     },
     "publish-version": async (el) => {
@@ -1393,11 +1406,16 @@
       e.preventDefault();
       const f = e.target, d = new FormData(f);
       if (f.dataset.form === "general") {
+        const oldName = account.business;
         account.business = d.get("business").trim() || account.business;
+        // A website still named after the store follows the new store name
+        if (store.site.name === oldName) store.site.name = account.business;
         account.name = d.get("owner").trim() || account.name;
         account.email = d.get("email").trim() || account.email;
         store.settings.phone = d.get("phone").trim();
         store.settings.address = d.get("address").trim();
+        // the same details Preferences shows on the website
+        store.site.phone = store.settings.phone; store.site.address = store.settings.address; touchSite();
       } else if (f.dataset.form === "payments") {
         Object.keys(PAYMENT_LABEL).forEach((k) => { store.settings.payments[k] = f.elements["pay_" + k].checked; });
       } else if (f.dataset.form === "notifications") {
