@@ -84,7 +84,7 @@ svg { display: block; }
 .top-icon:hover { background: var(--hover); color: var(--ink); }
 .top-icon .dot { position: absolute; top: 7px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; border: 2px solid #fff; }
 .menu-btn { display: none; }
-.scroll { flex: 1; overflow-y: auto; }
+.scroll { flex: 1; overflow-y: auto; scrollbar-gutter: stable; } /* room for the scrollbar is always kept, so pages don't shift sideways when they get longer or shorter */
 
 .page { max-width: 1280px; margin: 0 auto; padding: 28px 28px 80px; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }

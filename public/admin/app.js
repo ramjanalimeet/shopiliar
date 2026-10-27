@@ -154,7 +154,8 @@
   const refreshChrome = () => {
     const pending = store.orders.filter((o) => o.status === "Pending").length;
     document.querySelectorAll("[data-badge]").forEach((el) => { el.textContent = pending || ""; });
-    const alerts = pending + lowStock().length + unreadReplies;
+    // Same things the bell list shows, so the number matches it
+    const alerts = pending + lowStock().length + (unreadReplies ? 1 : 0) + (store.published ? 0 : 1);
     document.getElementById("bell-count").textContent = alerts ? (alerts > 9 ? "9+" : alerts) : "";
     if (bellMenu && !bellMenu.hidden) paintBell();
     document.getElementById("me-avatar").innerHTML = avatar(account.name);
@@ -1140,7 +1141,9 @@
   // Re-render the page, and the Settings popup when it's open
   const go = () => {
     const name = location.hash.replace(/^#\/?/, "").split("?")[0], route = routes[name];
-    if (!(route && route.update && route.update(document.getElementById("view")))) rerender();
+    // Redrawing the same page keeps where you were scrolled to (only moving to another page starts at the top)
+    const sc = document.querySelector(".scroll"), y = sc ? sc.scrollTop : 0;
+    if (!(route && route.update && route.update(document.getElementById("view")))) { rerender(); if (sc) sc.scrollTop = y; }
     if (settingsEl) settingsEl.refresh();
   };
   let rerender;
@@ -1811,6 +1814,7 @@
     payments: () => `<form data-form="payments">
         <h2>Payments</h2><p class="muted">Choose how customers can pay you.</p>
         <div class="s-card" style="padding-top:4px;padding-bottom:4px">${Object.entries(PAYMENT_LABEL).map(([k, l]) => `<div class="set-row"><span>${l}</span><label class="switch"><input type="checkbox" name="pay_${k}" ${store.settings.payments[k] ? "checked" : ""} aria-label="${l}"><i></i></label></div>`).join("")}</div>
+        <p class="muted small" style="margin-top:10px">Want Rocket, Upay or bank transfer, or to show payment instructions? Add them on the <a class="link" href="#/website?page=${esc((store.pages.find((p) => p.system === "checkout") || {}).id || "")}" data-close>Checkout page</a>.</p>
         <div class="s-foot"><button class="btn btn-primary" type="submit">Save</button></div>
       </form>`,
     notifications: () => `<form data-form="notifications">
@@ -2073,7 +2077,7 @@
       store.published ? "" : `<a class="bell-item" href="#/website" data-close-bell><span class="bell-ico c3">${icon("rocket")}</span><span><b>Your website isn't live yet</b><small>Customize it, then publish</small></span></a>`,
     ].filter(Boolean);
     const more = pending.length > 5 ? `<a class="bell-more" href="#/orders" data-close-bell>See all ${pending.length} pending orders</a>` : "";
-    bellMenu.innerHTML = `<div class="bell-head"><b>Notifications</b>${items.length ? `<span class="muted small">${items.length}</span>` : ""}</div>
+    bellMenu.innerHTML = `<div class="bell-head"><b>Notifications</b>${items.length ? `<span class="muted small">${pending.length + low.length + (unreadReplies ? 1 : 0) + (store.published ? 0 : 1)}</span>` : ""}</div>
       ${items.length ? `<div class="bell-list">${items.join("")}</div>${more}` : `<div class="bell-empty">${icon("check")}<b>You're all caught up</b><span>New orders, low stock and replies show up here.</span></div>`}`;
   };
   const toggleBell = (open) => {
@@ -2104,6 +2108,11 @@
     storeToggle.classList.toggle("in", inStore);
     // The customizer belongs to Themes
     if (route === "website") document.querySelector('[data-route="themes"]').classList.add("on");
+    // On phones table rows show as cards, with each value labelled by its column
+    document.querySelectorAll("#view .table").forEach((t) => {
+      const heads = [...t.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+      t.querySelectorAll("tbody tr").forEach((tr) => [...tr.children].forEach((td, i) => { if (heads[i] && !td.hasAttribute("colspan")) td.dataset.label = heads[i]; }));
+    });
   };
 
   hydrateIcons();
