@@ -1,6 +1,6 @@
 // Shopilier store owner dashboard (/admin)
 (async () => {
-  const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, limitText, withinLimit } = Dash;
+  const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, pixelLogo, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, limitText, withinLimit } = Dash;
   const PLANS = Dash.PLANS();
   const SIGN_IN = "/signin.html?next=" + encodeURIComponent(location.pathname + location.search);
 
@@ -533,14 +533,9 @@
       render: () => {
         const mk = store.marketing;
         const added = PIXELS.filter((p) => mk.pixels[p.id]?.id);
-        const logo = (p) => `<span class="pixel-logo" style="background:${p.color}${p.id === "snapchat" ? ";color:#111" : ""}">${esc(p.letter)}</span>`;
+        const logo = (p) => pixelLogo(p);
         return `${head("Marketing", "Connect your ad and analytics tools. Pick one, paste its ID, and it's added to every page of your website.",
           `${added.length || mk.headCode || mk.bodyCode ? `<button class="btn" data-action="view-code">${icon("code")}View code</button>` : ""}<button class="btn btn-primary" data-action="pixel-add">${icon("plus")}Add pixel</button>`)}
-          <ol class="mk-steps">
-            <li class="${added.length ? "done" : ""}"><i>${added.length ? icon("check") : "1"}</i><span><b>Add a pixel</b><small>Meta, Google, TikTok and more</small></span></li>
-            <li class="${added.length ? "done" : ""}"><i>${added.length ? icon("check") : "2"}</i><span><b>Paste its ID</b><small>We show you where to find it</small></span></li>
-            <li class="${added.length && store.published ? "done" : ""}"><i>${added.length && store.published ? icon("check") : "3"}</i><span><b>Publish your website</b><small>${store.published ? "Your website is live" : "Then visits start counting"}</small></span></li>
-          </ol>
           ${added.length ? `<div class="mk-head"><b>Connected</b><span class="muted small">${added.length} of ${PIXELS.length}</span></div>
           <div class="mk-grid">${added.map((p) => {
             const px = mk.pixels[p.id];
@@ -1242,7 +1237,7 @@
       const p = pixelById(el.dataset.id), px = store.marketing.pixels[p.id];
       dialog({
         title: (px?.id ? "Edit " : "Connect ") + p.name,
-        body: `<p class="muted" style="margin-bottom:14px">${esc(p.covers)}.</p>
+        body: `<div class="mk-connect-head">${pixelLogo(p)}<p class="muted">${esc(p.covers)}.</p></div>
           <div class="field"><label for="px-id">${esc(p.label)}</label><input class="input" id="px-id" name="id" required placeholder="${esc(p.placeholder)}" value="${esc(px?.id || "")}" autocomplete="off" spellcheck="false"></div>
           <p class="muted small" style="margin:-6px 0 14px">Where to find it: ${esc(p.where)}</p>`,
         submit: px?.id ? "Save" : "Connect",
@@ -1261,7 +1256,7 @@
       const d = dialog({
         title: "Add a pixel", submit: "", size: "lg",
         body: `<p class="muted" style="margin-bottom:14px">Which one do you want to connect?</p>
-          <div class="mk-pick">${left.map((p) => `<button type="button" class="mk-pick-item" data-pick="${p.id}"><span class="pixel-logo" style="background:${p.color}${p.id === "snapchat" ? ";color:#111" : ""}">${esc(p.letter)}</span><span><b>${esc(p.name)}</b><small>${esc(p.covers)}</small></span>${icon("chevronRight")}</button>`).join("")}</div>`,
+          <div class="mk-pick">${left.map((p) => `<button type="button" class="mk-pick-item" data-pick="${p.id}">${pixelLogo(p)}<span><b>${esc(p.name)}</b><small>${esc(p.covers)}</small></span>${icon("chevronRight")}</button>`).join("")}</div>`,
         onOpen: (form) => form.addEventListener("click", (e) => {
           const b = e.target.closest("[data-pick]");
           if (!b) return;
@@ -1355,7 +1350,7 @@
       persist(); if (location.hash !== "#/website") go(); toast("🚀 Website published");
     },
     "view-store": () => {
-      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: store.discounts });
+      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: store.discounts, tracking: trackingCode(store.marketing) });
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "create-backup": () => dialog({
@@ -1377,7 +1372,7 @@
       const data = JSON.parse(JSON.stringify(b.data));
       SiteKit.ensure(data.site, data.pages, { products: store.products });
       const bar = `<div style="position:sticky;top:0;z-index:100;display:flex;justify-content:center;gap:8px;padding:10px 16px;background:#0e7a4b;color:#fff;font:600 14px/1.4 Inter,system-ui,sans-serif">Preview of the backup “${esc(versionTitle(b))}”. This is a backup, not your live website.</div>`;
-      const html = SiteKit.storeHTML(data.site, data.pages, { products: store.products, discounts: store.discounts }).replace(/<body([^>]*)>/, (m) => m + bar);
+      const html = SiteKit.storeHTML(data.site, data.pages, { products: store.products, discounts: store.discounts, tracking: trackingCode(store.marketing) }).replace(/<body([^>]*)>/, (m) => m + bar);
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "version-menu": (el) => {
@@ -1532,7 +1527,7 @@
     "edit-page": (el) => pageDialog(store.pages.find((p) => p.id === el.dataset.id)),
     "page-view": (el) => {
       closeVersionMenus();
-      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: store.discounts, start: el.dataset.id });
+      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: store.discounts, tracking: trackingCode(store.marketing), start: el.dataset.id });
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "page-toggle-nav": (el) => {

@@ -544,6 +544,22 @@ window.SiteKit = (() => {
       return Math.min(sub, code.type === "percent" ? Math.round(sub * code.value / 100) : code.value);
     };
     var save = function () { try { sessionStorage.setItem("shop-cart", JSON.stringify(cart)); } catch (e) {} draw(); };
+    // Shop events for the ad and analytics pixels connected in Marketing (each only if it's on the page)
+    var track = function (ev, value, items) {
+      var w = window, cur = "BDT", ids = items.map(function (it) { return it.id; });
+      var names = { add: ["AddToCart", "add_to_cart", "AddToCart", "ADD_CART", "addtocart", "AddToCart"], checkout: ["InitiateCheckout", "begin_checkout", "InitiateCheckout", "START_CHECKOUT", "", ""], buy: ["Purchase", "purchase", "CompletePayment", "PURCHASE", "checkout", "Purchase"] }[ev];
+      try {
+        if (w.fbq) w.fbq("track", names[0], { value: value, currency: cur, content_ids: ids, content_type: "product" });
+        if (w.gtag) w.gtag("event", names[1], { value: value, currency: cur, items: items.map(function (it) { return { item_id: it.id, item_name: it.name, price: it.price, quantity: it.qty }; }) });
+        if (w.dataLayer && !w.gtag) w.dataLayer.push({ event: names[1], ecommerce: { value: value, currency: cur } });
+        if (w.ttq) w.ttq.track(names[2], { value: value, currency: cur, contents: items.map(function (it) { return { content_id: it.id, quantity: it.qty, price: it.price }; }) });
+        if (w.snaptr) w.snaptr("track", names[3], { price: value, currency: cur, item_ids: ids });
+        if (w.pintrk && names[4]) w.pintrk("track", names[4], { value: value, currency: cur, order_quantity: items.reduce(function (a, it) { return a + it.qty; }, 0) });
+        if (w.rdt && names[5]) w.rdt("track", names[5], { value: value, currency: cur, itemCount: items.length });
+        if (w.uetq && ev === "buy") w.uetq.push("event", "purchase", { revenue_value: value, currency: cur });
+      } catch (e) {}
+    };
+    var lines = function () { return cart.map(function (it) { var p = byId(it.id); return { id: p.id, name: p.name, price: p.price, qty: it.qty }; }); };
     var draw = function () {
       var count = cart.reduce(function (a, it) { return a + it.qty; }, 0);
       document.querySelectorAll('.tools a[href="/checkout"]').forEach(function (a) { if (count) a.setAttribute("data-count", count); else a.removeAttribute("data-count"); });
@@ -570,7 +586,8 @@ window.SiteKit = (() => {
         var p = byId(add.getAttribute("data-add")), it = cart.filter(function (x) { return x.id === p.id; })[0];
         if (it && p.stock != null && it.qty >= p.stock) { note("Only " + p.stock + " left in stock"); return; }
         if (it) it.qty++; else cart.push({ id: p.id, qty: 1 });
-        save(); note(p.name + " added to your cart"); return;
+        save(); note(p.name + " added to your cart");
+        track("add", p.price, [{ id: p.id, name: p.name, price: p.price, qty: 1 }]); return;
       }
       var q = e.target.closest("[data-qty]");
       if (q) {
@@ -594,6 +611,12 @@ window.SiteKit = (() => {
       }
     });
     document.addEventListener("change", function (e) { if (e.target.name === "delivery") draw(); });
+    // Opening the checkout with something in the cart counts as starting checkout (once per visit)
+    var started = false;
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest('a[href="/checkout"]');
+      if (a && cart.length && !started) { started = true; track("checkout", subtotal(), lines()); }
+    });
     document.addEventListener("submit", function (e) {
       var form = e.target.closest(".co-form");
       if (!form) return;
@@ -602,6 +625,8 @@ window.SiteKit = (() => {
       var root = form.closest(".checkout"), answers = [];
       form.querySelectorAll("[data-q]").forEach(function (f) { if (f.value.trim()) answers.push({ label: f.getAttribute("data-q"), type: f.getAttribute("data-type"), value: f.value.trim() }); });
       var pick = function (n) { var r = form.querySelector('input[name="' + n + '"]:checked'); return r ? r.value : ""; };
+      var paid = Math.max(0, subtotal() - discountOf(subtotal()));
+      track("buy", paid, lines());
       var order = { items: cart.map(function (it) { return { id: it.id, qty: it.qty }; }), answers: answers, delivery: pick("delivery"), payment: pick("pay"), code: code ? code.code : "" };
       if (window.opener) { try { window.opener.postMessage({ type: "shopilier-order", order: order }, location.origin === "null" ? "*" : location.origin); } catch (err) {} }
       cart = []; code = null; save();
@@ -623,7 +648,10 @@ window.SiteKit = (() => {
       discounts: (opts.discounts || []).filter((d) => d.active !== false).map((d) => ({ code: d.code, type: d.type, value: Number(d.value) || 0, min: Number(d.min) || 0 })),
     };
     const shopJs = `<script>window.SHOP=${JSON.stringify(shop).replace(/</g, "\\u003c")};(${storefront})();<\/script>`;
-    return doc.replace(/<body([^>]*)>[\s\S]*<\/body>/, `<body$1>${(all + nav + shopJs).replace(/\$/g, "$$$$")}</body>`);
+    // Pixels and custom code from Marketing: in the <head>, and at the end of the <body>
+    const t = opts.tracking || {};
+    return doc.replace("</head>", () => (t.head ? t.head + "\n" : "") + "</head>")
+      .replace(/<body([^>]*)>[\s\S]*<\/body>/, (m, attrs) => `<body${attrs}>${all}${nav}${shopJs}${t.body || ""}</body>`);
   };
 
   return { ANNOUNCE_COLORS, announceStyle, HEADER_BUTTONS, DROPDOWNS, CHECKOUT, PAYMENTS, SOCIALS, socialIcon, LIBRARY, fromLibrary, storeHTML, TEMPLATE_FONTS, esc, uid, FONTS, TYPES, BLOCKS, FEATURE_ICONS, make, makeBlock, pageSections, ensure, applyTemplate, renderBody, documentHTML, safeImg, isDark };
