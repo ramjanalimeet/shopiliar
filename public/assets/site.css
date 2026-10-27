@@ -222,6 +222,7 @@ figcaption span { font-size: 14px; opacity: .7; }
 .co-qty b { min-width: 16px; text-align: center; font-size: 13.5px; }
 .co-qty .co-rm { width: auto; padding: 0 8px; border: 0; font-size: 12.5px; text-decoration: underline; opacity: .7; }
 .co-items { display: grid; gap: 14px; }
+.co-line[hidden], .co-msg[hidden] { display: none; }
 .co-msg { margin-top: -6px; font-size: 13px; color: #b42318; }
 .co-msg.ok { color: #15803d; }
 .co-place:disabled { opacity: .5; cursor: not-allowed; }

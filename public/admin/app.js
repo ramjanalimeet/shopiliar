@@ -193,6 +193,21 @@
   const syncPayments = () => { const list = checkoutPays(); if (list) Object.entries(PAYMENT_LABEL).forEach(([k, l]) => { store.settings.payments[k] = hasPay(list, l) >= 0; }); };
   syncPayments();
   // The Checkout page is part of every website, so it doesn't count toward the plan's pages
+  // ---------- Discounts ----------
+  // How many orders used a code (cancelled ones don't count)
+  const discountUses = (d) => store.orders.filter((o) => o.status !== "Cancelled" && o.discount && o.discount.code === d.code).length;
+  const discountsForSite = () => store.discounts.map((d) => ({ ...d, used: discountUses(d) }));
+  const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  // What a code gives, in a few words: "20% off up to ৳500", "৳200 off", "Free delivery"
+  const discountText = (d) => d.type === "shipping" ? "Free delivery" : d.type === "percent" ? `${d.value}% off${d.max ? ` up to ${taka(d.max)}` : ""}` : `${taka(d.value)} off`;
+  const discountState = (d) => {
+    const today = todayISO();
+    if (d.active === false) return ["Paused", "gray"];
+    if (d.starts && d.starts > today) return ["Scheduled", "blue"];
+    if (d.ends && d.ends < today) return ["Expired", "gray"];
+    if (d.limit && discountUses(d) >= d.limit) return ["Used up", "yellow"];
+    return ["Active", "green"];
+  };
   // The website isn't live, or it changed after the last publish
   const unpublished = () => !store.published || !!(store.siteSavedAt && store.publishedAt && store.siteSavedAt > store.publishedAt);
   // Page links: unique, and never one the dashboard or the website itself uses
@@ -583,16 +598,21 @@
 
     discounts: {
       title: "Discounts",
-      render: () => `${head("Discounts", "Codes customers can use for money off.", `<button class="btn btn-primary" data-action="add-discount">${icon("plus")}Create discount</button>`)}
+      render: () => `${head("Discounts", "Codes customers type at checkout to get money off or free delivery.", `<button class="btn btn-primary" data-action="add-discount">${icon("plus")}Create discount</button>`)}
         <div class="card"><div class="table-wrap"><table class="table">
-          <thead><tr><th>Code</th><th>Discount</th><th>Status</th><th>Created</th><th class="t-actions"></th></tr></thead>
-          <tbody>${store.discounts.length ? store.discounts.map((d) => `<tr>
-            <td class="t-title">${esc(d.code)}</td>
-            <td>${d.type === "percent" ? esc(d.value) + "% off" : taka(d.value) + " off"}${d.min ? `<span class="sub">On orders over ${taka(d.min)}</span>` : ""}</td>
-            <td><label class="switch" title="${d.active ? "Active" : "Paused"}"><input type="checkbox" data-action="discount-active" data-id="${d.id}" ${d.active ? "checked" : ""} aria-label="Active"><i></i></label></td>
-            <td class="muted">${day(d.created)}</td>
-            <td class="t-actions"><button class="icon-btn danger" data-action="delete-discount" data-id="${d.id}" aria-label="Delete discount">${icon("trash")}</button></td>
-          </tr>`).join("") : `<tr><td colspan="5" class="table-empty">No discounts yet. Create one to run a promotion.</td></tr>`}</tbody>
+          <thead><tr><th>Code</th><th>Discount</th><th>Used</th><th>Dates</th><th>Status</th><th class="t-actions"></th></tr></thead>
+          <tbody>${store.discounts.length ? store.discounts.map((d) => {
+            const [st, tone] = discountState(d), used = discountUses(d);
+            const rules = [d.min ? `Orders over ${taka(d.min)}` : "", d.products && d.products.length ? `${d.products.length} product${d.products.length === 1 ? "" : "s"}` : "All products", d.once ? "Once per customer" : ""].filter(Boolean).join(" · ");
+            return `<tr>
+            <td><span class="dc-code">${esc(d.code)}<button class="icon-btn" data-copy="${esc(d.code)}" aria-label="Copy ${esc(d.code)}" title="Copy">${icon("copy")}</button></span></td>
+            <td><b class="dc-what">${discountText(d)}</b><span class="sub">${rules}</span></td>
+            <td>${used}${d.limit ? ` <span class="muted">/ ${d.limit}</span>` : ""}</td>
+            <td class="muted small">${d.starts || d.ends ? `${d.starts ? day(d.starts) : "Now"} → ${d.ends ? day(d.ends) : "No end"}` : "Always"}</td>
+            <td><span class="dc-status"><label class="switch" title="${d.active !== false ? "Pause" : "Turn on"}"><input type="checkbox" data-action="discount-active" data-id="${d.id}" ${d.active !== false ? "checked" : ""} aria-label="Active"><i></i></label><span class="tag dot ${tone}">${st}</span></span></td>
+            <td class="t-actions"><button class="icon-btn" data-action="edit-discount" data-id="${d.id}" aria-label="Edit ${esc(d.code)}" title="Edit">${icon("edit")}</button><button class="icon-btn danger" data-action="delete-discount" data-id="${d.id}" aria-label="Delete ${esc(d.code)}" title="Delete">${icon("trash")}</button></td>
+          </tr>`;
+          }).join("") : `<tr><td colspan="6" class="table-empty">No discounts yet. Create one to run a promotion, like EID20 for 20% off.</td></tr>`}</tbody>
         </table></div></div></div>`,
     },
 
@@ -1158,6 +1178,65 @@
     });
   };
 
+  // Create or edit a discount code
+  const discountDialog = (d) => {
+    const prods = store.products.filter((p) => p.status !== "draft"), type = d?.type || "percent", scoped = !!(d?.products && d.products.length);
+    const radio = (name, val, label, cur, extra = "") => `<label class="dc-opt"><input type="radio" name="${name}" value="${val}" ${val === cur ? "checked" : ""}>${extra}<span>${label}</span></label>`;
+    dialog({
+      title: d ? "Edit discount" : "Create discount",
+      size: "lg",
+      submit: d ? "Save" : "Create discount",
+      body: `<div class="field"><label for="dc-code">Code</label><div class="dc-code-row"><input class="input" id="dc-code" name="code" required maxlength="20" placeholder="e.g. EID20" value="${esc(d?.code || "")}" style="text-transform:uppercase" autocomplete="off" spellcheck="false"><button type="button" class="btn" data-gen>${icon("sparkle")}Generate</button></div><span class="pf-hint">Customers type this at checkout. Letters and numbers only.</span></div>
+        <div class="field"><label>Type</label><div class="dc-opts">${radio("type", "percent", "Percentage off", type, icon("discount"))}${radio("type", "fixed", "Taka off (৳)", type, icon("money"))}${radio("type", "shipping", "Free delivery", type, icon("truck"))}</div></div>
+        <div class="row dc-value"><div class="field"><label for="dc-value" data-value-label>${type === "fixed" ? "Amount (৳)" : "Percentage (%)"}</label><input class="input" id="dc-value" name="value" type="number" min="1" step="1" placeholder="${type === "fixed" ? "200" : "20"}" value="${esc(d?.value ?? "")}"></div>
+          <div class="field dc-max"><label for="dc-max">Most it can take off (৳, optional)</label><input class="input" id="dc-max" name="max" type="number" min="0" step="1" placeholder="No limit" value="${esc(d?.max || "")}"></div></div>
+        <div class="field"><label for="dc-min">Minimum order (৳, optional)</label><input class="input" id="dc-min" name="min" type="number" min="0" step="1" placeholder="0" value="${esc(d?.min || "")}"></div>
+        <div class="field dc-scope"><label>Works on</label><div class="dc-opts">${radio("scope", "all", "All products", scoped ? "some" : "all")}${radio("scope", "some", "Some products", scoped ? "some" : "all")}</div>
+          <div class="dc-prods" ${scoped ? "" : "hidden"}>${prods.length ? prods.map((p) => `<label><input type="checkbox" name="prod" value="${p.id}" ${d?.products?.includes(p.id) ? "checked" : ""}><span>${esc(p.name)}</span><span class="muted">${taka(p.price)}</span></label>`).join("") : '<p class="muted small">Add products first.</p>'}</div></div>
+        <div class="row"><div class="field"><label for="dc-limit">Total uses (optional)</label><input class="input" id="dc-limit" name="limit" type="number" min="1" step="1" placeholder="No limit" value="${esc(d?.limit || "")}"></div>
+          <div class="field"><label>&nbsp;</label><label class="dc-check"><input type="checkbox" name="once" ${d?.once ? "checked" : ""}><span>One use per customer<small>Checked by phone number</small></span></label></div></div>
+        <div class="row"><div class="field"><label for="dc-starts">Starts</label><input class="input" id="dc-starts" name="starts" type="date" value="${esc(d?.starts || todayISO())}"></div>
+          <div class="field"><label for="dc-ends">Ends (optional)</label><input class="input" id="dc-ends" name="ends" type="date" value="${esc(d?.ends || "")}"></div></div>`,
+      onOpen: (form) => {
+        const sync = () => {
+          const t = form.querySelector("input[name=type]:checked").value;
+          form.querySelector(".dc-value").hidden = t === "shipping";
+          form.querySelector(".dc-max").hidden = t !== "percent";
+          form.querySelector("[data-value-label]").textContent = t === "fixed" ? "Amount (৳)" : "Percentage (%)";
+          form.querySelector(".dc-scope").hidden = t === "shipping";
+          form.querySelector(".dc-prods").hidden = form.querySelector("input[name=scope]:checked").value !== "some";
+          form.querySelectorAll(".dc-opt").forEach((o) => o.classList.toggle("on", o.querySelector("input").checked));
+        };
+        form.addEventListener("change", sync); sync();
+        form.querySelector("[data-gen]").addEventListener("click", () => {
+          const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+          form.elements.code.value = "SAVE" + Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+        });
+      },
+      onSubmit: (v, close, form) => {
+        const code = String(v.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+        if (!code) { toast("Please add a code, e.g. EID20"); return false; }
+        if (store.discounts.some((x) => x !== d && x.code === code)) { toast("That code already exists"); return false; }
+        const value = Math.floor(Number(v.value) || 0);
+        if (v.type !== "shipping" && value < 1) { toast(v.type === "fixed" ? "Please add how many Taka it takes off" : "Please add the percentage"); return false; }
+        if (v.type === "percent" && value > 100) { toast("A percentage can't be more than 100"); return false; }
+        const products = v.type !== "shipping" && v.scope === "some" ? [...form.querySelectorAll("input[name=prod]:checked")].map((c) => c.value) : [];
+        if (v.type !== "shipping" && v.scope === "some" && !products.length) { toast("Pick at least one product, or choose All products"); return false; }
+        if (v.starts && v.ends && v.ends < v.starts) { toast("The end date is before the start date"); return false; }
+        const data = {
+          code, type: v.type, value: v.type === "shipping" ? 0 : value, max: v.type === "percent" ? Math.max(0, Math.floor(Number(v.max) || 0)) : 0,
+          min: Math.max(0, Math.floor(Number(v.min) || 0)), products, limit: Math.max(0, Math.floor(Number(v.limit) || 0)), once: !!v.once,
+          starts: v.starts || "", ends: v.ends || "",
+        };
+        if (d) Object.assign(d, data);
+        else store.discounts.unshift({ id: uid("d"), ...data, active: true, created: new Date().toISOString() });
+        persist();
+        if (location.hash === "#/discounts") go(); else location.hash = "#/discounts";
+        toast(`Discount ${code} ${d ? "saved" : "created"}`);
+      },
+    });
+  };
+
   const pageDialog = (pg) => dialog({
     title: pg ? "Rename page" : "New page",
     body: `<div class="field"><label>Page title</label><input class="input" name="title" required maxlength="40" value="${esc(pg?.title)}" placeholder="e.g. FAQ"></div>`,
@@ -1181,17 +1260,24 @@
     const find = (type) => (answers.find((a) => a.type === type) || {}).value || "";
     const name = (answers.find((a) => a.type === "text") || {}).value || "Website customer", phone = find("tel");
     const sub = items.reduce((a, it) => a + it.p.price * it.qty, 0);
-    const d = store.discounts.find((x) => x.code === o.code && x.active !== false && sub >= (x.min || 0));
-    const off = d ? Math.min(sub, d.type === "percent" ? Math.round((sub * d.value) / 100) : d.value) : 0;
     const co = store.pages.find((p) => p.system === "checkout"), sec = co && co.sections.find((x) => x.type === "checkout");
     const opt = sec && (sec.content.delivery || []).find((x) => x.label === o.delivery);
     const fee = opt ? Math.max(0, Number(opt.fee) || 0) : 0;
+    // The code is checked again with the same rules as the website, plus one use per customer (by phone)
+    const lines = items.map((it) => ({ id: it.p.id, price: it.p.price, qty: it.qty }));
+    let d = o.code ? store.discounts.find((x) => x.code === String(o.code)) : null, discountNote = "";
+    if (d) {
+      const why = SiteKit.discountProblem({ ...d, used: discountUses(d) }, lines, Date.now())
+        || (d.once && phone && store.orders.some((x) => x.status !== "Cancelled" && x.phone === phone && x.discount && x.discount.code === d.code) ? "already used by this customer" : "");
+      if (why) { discountNote = `${d.code} wasn't applied: ${why.charAt(0).toLowerCase() + why.slice(1)}`; d = null; }
+    }
+    const off = d ? SiteKit.discountFor(d, lines, fee) : 0;
     const number = Math.max(1000, ...store.orders.map((x) => x.number)) + 1;
     store.orders.unshift({
       id: uid("o"), number, customer: name.slice(0, 60), phone: phone.slice(0, 30),
       items: items.map((it) => ({ name: it.p.name, qty: it.qty, price: it.p.price })), total: sub - off + fee,
       payment: String(o.payment || "Cash on delivery").slice(0, 40), status: "Pending", date: new Date().toISOString(),
-      delivery: opt ? opt.label : "", deliveryFee: fee, discount: d ? { code: d.code, amount: off } : null, answers, source: "website",
+      delivery: opt ? opt.label : "", deliveryFee: fee, discount: d ? { code: d.code, amount: off, free: d.type === "shipping" } : null, discountNote, answers, source: "website",
     });
     items.forEach((it) => { if (it.p.stock != null) it.p.stock = Math.max(0, it.p.stock - it.qty); });
     if (!store.customers.some((c) => (phone && c.phone === phone) || c.name.toLowerCase() === name.toLowerCase())) {
@@ -1280,24 +1366,8 @@
              <p class="muted" style="margin:14px 0 10px">And this at the end of the &lt;body&gt;:</p><pre class="code-view" style="margin-bottom:14px">${esc(code.body || "—")}</pre>`,
       });
     },
-    "add-discount": () => dialog({
-      title: "Create discount",
-      body: `<div class="field"><label>Code</label><input class="input" name="code" required maxlength="20" placeholder="e.g. EID20" style="text-transform:uppercase"></div>
-        <div class="row"><div class="field"><label>Type</label><select class="select" name="type"><option value="percent">Percentage off</option><option value="fixed">Taka off (৳)</option></select></div>
-        <div class="field"><label>Amount</label><input class="input" name="value" type="number" min="1" step="1" required placeholder="20"></div></div>
-        <div class="field"><label>Minimum order (৳, optional)</label><input class="input" name="min" type="number" min="0" step="1" placeholder="0"></div>`,
-      submit: "Create discount",
-      onSubmit: (v, close, form) => {
-        const code = v.code.toUpperCase().replace(/\s+/g, "");
-        if (store.discounts.some((d) => d.code === code)) { toast("That code already exists"); return false; }
-        const value = Math.max(1, Number(v.value) || 0);
-        if (v.type === "percent" && value > 100) { toast("A percentage can't be more than 100"); return false; }
-        store.discounts.unshift({ id: uid("d"), code, type: v.type, value, min: Math.max(0, Number(v.min) || 0), active: true, created: new Date().toISOString() });
-        persist();
-        if (location.hash === "#/discounts") go(); else location.hash = "#/discounts";
-        toast("Discount " + code + " created");
-      },
-    }),
+    "add-discount": () => discountDialog(),
+    "edit-discount": (el) => discountDialog(store.discounts.find((x) => x.id === el.dataset.id)),
     "delete-discount": async (el) => {
       const d = store.discounts.find((x) => x.id === el.dataset.id);
       if (await confirm("Delete discount?", `${d.code} will stop working.`)) { store.discounts = store.discounts.filter((x) => x !== d); persist(); go(); }
@@ -1323,7 +1393,8 @@
           ${(o.answers || []).length ? `<dl class="order-answers">${o.answers.map((a) => `<div><dt>${esc(a.label)}</dt><dd>${esc(a.value)}</dd></div>`).join("")}</dl>` : ""}
           <div class="divider"></div>
           ${o.items.map((it) => `<div class="order-line"><span>${esc(it.name)} × ${it.qty}</span><span>${taka(it.price * it.qty)}</span></div>`).join("")}
-          ${o.discount ? `<div class="order-line muted"><span>Discount (${esc(o.discount.code)})</span><span>−${taka(o.discount.amount)}</span></div>` : ""}
+          ${o.discount ? `<div class="order-line muted"><span>${o.discount.free ? "Free delivery" : "Discount"} (${esc(o.discount.code)})</span><span>−${taka(o.discount.amount)}</span></div>` : ""}
+          ${o.discountNote ? `<p class="muted small" style="margin:6px 0">${esc(o.discountNote)}</p>` : ""}
           ${o.delivery ? `<div class="order-line muted"><span>Delivery · ${esc(o.delivery)}</span><span>${taka(o.deliveryFee || 0)}</span></div>` : ""}
           <div class="divider"></div><div class="order-line" style="font-weight:600"><span>Total · ${esc(o.payment)}</span><span>${taka(o.total)}</span></div>`,
       });
@@ -1350,7 +1421,7 @@
       persist(); if (location.hash !== "#/website") go(); toast("🚀 Website published");
     },
     "view-store": () => {
-      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: store.discounts, tracking: trackingCode(store.marketing) });
+      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: discountsForSite(), tracking: trackingCode(store.marketing) });
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "create-backup": () => dialog({
@@ -1372,7 +1443,7 @@
       const data = JSON.parse(JSON.stringify(b.data));
       SiteKit.ensure(data.site, data.pages, { products: store.products });
       const bar = `<div style="position:sticky;top:0;z-index:100;display:flex;justify-content:center;gap:8px;padding:10px 16px;background:#0e7a4b;color:#fff;font:600 14px/1.4 Inter,system-ui,sans-serif">Preview of the backup “${esc(versionTitle(b))}”. This is a backup, not your live website.</div>`;
-      const html = SiteKit.storeHTML(data.site, data.pages, { products: store.products, discounts: store.discounts, tracking: trackingCode(store.marketing) }).replace(/<body([^>]*)>/, (m) => m + bar);
+      const html = SiteKit.storeHTML(data.site, data.pages, { products: store.products, discounts: discountsForSite(), tracking: trackingCode(store.marketing) }).replace(/<body([^>]*)>/, (m) => m + bar);
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "version-menu": (el) => {
@@ -1527,7 +1598,7 @@
     "edit-page": (el) => pageDialog(store.pages.find((p) => p.id === el.dataset.id)),
     "page-view": (el) => {
       closeVersionMenus();
-      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: store.discounts, tracking: trackingCode(store.marketing), start: el.dataset.id });
+      const html = SiteKit.storeHTML(store.site, store.pages, { products: store.products, discounts: discountsForSite(), tracking: trackingCode(store.marketing), start: el.dataset.id });
       window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
     },
     "page-toggle-nav": (el) => {
@@ -1781,6 +1852,12 @@
     if (!el || el.tagName === "SELECT" || el.tagName === "INPUT") return;
     const fn = actions[el.dataset.action];
     if (fn) { e.preventDefault(); fn(el); }
+  });
+  // Copy a discount code
+  view.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-copy]");
+    if (!b) return;
+    (navigator.clipboard ? navigator.clipboard.writeText(b.dataset.copy) : Promise.reject()).then(() => toast(b.dataset.copy + " copied"), () => toast("Couldn't copy — select the code instead"));
   });
   view.addEventListener("change", (e) => {
     const el = e.target;
