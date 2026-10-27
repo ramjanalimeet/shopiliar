@@ -655,9 +655,9 @@
               <thead><tr><th>Product</th><th>Category</th><th class="t-right">Price</th><th class="t-right">Stock</th><th>Status</th><th class="t-actions"></th></tr></thead>
               <tbody>${list.length ? list.map((p) => `
                 <tr>
-                  <td><button class="t-title" data-action="edit-product" data-id="${p.id}"><span class="thumb" style="background:${esc(p.color)}"></span>${esc(p.name)}</button></td>
+                  <td><button class="t-title" data-action="edit-product" data-id="${p.id}"><span class="thumb" style="background:${esc(p.color)}">${SiteKit.safeImg(p.image) ? `<img src="${esc(p.image)}" alt="">` : ""}</span><span>${esc(p.name)}${(p.options || []).length ? `<span class="sub">${p.options.map((o) => `${esc(o.name)}: ${o.values.length}`).join(" · ")}</span>` : ""}</span></button></td>
                   <td>${tag(p.category || "General", "brown")}</td>
-                  <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(p.price)}</td>
+                  <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(p.price)}${p.compare > p.price ? `<span class="sub" style="text-decoration:line-through">${taka(p.compare)}</span>` : ""}</td>
                   <td class="t-right">${p.stock > 0 ? p.stock : '<span class="tag red">Out of stock</span>'}</td>
                   <td>${p.status === "draft" ? '<span class="tag dot gray">Draft</span>' : '<span class="tag dot green">Active</span>'}</td>
                   <td class="t-actions"><button class="icon-btn" data-action="edit-product" data-id="${p.id}" aria-label="Edit ${esc(p.name)}">${icon("edit")}</button><button class="icon-btn danger" data-action="delete-product" data-id="${p.id}" aria-label="Delete ${esc(p.name)}">${icon("trash")}</button></td>
@@ -665,7 +665,7 @@
             </table></div>` : `
             <div class="card-body"><div class="gallery">${list.map((p) => `
               <div class="g-card">
-                <div class="g-cover" style="background:${esc(p.color)}">${p.status === "draft" ? '<span class="tag gray">Draft</span>' : ""}</div>
+                <div class="g-cover" style="background:${esc(p.color)}">${SiteKit.safeImg(p.image) ? `<img src="${esc(p.image)}" alt="">` : ""}${p.status === "draft" ? '<span class="tag gray">Draft</span>' : ""}</div>
                 <div class="g-body"><div class="g-title">${esc(p.name)}</div><div class="g-meta"><b style="color:var(--ink)">${taka(p.price)}</b>${tag(p.category || "General", "brown")}<span class="muted small">${p.stock} in stock</span></div>
                 <div class="g-actions"><button class="btn btn-sm" data-action="edit-product" data-id="${p.id}">${icon("edit")}Edit</button><button class="icon-btn danger" data-action="delete-product" data-id="${p.id}" aria-label="Delete ${esc(p.name)}">${icon("trash")}</button></div></div>
               </div>`).join("") || '<p class="muted">No products yet.</p>'}</div></div>`}
@@ -1129,19 +1129,83 @@
   };
   let rerender;
 
+  // Add or edit a product: photos, details, price, stock, and sizes/colors customers pick on the website
   const productDialog = (p) => {
     const colors = ["#c8a98a", "#e9e4da", "#8a6a4f", "#d9cfc4", "#b6d3ea", "#dbeddb", "#f5e0e9", "#2f2f2f"];
+    let photos = (p?.images && p.images.length ? p.images : p?.image ? [p.image] : []).slice(0, 6);
+    const cats = [...new Set(store.products.map((x) => x.category).filter(Boolean))];
+    const opts = (p?.options || []).map((o) => ({ name: o.name, values: o.values.join(", ") }));
+    const optRow = (o, i) => `<div class="pd-opt" data-i="${i}"><input class="input" name="opt_name_${i}" list="pd-opt-names" maxlength="20" placeholder="Size" value="${esc(o?.name || "")}"><input class="input" name="opt_vals_${i}" maxlength="200" placeholder="S, M, L, XL" value="${esc(o?.values || "")}"><button type="button" class="icon-btn danger" data-opt-rm="${i}" aria-label="Remove option" title="Remove">${icon("trash")}</button></div>`;
     dialog({
       title: p ? "Edit product" : "New product",
-      body: `<div class="field"><label>Name</label><input class="input" name="name" required maxlength="60" value="${esc(p?.name)}"></div>
-        <div class="row"><div class="field"><label>Price (৳)</label><input class="input" name="price" type="number" min="0" step="1" required value="${esc(p?.price ?? "")}"></div>
-        <div class="field"><label>Stock</label><input class="input" name="stock" type="number" min="0" step="1" value="${esc(p?.stock ?? 10)}"></div></div>
-        <div class="row"><div class="field"><label>Category</label><input class="input" name="category" maxlength="30" value="${esc(p?.category ?? "General")}"></div>
-        <div class="field"><label>Status</label><select class="select" name="status"><option value="active">Active</option><option value="draft"${p?.status === "draft" ? " selected" : ""}>Draft (hidden)</option></select></div></div>
-        <div class="field"><label>Photo color (until you upload photos)</label><div style="display:flex;gap:6px">${colors.map((c, i) => `<label style="cursor:pointer"><input type="radio" name="color" value="${c}" ${(p ? p.color === c : i === 0) ? "checked" : ""} style="accent-color:${c}"> <span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:${c};vertical-align:middle;border:1px solid var(--border)"></span></label>`).join("")}</div></div>`,
+      size: "lg",
       submit: p ? "Save" : "Add product",
-      onSubmit: (v) => {
-        const data = { name: v.name, price: Math.max(0, Number(v.price) || 0), stock: Math.max(0, parseInt(v.stock, 10) || 0), category: v.category || "General", status: v.status, color: v.color || colors[0] };
+      body: `<div class="field"><label>Photos</label><div class="pd-photos" data-photos></div><span class="pf-hint">Up to 6. The first one is the main photo — click a photo to make it the main one.</span></div>
+        <div class="field"><label for="pd-name">Name</label><input class="input" id="pd-name" name="name" required maxlength="80" value="${esc(p?.name || "")}" placeholder="e.g. Cotton Panjabi"></div>
+        <div class="field"><label for="pd-desc">Description <span class="muted">(optional)</span></label><textarea class="textarea" id="pd-desc" name="description" rows="3" maxlength="2000" placeholder="Fabric, fit, size guide, care…">${esc(p?.description || "")}</textarea></div>
+        <div class="row"><div class="field"><label for="pd-price">Price (৳)</label><input class="input" id="pd-price" name="price" type="number" min="0" step="1" required value="${esc(p?.price ?? "")}" placeholder="1500"></div>
+          <div class="field"><label for="pd-compare">Price before sale (৳) <span class="muted">(optional)</span></label><input class="input" id="pd-compare" name="compare" type="number" min="0" step="1" value="${esc(p?.compare || "")}" placeholder="1800"><span class="pf-hint">Shown crossed out, with a “−17%” badge.</span></div></div>
+        <div class="row"><div class="field"><label for="pd-stock">Stock</label><input class="input" id="pd-stock" name="stock" type="number" min="0" step="1" value="${esc(p?.stock ?? 10)}"></div>
+          <div class="field"><label for="pd-sku">SKU <span class="muted">(optional)</span></label><input class="input" id="pd-sku" name="sku" maxlength="40" value="${esc(p?.sku || "")}" placeholder="PNJ-001"></div></div>
+        <div class="row"><div class="field"><label for="pd-cat">Category</label><input class="input" id="pd-cat" name="category" maxlength="30" list="pd-cats" value="${esc(p?.category ?? "General")}"><datalist id="pd-cats">${cats.map((c) => `<option value="${esc(c)}">`).join("")}</datalist></div>
+          <div class="field"><label>Status</label><div class="dc-opts"><label class="dc-opt"><input type="radio" name="status" value="active" ${p?.status !== "draft" ? "checked" : ""}>${icon("eye")}<span>Active</span></label><label class="dc-opt"><input type="radio" name="status" value="draft" ${p?.status === "draft" ? "checked" : ""}>${icon("eyeOff")}<span>Draft (hidden)</span></label></div></div></div>
+        <div class="field"><label>Sizes, colors and other options <span class="muted">(optional)</span></label>
+          <div class="pd-opts" data-opts>${opts.map(optRow).join("")}</div>
+          <datalist id="pd-opt-names"><option value="Size"><option value="Color"><option value="Material"><option value="Style"></datalist>
+          <div class="pd-opt-add"><button type="button" class="btn btn-sm" data-opt-add>${icon("plus")}Add option</button><button type="button" class="btn btn-sm" data-opt-preset="Size|S, M, L, XL, XXL">Sizes S–XXL</button><button type="button" class="btn btn-sm" data-opt-preset="Color|Black, White, Red, Blue">Colors</button></div>
+          <span class="pf-hint">Customers choose these on your website. Up to 2, values separated by commas.</span></div>`,
+      onOpen: (form) => {
+        const box = form.querySelector("[data-photos]");
+        const draw = () => {
+          box.innerHTML = photos.map((u, i) => `<div class="pd-photo${i ? "" : " pd-first"}"><button type="button" data-main="${i}" title="Make main photo"><img src="${esc(u)}" alt=""></button>${i ? "" : '<span class="pd-main">Main</span>'}<button type="button" class="pd-x" data-photo-rm="${i}" aria-label="Remove photo">${icon("x")}</button></div>`).join("")
+            + (photos.length < 6 ? `<label class="pd-up">${icon("image")}<span>Add photos</span><input type="file" accept="image/*" multiple hidden data-photo-up></label>` : "");
+        };
+        draw();
+        const optsBox = form.querySelector("[data-opts]");
+        const optCount = () => optsBox.querySelectorAll(".pd-opt").length;
+        const syncAdd = () => form.querySelectorAll("[data-opt-add],[data-opt-preset]").forEach((b) => { b.disabled = optCount() >= 2; });
+        syncAdd();
+        const addOpt = (name = "", values = "") => {
+          if (optCount() >= 2) return;
+          const i = Date.now() % 100000;
+          optsBox.insertAdjacentHTML("beforeend", optRow({ name, values }, i));
+          syncAdd();
+          optsBox.lastElementChild.querySelector(name ? `[name=opt_vals_${i}]` : `[name=opt_name_${i}]`).focus();
+        };
+        form.addEventListener("click", (e) => {
+          const m = e.target.closest("[data-main]"), r = e.target.closest("[data-photo-rm]"), or = e.target.closest("[data-opt-rm]"), pr = e.target.closest("[data-opt-preset]");
+          if (m) { const i = +m.dataset.main; photos.unshift(...photos.splice(i, 1)); draw(); }
+          else if (r) { photos.splice(+r.dataset.photoRm, 1); draw(); }
+          else if (or) { or.closest(".pd-opt").remove(); syncAdd(); }
+          else if (e.target.closest("[data-opt-add]")) addOpt();
+          else if (pr) { const [n, vals] = pr.dataset.optPreset.split("|"); addOpt(n, vals); }
+        });
+        form.addEventListener("change", async (e) => {
+          if (e.target.matches("[type=radio]")) form.querySelectorAll(".dc-opt").forEach((o) => o.classList.toggle("on", o.querySelector("input").checked));
+          if (!e.target.matches("[data-photo-up]")) return;
+          const files = [...e.target.files].slice(0, 6 - photos.length), up = e.target.closest(".pd-up");
+          up.classList.add("busy");
+          for (const f of files) {
+            try { photos.push(await SiteEditor.upload(f)); draw(); }
+            catch (err) { toast(err.message); break; }
+          }
+          draw();
+        });
+        form.querySelectorAll(".dc-opt").forEach((o) => o.classList.toggle("on", o.querySelector("input").checked));
+      },
+      onSubmit: (v, close, form) => {
+        const price = Math.max(0, Math.floor(Number(v.price) || 0)), compare = Math.max(0, Math.floor(Number(v.compare) || 0));
+        if (compare && compare <= price) { toast("The price before sale should be higher than the price"); return false; }
+        const options = [...form.querySelectorAll(".pd-opt")].map((row) => {
+          const [n, vals] = row.querySelectorAll("input");
+          return { name: n.value.trim().slice(0, 20), values: [...new Set(vals.value.split(",").map((x) => x.trim().slice(0, 30)).filter(Boolean))].slice(0, 20) };
+        }).filter((o) => o.name || o.values.length);
+        if (options.some((o) => !o.name || !o.values.length)) { toast("Each option needs a name and at least one value"); return false; }
+        const data = {
+          name: v.name, description: v.description || "", price, compare, stock: Math.max(0, parseInt(v.stock, 10) || 0), sku: v.sku || "",
+          category: v.category || "General", status: v.status === "draft" ? "draft" : "active", images: photos.slice(0, 6), image: photos[0] || "", options,
+          color: p?.color || colors[store.products.length % colors.length],
+        };
         if (p) Object.assign(p, data);
         else store.products.unshift({ id: uid("p"), created: new Date().toISOString(), ...data });
         persist(); go(); toast(p ? "Product saved" : "Product added");
@@ -1254,7 +1318,16 @@
   window.addEventListener("message", (e) => {
     if (e.origin !== location.origin || !e.data || e.data.type !== "shopilier-order") return;
     const o = e.data.order || {};
-    const items = (Array.isArray(o.items) ? o.items : []).map((it) => ({ p: store.products.find((p) => p.id === it.id && p.status !== "draft"), qty: Math.max(1, Math.floor(Number(it.qty) || 1)) })).filter((it) => it.p);
+    // A size/color choice only counts if it matches the product's own options
+    const variant = (p, v) => {
+      if (!v || !(p.options || []).length) return "";
+      const parts = String(v).split(" / ").map((x) => x.split(": "));
+      return parts.length === p.options.length && parts.every(([n, val], i) => p.options[i].name === n && p.options[i].values.includes(val)) ? String(v) : "";
+    };
+    const items = (Array.isArray(o.items) ? o.items : []).map((it) => {
+      const p = store.products.find((x) => x.id === it.id && x.status !== "draft");
+      return { p, qty: Math.max(1, Math.floor(Number(it.qty) || 1)), v: p ? variant(p, it.v) : "" };
+    }).filter((it) => it.p);
     if (!items.length) return;
     const answers = (Array.isArray(o.answers) ? o.answers : []).slice(0, 20).map((a) => ({ label: String(a.label || "").slice(0, 60), type: String(a.type || ""), value: String(a.value || "").slice(0, 300) }));
     const find = (type) => (answers.find((a) => a.type === type) || {}).value || "";
@@ -1275,7 +1348,7 @@
     const number = Math.max(1000, ...store.orders.map((x) => x.number)) + 1;
     store.orders.unshift({
       id: uid("o"), number, customer: name.slice(0, 60), phone: phone.slice(0, 30),
-      items: items.map((it) => ({ name: it.p.name, qty: it.qty, price: it.p.price })), total: sub - off + fee,
+      items: items.map((it) => ({ name: it.p.name + (it.v ? ` (${it.v})` : ""), qty: it.qty, price: it.p.price, ...(it.v ? { variant: it.v } : {}) })), total: sub - off + fee,
       payment: String(o.payment || "Cash on delivery").slice(0, 40), status: "Pending", date: new Date().toISOString(),
       delivery: opt ? opt.label : "", deliveryFee: fee, discount: d ? { code: d.code, amount: off, free: d.type === "shipping" } : null, discountNote, answers, source: "website",
     });
