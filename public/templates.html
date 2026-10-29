@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Templates — Shopilier</title>
-  <meta name="description" content="Browse free, professionally designed website templates for stores, businesses, portfolios, restaurants and more.">
+  <meta name="description" content="Free online store templates for Bangladeshi businesses: fashion, beauty, electronics, food, home, jewellery and more. Pick one, add products and go live today.">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
@@ -22,6 +22,7 @@
         <a href="index.html">Home</a>
         <a href="templates.html" class="active" aria-current="page">Templates</a>
         <a href="pricing.html">Pricing</a>
+        <a href="demo/">Demo</a>
       </nav>
       <div class="auth">
         <a class="btn btn-outline" href="signin.html">Sign in</a>
@@ -32,7 +33,11 @@
   </header>
 
   <main class="container tpl-page">
-    <h1 class="tpl-title">Pick any templates for <span class="gradient-text">free</span></h1>
+    <section class="tpl-head">
+      <span class="pill">Templates for online stores</span>
+      <h1 class="tpl-title">Store templates made for <span class="gradient-text">selling</span></h1>
+      <p class="tpl-sub">Every template is built for selling online in Bangladesh — bKash, Nagad and cash on delivery included. Pick one for free, add your products and go live today. Switch designs any time without losing anything.</p>
+    </section>
 
     <div class="tpl-bar">
       <div class="tpl-tools">
@@ -52,9 +57,23 @@
         </label>
       </div>
     </div>
+    <div class="tpl-niches" id="tpl-niches" role="group" aria-label="Filter by what you sell">
+      <span class="tpl-niches-label">What do you sell?</span>
+      <button type="button" class="on" data-niche="" aria-pressed="true">All stores</button>
+      <button type="button" data-niche="fashion" aria-pressed="false">Fashion &amp; Clothing</button>
+      <button type="button" data-niche="beauty" aria-pressed="false">Beauty &amp; Cosmetics</button>
+      <button type="button" data-niche="electronics" aria-pressed="false">Electronics &amp; Gadgets</button>
+      <button type="button" data-niche="food" aria-pressed="false">Food &amp; Grocery</button>
+      <button type="button" data-niche="home" aria-pressed="false">Home &amp; Furniture</button>
+      <button type="button" data-niche="jewellery" aria-pressed="false">Jewellery &amp; Accessories</button>
+      <button type="button" data-niche="kids" aria-pressed="false">Kids &amp; Toys</button>
+      <button type="button" data-niche="books" aria-pressed="false">Books &amp; Stationery</button>
+      <button type="button" data-niche="crafts" aria-pressed="false">Handicrafts &amp; Art</button>
+      <button type="button" data-niche="health" aria-pressed="false">Health &amp; Fitness</button>
+    </div>
 
     <section class="tpl-list" id="tpl-list">
-      <article class="tcard" data-name="Luxe Store" data-pop="0" data-new="4" data-search="luxe store a modern and elegant online store template for fashion, beauty and lifestyle brands. fashion beauty lifestyle shop ecommerce clothing online store shop products">
+      <article class="tcard" data-niche="fashion beauty jewellery" data-name="Luxe Store" data-pop="0" data-new="4" data-search="luxe store a modern and elegant online store template for fashion, beauty and lifestyle brands. fashion beauty lifestyle shop ecommerce clothing online store shop products clothing boutique saree cosmetics skincare perfume bags shoes fashion & clothing beauty & cosmetics jewellery & accessories">
         <div data-layout="split" class="shot t-luxe"><div class="s-nav"><b>LUXE</b><nav><span>Home</span><span>Shop</span><span>Collections</span><span>About</span></nav><div class=s-ico><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h2l2.4 11h11l2-8H6.3"/><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg></div></div><div class="s-copy"><h4>Modern<br>Fashion<br>For Everyone</h4><p>Premium quality. Timeless style.</p><div class="s-btns"><span class="s-btn">Shop Now</span></div></div><div class="s-art"><svg viewBox="0 0 200 220" preserveAspectRatio="xMidYMid slice"><defs>
 <linearGradient id="lx-coat" x1="0" x2="1"><stop offset="0" stop-color="#e3c6a5"/><stop offset=".55" stop-color="#d4b08a"/><stop offset="1" stop-color="#b98f68"/></linearGradient>
 <linearGradient id="lx-hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b4630"/><stop offset="1" stop-color="#3d2617"/></linearGradient></defs>
@@ -72,7 +91,7 @@
           <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
         </div>
       </article>
-      <article class="tcard" data-name="SaaS Landing" data-pop="1" data-new="2" data-search="saas landing a clean and modern template for saas, startup and tech businesses. saas startup tech software app product online store shop products">
+      <article class="tcard" data-niche="electronics health" data-name="SaaS Landing" data-pop="1" data-new="2" data-search="saas landing a clean and modern template for saas, startup and tech businesses. saas startup tech software app product online store shop products gadgets phone accessories software digital products courses electronics & gadgets health & fitness">
         <div data-layout="center" class="shot t-saas"><div class="s-nav"><b>SaaSly</b><nav><span>Home</span><span>Features</span><span>Pricing</span><span>Blog</span></nav><span class=s-cta>Get Started</span></div><div class="s-copy"><h4>Build Better<br>Products Faster</h4><p>All the tools you need to launch, grow and manage your business.</p></div><div class="s-art"><svg viewBox="0 0 300 66" preserveAspectRatio="xMidYMax meet">
 <rect x="0" y="0" width="300" height="80" rx="5" fill="#fff" stroke="#e3e1f3"/>
 <rect x="0" y="0" width="22" height="80" rx="5" fill="#1b1f3b"/>
@@ -92,7 +111,7 @@
           <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
         </div>
       </article>
-      <article class="tcard" data-name="Bistro Restaurant" data-pop="2" data-new="5" data-search="bistro restaurant a stylish template for restaurants, cafes and food businesses. restaurant cafe food menu dining bar online store shop products">
+      <article class="tcard" data-niche="food" data-name="Bistro Restaurant" data-pop="2" data-new="5" data-search="bistro restaurant a stylish template for restaurants, cafes and food businesses. restaurant cafe food menu dining bar online store shop products grocery bakery sweets cake homemade pitha catering tea coffee food & grocery">
         <div data-layout="bleed" class="shot t-bistro"><div class="s-art"><svg viewBox="0 0 270 220" preserveAspectRatio="xMaxYMid slice"><defs>
 <radialGradient id="bi-glow" cx=".62" cy=".55" r=".7"><stop offset="0" stop-color="#5a3a1c"/><stop offset=".5" stop-color="#24170d"/><stop offset="1" stop-color="#0f0c0a"/></radialGradient>
 <linearGradient id="bi-fade" x1="0" x2="1"><stop offset="0" stop-color="#0f0c0a"/><stop offset=".35" stop-color="#0f0c0a" stop-opacity="0"/></linearGradient>
@@ -115,7 +134,7 @@
           <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
         </div>
       </article>
-      <article class="tcard" data-name="Nova Portfolio" data-pop="3" data-new="3" data-search="nova portfolio a minimalist portfolio template for creatives, designers and professionals. designer creative freelancer resume work online store shop products">
+      <article class="tcard" data-niche="crafts home jewellery" data-name="Nova Portfolio" data-pop="3" data-new="3" data-search="nova portfolio a minimalist portfolio template for creatives, designers and professionals. designer creative freelancer resume work online store shop products handmade art prints decor minimal gallery furniture home & furniture jewellery & accessories handicrafts & art">
         <div data-layout="split" class="shot t-nova"><div class="s-nav"><b>Nova</b><nav><span>Home</span><span>Work</span><span>About</span><span>Contact</span></nav></div><div class="s-copy"><small>Hi, I’m Alex.</small><h4>Product Designer<br>&amp; Creative Thinker</h4><p>I design digital experiences that<br>make a difference.</p><div class="s-btns"><span class="s-btn">View My Work</span></div></div><div class="s-art"><svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice"><defs>
 <linearGradient id="nv-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#eeeef0"/><stop offset="1" stop-color="#c9cacd"/></linearGradient>
 <linearGradient id="nv-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ececee"/></linearGradient>
@@ -133,7 +152,7 @@
           <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
         </div>
       </article>
-      <article class="tcard" data-name="Growify Agency" data-pop="4" data-new="6" data-search="growify agency a modern template for agencies, consultancies and service-based businesses. agency consultancy marketing business services online store shop products">
+      <article class="tcard" data-niche="home food health" data-name="Growify Agency" data-pop="4" data-new="6" data-search="growify agency a modern template for agencies, consultancies and service-based businesses. agency consultancy marketing business services online store shop products furniture decor organic grocery plants wellness food & grocery home & furniture health & fitness">
         <div data-layout="split" class="shot t-growify"><div class="s-nav"><b>Growify</b><nav><span>Home</span><span>Services</span><span>Work</span><span>About</span></nav><span class=s-cta>Get a Quote</span></div><div class="s-copy"><small>Digital Agency</small><h4>We Help Brands<br>Grow Online</h4><p>Strategy, design, and development<br>to take your business further.</p><div class="s-btns"><span class="s-btn">Get Started</span></div></div><div class="s-art"><svg viewBox="0 0 200 180" preserveAspectRatio="xMidYMid slice"><defs>
 <linearGradient id="gr-wall" x1="0" x2="1"><stop offset="0" stop-color="#fbfaf7"/><stop offset="1" stop-color="#ece8e1"/></linearGradient>
 <linearGradient id="gr-floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cdb79a"/><stop offset="1" stop-color="#a88c6b"/></linearGradient></defs>
@@ -157,7 +176,7 @@
           <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
         </div>
       </article>
-      <article class="tcard" data-name="Writely Blog" data-pop="5" data-new="1" data-search="writely blog a clean blog template for writers, creators and thought leaders. blog writer articles magazine news journal online store shop products">
+      <article class="tcard" data-niche="books crafts" data-name="Writely Blog" data-pop="5" data-new="1" data-search="writely blog a clean blog template for writers, creators and thought leaders. blog writer articles magazine news journal online store shop products stationery magazine publisher notebooks gifts books & stationery handicrafts & art">
         <div data-layout="split" class="shot t-writely"><div class="s-nav"><b>Writely</b><nav><span>Home</span><span>Blog</span><span>About</span></nav><div class=s-ico><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg></div></div><div class="s-copy"><h4>Stories, Ideas<br>and Insights</h4><p>A blog about design, business,<br>productivity and life.</p><div class="s-btns"><span class="s-btn">Read the Latest</span></div></div><div class="s-art"><svg viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice"><defs>
 <linearGradient id="wr-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fb5dc"/><stop offset="1" stop-color="#e3edf6"/></linearGradient>
 <linearGradient id="wr-lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b7ea1"/><stop offset="1" stop-color="#1f3b57"/></linearGradient>
@@ -177,7 +196,7 @@
           <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
         </div>
       </article>
-      <article class="tcard" data-name="Fixly Services" data-pop="6" data-new="7" data-search="fixly services a trustworthy template for repair, cleaning and local service businesses. services repair plumber cleaning home local booking online store shop products">
+      <article class="tcard" data-niche="health electronics kids" data-name="Fixly Services" data-pop="6" data-new="7" data-search="fixly services a trustworthy template for repair, cleaning and local service businesses. services repair plumber cleaning home local booking online store shop products pharmacy fitness gym equipment repair toys electronics & gadgets kids & toys health & fitness">
         <div data-layout="split" class="shot t-fixly"><div class="s-nav"><b>Fixly</b><nav><span>Home</span><span>Services</span><span>Pricing</span><span>Contact</span></nav><span class=s-cta>Book Now</span></div><div class="s-copy"><small>Home Repair Experts</small><h4>Fast, Reliable<br>Home Services</h4><p>Book trusted local pros in<br>under 60 seconds.</p><div class="s-btns"><span class="s-btn">Book a Service</span></div></div><div class="s-art"><svg viewBox="0 0 200 170" preserveAspectRatio="xMidYMax meet">
 <rect x="34" y="70" width="132" height="100" rx="4" fill="#fff" stroke="#c7d6f5" stroke-width="2"/>
 <path d="M20 78l80-60 80 60" fill="none" stroke="#1d4ed8" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
@@ -191,7 +210,7 @@
           <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
         </div>
       </article>
-      <article class="tcard" data-name="Launchly" data-pop="7" data-new="8" data-search="launchly a bold one-page template to launch a product and collect sign-ups. landing page launch product waitlist app online store shop products">
+      <article class="tcard" data-niche="electronics kids beauty" data-name="Launchly" data-pop="7" data-new="8" data-search="launchly a bold one-page template to launch a product and collect sign-ups. landing page launch product waitlist app online store shop products gadgets launch pre-order toys skincare new product beauty & cosmetics electronics & gadgets kids & toys">
         <div data-layout="bleed" class="shot t-launch"><div class="s-art"><svg viewBox="0 0 450 248" preserveAspectRatio="xMidYMid slice"><defs>
 <radialGradient id="la-a" cx=".2" cy=".9" r=".6"><stop offset="0" stop-color="#ff3d8b" stop-opacity=".55"/><stop offset="1" stop-color="#ff3d8b" stop-opacity="0"/></radialGradient>
 <radialGradient id="la-b" cx=".85" cy=".2" r=".55"><stop offset="0" stop-color="#5b5cf0" stop-opacity=".6"/><stop offset="1" stop-color="#5b5cf0" stop-opacity="0"/></radialGradient></defs>
@@ -203,7 +222,7 @@
           <button class="btn btn-preview" type="button" data-preview><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Preview</button>
         </div>
       </article>
-      <article class="tcard" data-name="Mia Personal" data-pop="8" data-new="9" data-search="mia personal a warm personal site for your bio, links and contact details. personal profile bio link resume about me online store shop products">
+      <article class="tcard" data-niche="beauty crafts jewellery" data-name="Mia Personal" data-pop="8" data-new="9" data-search="mia personal a warm personal site for your bio, links and contact details. personal profile bio link resume about me online store shop products handmade cosmetics personal brand creator gifts beauty & cosmetics jewellery & accessories handicrafts & art">
         <div data-layout="profile" class="shot t-mia"><div class="s-nav"><b>Mia Chen</b><nav><span>About</span><span>Links</span><span>Contact</span></nav></div><div class="s-art"><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#f2c9a8"/>
 <path d="M22 48c0-24 14-36 30-36s28 14 28 36c0 14-4 26-4 40H26c0-14-4-24-4-40z" fill="#5a3322"/>
 <ellipse cx="51" cy="50" rx="17" ry="20" fill="#f6d2b8"/>
@@ -216,7 +235,7 @@
         </div>
       </article>
     </section>
-    <p class="empty" id="tpl-empty" hidden>No templates match your search. Try another word.</p>
+    <p class="empty" id="tpl-empty" hidden>No templates match. Try another word or pick a different niche — every template can sell any product.</p>
   </main>
 
   <div class="modal" id="tpl-modal" hidden role="dialog" aria-modal="true" aria-labelledby="tpl-modal-title">
@@ -244,17 +263,40 @@
   </div>
 
   <footer class="site-footer">
-    <div class="container footer-top">
-      <a class="brand footer-brand" href="index.html"><img class="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="">Shopilier</a>
-      <nav class="footer-nav" aria-label="Footer"><a href="index.html">Home</a><a href="templates.html">Templates</a><a href="pricing.html">Pricing</a><a href="resources.html">Resources</a><a href="contact.html">Contact Us</a><a href="privacy.html">Privacy Policy</a></nav>
-      <div class="social">
-        <a href="https://www.youtube.com/@shopilier" target="_blank" rel="noopener" aria-label="Shopilier on YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg></a>
-        <a href="https://www.facebook.com/shopilier/" target="_blank" rel="noopener" aria-label="Shopilier on Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M24 12a12 12 0 1 0-13.9 11.9v-8.4H7.1V12h3V9.4c0-3 1.8-4.7 4.5-4.7 1.3 0 2.7.2 2.7.2v3h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4A12 12 0 0 0 24 12z"/></svg></a>
-        <a href="https://www.tiktok.com/@shopiliar" target="_blank" rel="noopener" aria-label="Shopilier on TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.6 6.7a4.8 4.8 0 0 1-3.8-4.2V2h-3.4v13.7a2.9 2.9 0 1 1-2-2.8V9.4a6.3 6.3 0 1 0 5.4 6.3V8.7a8.2 8.2 0 0 0 4.8 1.5V6.8a4.9 4.9 0 0 1-1-.1z"/></svg></a>
+    <div class="container footer-grid">
+      <div class="footer-about">
+        <a class="brand footer-brand" href="index.html"><img class="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="">Shopilier</a>
+        <p>Create your online store in minutes. Built in Bangladesh, for Bangladeshi businesses — no coding, no designers, no technical skills.</p>
+        <div class="social">
+          <a href="https://www.youtube.com/@shopilier" target="_blank" rel="noopener" aria-label="Shopilier on YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg></a>
+          <a href="https://www.facebook.com/shopilier/" target="_blank" rel="noopener" aria-label="Shopilier on Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M24 12a12 12 0 1 0-13.9 11.9v-8.4H7.1V12h3V9.4c0-3 1.8-4.7 4.5-4.7 1.3 0 2.7.2 2.7.2v3h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4A12 12 0 0 0 24 12z"/></svg></a>
+          <a href="https://www.tiktok.com/@shopiliar" target="_blank" rel="noopener" aria-label="Shopilier on TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.6 6.7a4.8 4.8 0 0 1-3.8-4.2V2h-3.4v13.7a2.9 2.9 0 1 1-2-2.8V9.4a6.3 6.3 0 1 0 5.4 6.3V8.7a8.2 8.2 0 0 0 4.8 1.5V6.8a4.9 4.9 0 0 1-1-.1z"/></svg></a>
+        </div>
+      </div>
+      <nav class="footer-col" aria-label="Product">
+        <h4>Product</h4>
+        <a href="templates.html">Templates</a>
+        <a href="pricing.html">Pricing</a>
+        <a href="demo/">Live demo</a>
+        <a href="signup.html?plan=free">Start for free</a>
+      </nav>
+      <nav class="footer-col" aria-label="Company">
+        <h4>Company</h4>
+        <a href="index.html">Home</a>
+        <a href="resources.html">Resources</a>
+        <a href="contact.html">Contact Us</a>
+        <a href="privacy.html">Privacy Policy</a>
+      </nav>
+      <div class="footer-col footer-contact">
+        <h4>Get in touch</h4>
+        <a href="mailto:support@shopilier.com">support@shopilier.com</a>
+        <span>Dhaka, Bangladesh</span>
+        <a class="footer-cta" href="signup.html?plan=free">Open your store free<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
     </div>
     <div class="container footer-bottom">
       <span>© 2026 Shopilier. All rights reserved.</span>
+      <span class="footer-made">Made with <i aria-hidden="true">♥</i> in Bangladesh</span>
     </div>
   </footer>
   <script src="assets/main.js"></script>

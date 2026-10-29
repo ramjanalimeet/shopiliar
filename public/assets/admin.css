@@ -895,3 +895,42 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
 .dialog .st-perms label { display: flex; align-items: center; gap: 10px; margin: 0; padding: 6px 0; font-size: 14px; font-weight: 500; cursor: pointer; }
 .st-perms input { width: 16px; height: 16px; accent-color: var(--accent); }
 @media (max-width: 640px) { .st-roles, .st-perms { grid-template-columns: 1fr; } .st-row { grid-template-columns: auto 1fr auto auto; } .st-meta { grid-column: 2 / -1; justify-content: flex-start; } }
+
+/* Free plan: the chat shows how to get support instead of the inbox */
+.chat-fab.locked::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 18px; height: 18px; border-radius: 50%; background: #f59e0b; border: 2px solid #fff; }
+.chat-locked { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px 28px; gap: 10px; }
+.chat-locked-ico { width: 56px; height: 56px; border-radius: 16px; background: #fff7ed; color: #c2410c; display: grid; place-items: center; margin-bottom: 6px; }
+.chat-locked-ico .i { width: 26px; height: 26px; }
+.chat-locked b { font-size: 17px; color: var(--ink); }
+.chat-locked p { color: var(--muted); max-width: 320px; margin-bottom: 8px; }
+.chat-locked .link { color: var(--accent); font-weight: 600; }
+
+/* ---------- Demo dashboard (/demo): the real dashboard on a sample store ---------- */
+.demo-bar {
+  display: flex; align-items: center; gap: 14px; min-height: 46px; padding: 6px 18px;
+  background: linear-gradient(90deg, #0f2e05, #245f0a 55%, #2f7d0c); color: #fff; font-size: 13.5px; position: relative; z-index: 96;
+}
+.demo-bar-dot { width: 9px; height: 9px; border-radius: 50%; background: #9be07a; box-shadow: 0 0 0 4px rgba(155, 224, 122, .25); flex: none; animation: demo-pulse 1.8s ease-in-out infinite; }
+@keyframes demo-pulse { 50% { box-shadow: 0 0 0 7px rgba(155, 224, 122, .08); } }
+.demo-bar b { font-weight: 700; }
+.demo-bar .demo-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .95; }
+.demo-bar .demo-text .demo-long { opacity: .85; }
+.demo-bar .demo-short { display: none; }
+.demo-bar .btn { height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13px; }
+.demo-bar .btn-ghost { background: rgba(255, 255, 255, .12); color: #fff; border: 1px solid rgba(255, 255, 255, .22); }
+.demo-bar .btn-ghost:hover { background: rgba(255, 255, 255, .2); }
+.demo-bar .btn-cta { background: #fff; color: #245f0a; font-weight: 700; }
+.demo-bar .btn-cta:hover { background: #eef8e7; }
+.demo-bar .btn .i { width: 15px; height: 15px; }
+.store-admin.demo .app { height: calc(100vh - 46px); }
+@media (min-width: 1024px) { .store-admin.demo .app { height: calc(125vh - 46px); } }
+@media (max-width: 700px) {
+  .demo-bar { padding: 6px 12px; gap: 8px; font-size: 12.5px; }
+  .demo-bar .demo-long { display: none; }
+  .demo-bar .demo-short { display: inline; opacity: .85; }
+  .demo-bar .btn-ghost span { display: none; }
+  .demo-bar .btn { padding: 0 10px; }
+}
+@media (max-width: 480px) {
+  .demo-bar .demo-sep, .demo-bar .demo-short { display: none; }
+}

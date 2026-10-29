@@ -209,10 +209,16 @@ const Dash = (() => {
     { id: "mia-personal", name: "Mia Personal", category: "Personal", desc: "A warm personal site for your bio, links and contact details.", layout: "center", bg: "#fdf6ef", text: "#3b2418", accent: "#e0794f", headline: "Hi, I'm Mia", sub: "Writer, speaker & coffee lover.", cta: "Say Hello", status: "published", uses: 18, created: daysAgo(20) },
   ];
   const CATEGORIES = ["Online Store", "Business", "Portfolio", "Food & Drink", "Services", "Blog", "Agency", "Landing Page", "Personal"];
+  // Plans (prices per month in Taka). null means unlimited.
+  //   pages/products/staff: how many the plan allows
+  //   domain: can connect a custom domain (Free stays on its shopilier.com address)
+  //   freeDomain: a free custom domain comes with yearly billing
+  //   support: chat with the Shopilier team from the dashboard
   const PLANS = () => ({
-    starter: { name: "Starter", price: 249, pages: 5, products: 3 },
-    business: { name: "Business", price: 549, pages: 100, products: 150 },
-    pro: { name: "Pro", price: 1449, pages: null, products: null },
+    free: { name: "Free", price: 0, pages: 5, products: 3, staff: 0, domain: false, freeDomain: false, support: false, blurb: "Try Shopilier, free forever" },
+    starter: { name: "Starter", price: 249, pages: 10, products: 20, staff: 1, domain: true, freeDomain: false, support: true, blurb: "For getting started online" },
+    business: { name: "Business", price: 549, pages: null, products: 100, staff: 5, domain: true, freeDomain: true, support: true, blurb: "For growing businesses" },
+    pro: { name: "Pro", price: 2499, pages: null, products: null, staff: null, domain: true, freeDomain: true, support: true, blurb: "Everything unlimited" },
   });
   // null means unlimited
   const limitText = (n) => (n == null ? "Unlimited" : String(n));

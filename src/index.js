@@ -5,7 +5,9 @@ const REMEMBER_DAYS = 30;
 const SESSION_HOURS = 24; // "Remember me" unticked
 const PBKDF2_ITERATIONS = 100000; // the maximum Workers allows
 const MAX_STORE_BYTES = 1_000_000;
-const PLANS = ["starter", "business", "pro"];
+// Plans, cheapest first. Accounts that never picked one (e.g. "Continue with Google" from the sign-in page) start on Free.
+const PLANS = ["free", "starter", "business", "pro"];
+const DEFAULT_PLAN = "free";
 // Every account is an e-commerce store (the users.category column is kept as "ecommerce")
 const CATEGORY = "ecommerce";
 // Starting template when none was picked
@@ -30,9 +32,11 @@ export default {
       }
     }
     if (url.pathname.startsWith("/media/") && request.method === "GET") return media(env, url);
-    // The store dashboard needs a signed-in user
+    // The store dashboard needs a signed-in user. Its scripts (app.js, editor.js) are plain files
+    // that the public demo at /demo also loads, so only the page itself is kept behind sign-in.
     if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) {
-      if (!(await currentUser(request, env))) {
+      const isFile = /\.(js|css|map|png|webp|svg)$/i.test(url.pathname);
+      if (!isFile && !(await currentUser(request, env))) {
         const next = encodeURIComponent(url.pathname + url.search);
         return Response.redirect(new URL("/signin.html?next=" + next, url), 302);
       }
@@ -96,7 +100,7 @@ async function signup(request, env) {
     name,
     business: clean(body.business, 80) || name + "'s Store",
     category: CATEGORY,
-    plan: PLANS.includes(body.plan) ? body.plan : "starter",
+    plan: PLANS.includes(body.plan) ? body.plan : DEFAULT_PLAN,
     billing: body.billing === "yearly" ? "yearly" : "monthly",
     template: SLUG.test(body.template || "") ? body.template : DEFAULT_TEMPLATE,
     created_at: new Date().toISOString(),
@@ -487,7 +491,7 @@ async function googleCallback(request, env, url) {
     user = {
       id: crypto.randomUUID(), email, name, business: name + "'s Store",
       category: CATEGORY,
-      plan: PLANS.includes(pick.plan) ? pick.plan : "starter",
+      plan: PLANS.includes(pick.plan) ? pick.plan : DEFAULT_PLAN,
       billing: pick.billing === "yearly" ? "yearly" : "monthly",
       template: SLUG.test(pick.template || "") ? pick.template : DEFAULT_TEMPLATE,
       created_at: new Date().toISOString(),

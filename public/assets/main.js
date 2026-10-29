@@ -22,18 +22,30 @@ if (tplList) {
   const search = document.getElementById("tpl-search");
   const sort = document.getElementById("tpl-sort");
   const empty = document.getElementById("tpl-empty");
+  const niches = document.getElementById("tpl-niches");
+  let niche = ""; // what the visitor sells (a chip under the search box); "" is every store
 
   const render = () => {
     const q = search.value.trim().toLowerCase();
     const terms = q.split(/\s+/).filter(Boolean);
     let shown = 0;
     cards.forEach((card) => {
-      const match = terms.every((t) => card.dataset.search.includes(t));
+      const inNiche = !niche || (card.dataset.niche || "").split(" ").includes(niche);
+      const match = inNiche && terms.every((t) => card.dataset.search.includes(t));
       card.hidden = !match;
       if (match) shown++;
     });
     empty.hidden = shown > 0;
   };
+  if (niches) {
+    niches.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-niche]");
+      if (!btn) return;
+      niche = btn.dataset.niche;
+      niches.querySelectorAll("button").forEach((b) => { const on = b === btn; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+      render();
+    });
+  }
 
   const sortCards = () => {
     const key = sort.value;
@@ -137,9 +149,10 @@ if (billing) {
     document.querySelectorAll(".cat-panel .pcard").forEach((card) => {
       const price = card.querySelector("[data-month]");
       const month = Number(price.dataset.month);
-      price.textContent = taka(yearly ? month * 12 : month);
-      card.querySelector("[data-per]").textContent = yearly ? "/year" : "/month";
-      card.querySelector("[data-bill]").textContent = yearly ? "৳" + taka(month) + "/month, billed yearly" : "Billed monthly";
+      // The Free plan costs ৳0 whichever way it's billed
+      price.textContent = taka(yearly && month ? month * 12 : month);
+      card.querySelector("[data-per]").textContent = yearly && month ? "/year" : "/month";
+      card.querySelector("[data-bill]").textContent = !month ? "Free forever · no card needed" : yearly ? "৳" + taka(month) + "/month, billed yearly" : "Billed monthly";
       card.querySelector("[data-plan-link]").href = "signup.html?plan=" + card.dataset.plan + "&billing=" + (yearly ? "yearly" : "monthly");
     });
   };
