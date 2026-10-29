@@ -9,7 +9,8 @@ window.SiteKit = (() => {
     u = String(u || "").trim();
     return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(u) ? u : "#";
   };
-  const safeImg = (u) => /^(\/media\/[\w-]+|https:\/\/[^\s"'<>]+)$/.test(String(u || "")) ? u : "";
+  // Image addresses a store can show: uploads (/media/…), https links, and inline images (the demo keeps uploads inline)
+  const safeImg = (u) => /^(\/media\/[\w-]+|https:\/\/[^\s"'<>]+|data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+)$/.test(String(u || "")) ? u : "";
 
   const FONTS = {
     // Single quotes: these go inside a style="" attribute

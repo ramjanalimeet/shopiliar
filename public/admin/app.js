@@ -152,7 +152,9 @@
   if (!me.store || picked) saveNow();
   const plan = () => PLANS[account.plan] || PLANS.starter;
   // Business and Pro get a free domain with yearly billing
-  const hasFreeDomain = () => account.billing === "yearly" && account.plan !== "starter";
+  const hasFreeDomain = () => account.billing === "yearly" && !!plan().freeDomain;
+  // Support chat with the Shopilier team comes with the paid plans
+  const hasSupport = () => plan().support !== false;
 
   // ---------- Chrome ----------
   // Active products with 3 or fewer left (0 = sold out)
@@ -171,7 +173,8 @@
     document.getElementById("me-store").textContent = siteUrl();
     document.getElementById("menu-name").textContent = account.name;
     document.getElementById("me-email").textContent = account.email;
-    document.getElementById("me-plan").textContent = plan().name + " · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
+    document.getElementById("me-plan").textContent = plan().price ? plan().name + " · " + (account.billing === "yearly" ? "Yearly" : "Monthly") : "Free plan";
+    chatFab.classList.toggle("locked", !hasSupport());
   };
   const profileBtn = document.getElementById("profile-btn");
   const profileMenu = document.getElementById("profile-menu");
@@ -1492,7 +1495,7 @@
   let inbox = null;
   const chatFab = document.getElementById("chat-fab"), chatPanel = document.getElementById("chat-panel"), chatRoot = document.getElementById("chat-root");
   const setMsgBadge = (n) => { unreadReplies = n || 0; document.getElementById("msg-count").textContent = n ? (n > 9 ? "9+" : n) : ""; refreshChrome(); };
-  const checkMessages = () => ShopilierInbox.unread("user").then(setMsgBadge);
+  const checkMessages = () => (hasSupport() ? ShopilierInbox.unread("user").then(setMsgBadge) : Promise.resolve(setMsgBadge(0)));
   checkMessages();
   setInterval(() => { if (chatPanel.hidden) checkMessages(); }, 60000);
   const openChat = () => {
@@ -1500,7 +1503,14 @@
     chatPanel.hidden = false;
     chatFab.setAttribute("aria-expanded", "true");
     document.body.classList.add("chat-open");
-    if (!inbox) inbox = ShopilierInbox(chatRoot, { mode: "user", onUnread: setMsgBadge });
+    // The Free plan has no support: show what the chat is and how to get it
+    if (!hasSupport()) {
+      chatRoot.innerHTML = `<div class="chat-locked"><span class="chat-locked-ico">${icon("lock")}</span>
+        <b>Support chat comes with the paid plans</b>
+        <p>On Starter, Business and Pro you can message the Shopilier team right here and get help with your store, your website or billing.</p>
+        <button class="btn btn-primary" type="button" data-settings="billing">See plans from ৳${PLANS.starter.price}/month</button>
+        <button class="link" type="button" data-settings="help">Open the Help Center</button></div>`;
+    } else if (!inbox) inbox = ShopilierInbox(chatRoot, { mode: "user", onUnread: setMsgBadge });
     chatPanel.querySelector("#chat-close").focus();
   };
   // Closing clears the inbox, which also stops it checking for new replies
@@ -1514,7 +1524,7 @@
   };
   chatFab.addEventListener("click", () => (chatPanel.hidden ? openChat() : closeChat()));
   document.getElementById("chat-close").addEventListener("click", closeChat);
-  document.getElementById("chat-new").addEventListener("click", () => { if (!inbox) openChat(); inbox.newMessage(); });
+  document.getElementById("chat-new").addEventListener("click", () => { if (!inbox) openChat(); if (inbox) inbox.newMessage(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !chatPanel.hidden && !document.querySelector(".overlay")) closeChat(); });
 
   const actions = {
@@ -1832,13 +1842,14 @@
       if (await confirm("Delete page?", `The “${pg.title}” page will be removed from your website.`)) { store.pages = store.pages.filter((x) => x !== pg); touchSite(); persist(); go(); }
     },
     "connect-domain": () => {
+      if (!plan().domain) { toast("Custom domains come with Starter and up — upgrade to connect yours"); return; }
       const v = document.getElementById("s-domain").value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
       if (v && !/^([a-z0-9-]+\.)+[a-z]{2,}$/.test(v)) { toast("That doesn't look like a domain — try www.yourbusiness.com"); return; }
       store.settings.domain = v; store.settings.domainStatus = v ? "pending" : "";
       persist(); go(); toast(v ? "Domain saved — waiting for DNS" : "Custom domain removed");
     },
     "change-plan": () => {
-      const planOptions = Object.entries(PLANS).map(([id, p]) => `<option value="${id}"${id === account.plan ? " selected" : ""}>${p.name} — ${taka(p.price)}/month</option>`).join("");
+      const planOptions = Object.entries(PLANS).map(([id, p]) => `<option value="${id}"${id === account.plan ? " selected" : ""}>${p.name} — ${p.price ? taka(p.price) + "/month" : "free"}</option>`).join("");
       dialog({
         title: "Change plan",
         body: `<div class="field"><label>Plan</label><select class="select" name="plan">${planOptions}</select></div>
@@ -1877,7 +1888,8 @@
     staff: { name: "Order handler", text: "Only orders and customers", perms: ["orders", "customers"] },
     custom: { name: "Custom", text: "Pick exactly what they can open", perms: [] },
   };
-  const staffLimit = () => ({ starter: 1, business: 5, pro: null }[account.plan] ?? 1);
+  // How many staff a plan allows (null = unlimited). Free has none: the owner runs the store alone.
+  const staffLimit = () => (plan().staff === undefined ? 1 : plan().staff);
   const staffDialog = (m) => {
     const role = m?.role || "manager";
     dialog({
@@ -1929,15 +1941,15 @@
       return `<h2>Plan &amp; billing</h2><p class="muted">Your plan and how much of it you're using.</p>
         <div class="s-card">
           <div class="s-plan"><div><span class="tag green">${esc(p.name)} plan</span>
-            <div class="stat-value" style="margin-top:8px">${yearly ? taka(p.price * 12) + '<span class="muted" style="font-size:14px;font-weight:500"> /year</span>' : taka(p.price) + '<span class="muted" style="font-size:14px;font-weight:500"> /month</span>'}</div>
-            <p class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${hasFreeDomain() ? " · includes a free custom domain" : ""}</p></div>
-            <button class="btn btn-primary" type="button" data-action="change-plan">Change plan</button></div>
+            <div class="stat-value" style="margin-top:8px">${!p.price ? '৳0<span class="muted" style="font-size:14px;font-weight:500"> forever</span>' : yearly ? taka(p.price * 12) + '<span class="muted" style="font-size:14px;font-weight:500"> /year</span>' : taka(p.price) + '<span class="muted" style="font-size:14px;font-weight:500"> /month</span>'}</div>
+            <p class="muted small">${!p.price ? "No custom domain or support chat — upgrade when you're ready" : yearly ? "Billed yearly" : "Billed monthly"}${hasFreeDomain() ? " · includes a free custom domain" : ""}</p></div>
+            <button class="btn btn-primary" type="button" data-action="change-plan">${p.price ? "Change plan" : "Upgrade"}</button></div>
           ${[["Pages", pageCount(), p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
             <div class="meter" style="margin-top:14px"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
             <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
         </div>
-        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:520px"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Sales</th><th class="t-actions"></th></tr></thead>
-          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${taka(pl.price)}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td><td>Unlimited</td>
+        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:640px"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Staff</th><th>Domain</th><th>Support</th><th class="t-actions"></th></tr></thead>
+          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${pl.price ? taka(pl.price) : "Free"}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td><td>${pl.staff === 0 ? "—" : limitText(pl.staff)}</td><td>${pl.domain ? (pl.freeDomain ? "Yes, free yearly" : "Yes") : "—"}</td><td>${pl.support ? "Chat" : "—"}</td>
             <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" type="button" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
         <p class="muted small">Online payment for plans isn't connected yet, so switching plans changes your limits straight away.</p>`;
     },
@@ -1946,7 +1958,8 @@
       return `<h2>Domain</h2><p class="muted">Where customers find your website.</p>
         <div class="s-card"><b>Free address</b><p class="muted" style="margin-top:4px">${esc(st.subdomain)}.shopilier.com</p></div>
         ${freeDomain ? `<div class="callout green"><span class="ico">${icon("gift")}</span><div><b>Your yearly ${esc(plan().name)} plan includes a free custom domain.</b></div></div>` : ""}
-        <div class="s-card">
+        ${plan().domain ? "" : `<div class="callout blue"><span class="ico">${icon("globe")}</span><div><b>Your own domain (like www.yourbusiness.com) comes with Starter and up.</b> On the Free plan your website lives at ${esc(st.subdomain)}.shopilier.com. <button type="button" class="link st-up" data-tab="billing">Upgrade to connect a domain</button>.</div></div>`}
+        <div class="s-card"${plan().domain ? "" : ' style="opacity:.55;pointer-events:none" aria-disabled="true"'}>
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
             <div class="field" style="flex:1;margin:0;min-width:200px"><label for="s-domain">Custom domain</label><input class="input" id="s-domain" placeholder="www.yourbusiness.com" value="${esc(st.domain)}"></div>
             <button type="button" class="btn btn-primary" data-action="connect-domain">${st.domain ? "Update" : "Connect"}</button>
@@ -2009,13 +2022,14 @@
           ["How do I change how my website looks?", "Open Online Store → Themes and click Customize. Click any part of your website to edit it, add sections, and preview it on desktop, tablet and mobile."],
           ["How do I publish my website?", "In the website editor, click Publish website. Your site goes live at your free shopilier.com address."],
           ["Can I go back to an earlier version of my website?", "Yes. Online Store → Themes → Website backups. Click Save a backup any time; a backup is also saved every time you publish. Click Preview to look at a backup, or ⋯ → Publish to bring it back."],
-          ["Can I use my own domain?", "Yes. Open Settings → Domain and add your domain. Yearly Business and Pro plans include a free domain."],
+          ["Can I use my own domain?", "Yes, on Starter and up. Open Settings → Domain and add your domain. Yearly Business and Pro plans include a free domain. The Free plan uses your shopilier.com address."],
           ["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."],
           ["How do I change my plan?", "Open Settings → Plan & billing and choose Switch next to the plan you want."],
-          ["How do I contact the Shopilier team?", "Click the green chat button at the bottom right of your dashboard. Pick what it's about (a question, a complaint, billing or a website problem) and we'll reply right there."],
+          ["How do I contact the Shopilier team?", "On Starter, Business and Pro, click the green chat button at the bottom right of your dashboard. Pick what it's about (a question, a complaint, billing or a website problem) and we'll reply right there."],
         ].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
       </div>
-      <div class="s-card help-chat"><div><b>Still need help?</b><p class="muted small">Send a message to the Shopilier team.</p></div><button class="btn btn-primary" type="button" data-action="open-chat">${icon("chat")}Chat with us</button></div>`;
+      ${hasSupport() ? `<div class="s-card help-chat"><div><b>Still need help?</b><p class="muted small">Send a message to the Shopilier team.</p></div><button class="btn btn-primary" type="button" data-action="open-chat">${icon("chat")}Chat with us</button></div>`
+        : `<div class="s-card help-chat"><div><b>Need help from a person?</b><p class="muted small">Support chat with the Shopilier team comes with Starter and up.</p></div><button class="btn btn-primary" type="button" data-tab="billing">${icon("chat")}See plans</button></div>`}`;
 
   let settingsEl = null;
   const openSettings = (tab = "general") => {
@@ -2102,6 +2116,7 @@
     if (!b) return;
     e.preventDefault();
     document.querySelector(".app").classList.remove("nav-open");
+    if (!chatPanel.hidden) closeChat();
     openSettings(b.dataset.settings);
   });
   // Old links like #/settings or #/billing open the popup

@@ -9,8 +9,15 @@
   const PLANS = Dash.PLANS();
   const taka = (n) => "৳" + Number(n).toLocaleString("en-US");
 
-  const PLAN_NAMES = { starter: "Starter", business: "Business", pro: "Pro" };
-  const FEATURES = { starter: ["5 page website", "3 products", "Unlimited sales"], business: ["100 page website", "150+ products", "Unlimited sales"], pro: ["Unlimited pages", "Unlimited products", "Unlimited sales"] };
+  const PLAN_NAMES = { free: "Free", starter: "Starter", business: "Business", pro: "Pro" };
+  const FEATURES = {
+    free: ["5 page website", "3 products", "Free shopilier.com address"],
+    starter: ["10 page website", "20 products", "Custom domain + support"],
+    business: ["Unlimited pages", "100+ products", "Custom domain + support"],
+    pro: ["Unlimited pages", "Unlimited products", "Unlimited staff"],
+  };
+  // The price for a plan on the chosen billing, as text
+  const priceText = (id) => PLANS[id].price ? `${taka(state.billing === "yearly" ? PLANS[id].price * 12 : PLANS[id].price)}<small>/${state.billing === "yearly" ? "year" : "month"}</small>` : "৳0<small>forever</small>";
   const STEPS = [["site", "Your website"], ["plan", "Plan"], ["account", "Account"]];
 
   // ---------- State (seeded from the link that brought the visitor here) ----------
@@ -73,7 +80,7 @@
       </form>`,
 
     plan: () => {
-      return `${back(state.start === "ai" ? "ai" : "template")}${head("Choose your plan", "Every plan includes a free website, CMS access and support.")}
+      return `${back(state.start === "ai" ? "ai" : "template")}${head("Choose your plan", "Start free, or pick a paid plan with a custom domain and support. You can change it any time.")}
         <div class="start-toggle" role="group" aria-label="Billing period">
           <button type="button" data-billing="monthly" class="${state.billing === "monthly" ? "on" : ""}" aria-pressed="${state.billing === "monthly"}">Monthly</button>
           <button type="button" data-billing="yearly" class="${state.billing === "yearly" ? "on" : ""}" aria-pressed="${state.billing === "yearly"}">Yearly <small>Free domain</small></button>
@@ -82,7 +89,7 @@
           <button type="button" class="plan-option${state.plan === id ? " on" : ""}${id === "business" ? " pop" : ""}" data-plan="${id}">
             ${id === "business" ? '<span class="pop-tag">Most popular</span>' : ""}
             <b>${PLAN_NAMES[id]}</b>
-            <span class="plan-price">${taka(state.billing === "yearly" ? PLANS[id].price * 12 : PLANS[id].price)}<small>/${state.billing === "yearly" ? "year" : "month"}</small></span>
+            <span class="plan-price">${priceText(id)}</span>
             <ul>${FEATURES[id].map((f) => `<li>${icon("check")}${f}</li>`).join("")}</ul>
             <span class="plan-cta">Choose ${PLAN_NAMES[id]}</span>
           </button>`).join("")}</div>`;
@@ -111,8 +118,9 @@
               <div><dt>Website</dt><dd>${state.start === "ai" ? "Created with AI · " : ""}${esc(t.name)} <button type="button" class="link-btn" data-go="${state.start === "ai" ? "ai" : "template"}">Change</button></dd></div>
               <div><dt>Plan</dt><dd>${PLAN_NAMES[state.plan]} · ${state.billing === "yearly" ? "Yearly" : "Monthly"} <button type="button" class="link-btn" data-go="plan">Change</button></dd></div>
             </dl>
-            <div class="summary-total"><span>Total</span><b>${taka(state.billing === "yearly" ? price * 12 : price)}<small>/${state.billing === "yearly" ? "year" : "month"}</small></b></div>
-            <div class="pay-note">${icon("info")}<span><b>Payment:</b> online payment with bKash, Nagad and card is coming soon. Your plan starts today and you won't be charged until payments are switched on.</span></div>
+            <div class="summary-total"><span>Total</span><b>${price ? `${taka(state.billing === "yearly" ? price * 12 : price)}<small>/${state.billing === "yearly" ? "year" : "month"}</small>` : "Free"}</b></div>
+            ${price ? `<div class="pay-note">${icon("info")}<span><b>Payment:</b> online payment with bKash, Nagad and card is coming soon. Your plan starts today and you won't be charged until payments are switched on.</span></div>`
+              : `<div class="pay-note">${icon("info")}<span><b>No payment needed.</b> The Free plan is free forever — 5 pages, 3 products and your own shopilier.com address. Upgrade any time from your dashboard.</span></div>`}
           </aside>
         </div>`;
     },

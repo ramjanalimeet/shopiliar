@@ -11,7 +11,8 @@ python3 -m http.server 8000 -d public
 ## Pages
 - `index.html` — Home
 - `templates.html` — Templates (search, sort and live preview)
-- `pricing.html` — Pricing (monthly / yearly toggle, FAQ)
+- `pricing.html` — Pricing (Free, Starter, Business and Pro; monthly / yearly toggle, FAQ)
+- `demo/` — Live demo: the real store dashboard on a sample store, no sign-up (see below)
 - `signin.html` — Sign in
 - `signup.html` — Get started: the step-by-step sign-up (see below)
 - `resources.html` — Resources: guide video and blog
@@ -19,6 +20,19 @@ python3 -m http.server 8000 -d public
 - `privacy.html` — Privacy Policy
 
 Shared styles live in `public/assets/styles.css`, shared behaviour in `public/assets/main.js`. Deployed to Cloudflare Workers with `npx wrangler deploy` (see `wrangler.jsonc`).
+
+## Plans
+Defined once in `Dash.PLANS()` (`public/assets/dash.js`) and mirrored on the public Pricing page and in the Worker's `PLANS` list:
+
+| Plan | Price | Pages | Products | Staff | Custom domain | Support |
+|---|---|---|---|---|---|---|
+| Free | ৳0 | 5 | 3 | — | — (shopilier.com address) | — |
+| Starter | ৳249/mo | 10 | 20 | 1 | Yes | Chat |
+| Business | ৳549/mo | Unlimited | 100+ | 5 | Yes, free with yearly | Chat |
+| Pro | ৳2,499/mo | Unlimited | Unlimited | Unlimited | Yes, free with yearly | Chat |
+
+The store dashboard enforces these (Products, Pages, Staff, Settings → Domain, and the support chat), and accounts that never
+picked a plan start on Free.
 
 ## Accounts
 `src/index.js` is the Worker. It serves `public/` and an account API backed by the D1 database `shopiliar-db` (tables in `schema.sql`):
@@ -32,7 +46,8 @@ Shared styles live in `public/assets/styles.css`, shared behaviour in `public/as
   `https://<your site>/api/auth/google/callback`, then run
   `npx wrangler secret put GOOGLE_CLIENT_ID` and `npx wrangler secret put GOOGLE_CLIENT_SECRET`
 
-`/admin` redirects to sign in when there is no session. Local development:
+`/admin` redirects to sign in when there is no session (its scripts, `/admin/app.js` and `/admin/editor.js`, are served to
+everyone because the demo loads them too). Local development:
 
 ```
 npx wrangler d1 execute shopiliar-db --local --file=schema.sql
@@ -56,6 +71,13 @@ rules when AI isn't available. Online payment isn't connected yet; the plan star
   publish/unpublish, duplicate, delete), payments, plans & pricing, activity, settings.
 
 Shared files: `public/assets/dash.css` and `public/assets/dash.js`.
+
+## Live demo (`/demo`)
+`demo/index.html` is the store dashboard shell with a demo bar on top, loading the same scripts as `/admin`.
+`assets/demo.js` loads first and stands in for the account API: it answers `/api/me`, `/api/store`, `/api/messages`,
+`/api/password` and `/api/upload` in the browser and keeps the sample store ("Dhaka Threads") in `localStorage`
+(`shopilier.demo`). Visitors can add products, record orders, customize and publish the website, and chat (replies are
+canned); uploaded photos are kept inline as data URLs. "Reset demo" clears the saved sample store.
 
 ## Website editor
 Online Store → Themes → **Customize** opens the full-screen editor (`admin/editor.js`, `assets/editor.css`).
