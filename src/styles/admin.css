@@ -896,7 +896,7 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
 .st-perms input { width: 16px; height: 16px; accent-color: var(--accent); }
 @media (max-width: 640px) { .st-roles, .st-perms { grid-template-columns: 1fr; } .st-row { grid-template-columns: auto 1fr auto auto; } .st-meta { grid-column: 2 / -1; justify-content: flex-start; } }
 
-/* Free plan: the chat shows how to get support instead of the inbox */
+/* A plan without support: the chat shows how to get support instead of the inbox */
 .chat-fab.locked::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 18px; height: 18px; border-radius: 50%; background: #f59e0b; border: 2px solid #fff; }
 .chat-locked { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px 28px; gap: 10px; }
 .chat-locked-ico { width: 56px; height: 56px; border-radius: 16px; background: #fff7ed; color: #c2410c; display: grid; place-items: center; margin-bottom: 6px; }

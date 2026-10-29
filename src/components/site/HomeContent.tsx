@@ -8,7 +8,7 @@ export default function HomeContent() {
       <section className="hero container"><span className="pill">Build{" "}<i />{" "}Launch{" "}<i />{" "}Grow</span>
         <h1>Create Your Business<br /><span className="gradient-text">Website Online</span></h1>
         <p className="lead bn">Shopilier একটি বাংলাদেশি প্রতিষ্ঠান, যা যেকোনো ব্যবসাকে মাত্র কয়েক মিনিটে একটি প্রফেশনাল ওয়েবসাইট তৈরি করতে সাহায্য করে — without coding, designers, or technical skills.</p>
-        <div className="cta"><a className="btn btn-dark btn-lg bn" href="/signup?plan=free">ফ্রিতে শুরু করুন{" "}
+        <div className="cta"><a className="btn btn-dark btn-lg bn" href="/signup">আজই শুরু করুন{" "}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
           </a>
           <div className="watch">
@@ -157,7 +157,7 @@ export default function HomeContent() {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
             </div>
-            <p>“Before Shopilier I took every order in my Facebook inbox. Now customers order from my website and I just update the status. The Free plan was enough to start.”</p>
+            <p>“Before Shopilier I took every order in my Facebook inbox. Now customers order from my website and I just update the status. The Starter plan was enough to start.”</p>
             <div className="reviewer"><span className="r-avatar" style={{ background: "#db2777" }}>FI</span><span><b>Farhana Islam</b><small>Glow by Farhana · Chattogram</small></span></div>
           </article>
           <article className="review">

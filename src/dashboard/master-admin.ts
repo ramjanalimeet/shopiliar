@@ -17,21 +17,21 @@ export const start = () => {
       ["Arif Chowdhury", "Arif Travels", "starter", "yearly", "active", 64], ["Mitu Rahman", "Mitu Crafts", "starter", "monthly", "active", 41],
       ["Shakil Khan", "Dhaka Gadget Hub", "pro", "monthly", "active", 33], ["Ruma Begum", "Ruma Home Decor", "business", "yearly", "active", 21],
       ["Imran Kabir", "Kabir Consultancy", "starter", "monthly", "active", 12], ["Lamia Haque", "Lamia Studio", "business", "monthly", "active", 6],
-      ["Sohel Rana", "Rana Auto Parts", "starter", "monthly", "active", 3], ["Jannat Ara", "Jannat's Pitha Ghor", "free", "monthly", "active", 9],
-      ["Rakib Hasan", "Rakib Mobile Point", "free", "monthly", "active", 2], ["Sumaiya Khatun", "Sumaiya Handicrafts", "free", "monthly", "active", 1],
+      ["Sohel Rana", "Rana Auto Parts", "starter", "monthly", "active", 3], ["Jannat Ara", "Jannat's Pitha Ghor", "starter", "monthly", "active", 9],
+      ["Rakib Hasan", "Rakib Mobile Point", "starter", "monthly", "active", 2], ["Sumaiya Khatun", "Sumaiya Handicrafts", "starter", "monthly", "active", 1],
     ];
     const tpl = Dash.TEMPLATES();
     const users = people.map(([name, business, plan, billing, status, ago], i) => ({
       id: uid("u"), name, business, email: name.toLowerCase().split(" ")[0] + "@" + business.toLowerCase().replace(/[^a-z]+/g, "") + ".com",
       phone: "01" + (700000000 + i * 1234567).toString().slice(0, 9), plan, billing, status, joined: daysAgo(ago),
       template: tpl[i % tpl.length].id, site: business.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopilier.com",
-      products: plan === "free" ? 2 : plan === "starter" ? 8 + (i % 9) : plan === "business" ? 40 + i * 5 : 320 + i * 11, published: i % 5 !== 4,
+      products: plan === "starter" ? 3 + (i % 8) : plan === "business" ? 40 + i * 5 : 320 + i * 11, published: i % 5 !== 4,
     }));
     const methods = ["bKash", "Nagad", "Card", "bKash", "Bank transfer"];
     const payments = [];
     users.forEach((u, i) => {
       const price = plans[u.plan].price;
-      if (!price) return; // the Free plan has no invoices
+      if (!price) return; // a plan without a price has no invoices
       const periods = u.billing === "yearly" ? 1 : Math.min(3, Math.ceil((Date.now() - new Date(u.joined)) / (30 * 864e5)));
       for (let k = 0; k < periods; k++) {
         payments.push({
@@ -51,8 +51,9 @@ export const start = () => {
     };
   };
   const db = load(KEY, seed);
-  // Plans were restructured (a Free plan was added and the limits changed): data saved by an older version gets the new plans
-  if (!db.plans || !db.plans.free) db.plans = Dash.PLANS();
+  // Plans were restructured (the Free plan was retired and the limits changed): data saved by an older version gets the new plans
+  if (!db.plans || db.plans.free || !db.plans.starter) db.plans = Dash.PLANS();
+  db.users.forEach((u) => { if (u.plan === "free") u.plan = "starter"; });
 
   // A real sign-up from this browser joins the user list.
   const account = load("shopiliar.account", null);
@@ -62,7 +63,7 @@ export const start = () => {
       billing: account.billing || "monthly", status: "active", joined: account.createdAt || new Date().toISOString(), template: account.template || "luxe-store",
       site: (account.business || "store").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopilier.com", products: 0, published: false,
     });
-    db.activity.unshift({ id: uid("a"), date: new Date().toISOString(), text: `${account.name} signed up on the ${(db.plans[account.plan] || db.plans.free).name} plan` });
+    db.activity.unshift({ id: uid("a"), date: new Date().toISOString(), text: `${account.name} signed up on the ${(db.plans[account.plan] || db.plans.starter).name} plan` });
   }
   // Keep that user's plan and website status in sync with their dashboard.
   const ownStore = load("shopiliar.store", null);
@@ -89,7 +90,7 @@ export const start = () => {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !profileMenu.hidden) { toggleMenu(false); profileBtn.focus(); } });
 
   // ---------- Helpers ----------
-  const PLAN_COLOR = { free: "gray", starter: "green", business: "blue", pro: "purple" };
+  const PLAN_COLOR = { starter: "green", business: "blue", pro: "purple" };
   const PAY_COLOR = { Paid: "green", Due: "yellow", Failed: "red" };
   const planName = (id) => (db.plans[id] || { name: id }).name;
   const monthly = (u) => u.status === "active" ? (db.plans[u.plan]?.price || 0) : 0;

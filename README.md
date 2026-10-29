@@ -61,12 +61,12 @@ dashboards) and enforced by the API (`src/lib/plans.ts`):
 
 | Plan | Price | Pages | Products | Staff | Custom domain | Support |
 |---|---|---|---|---|---|---|
-| Free | ৳0 | 5 | 3 | — | — (shopilier.com address) | — |
-| Starter | ৳249/mo | 10 | 20 | 1 | Yes | Chat |
-| Business | ৳549/mo | Unlimited | 100+ | 5 | Yes, free with yearly | Chat |
+| Starter | ৳149/mo | 10 | 10 | 2 | Yes | Chat |
+| Business | ৳549/mo | Unlimited | 100+ | 10+ | Yes, free with yearly | Chat |
 | Pro | ৳2,499/mo | Unlimited | Unlimited | Unlimited | Yes, free with yearly | Chat |
 
-Accounts that never picked a plan start on Free.
+Every plan includes a free sub-domain (yourstore.shopilier.com). Accounts that never picked a plan start on Starter;
+accounts still on the retired Free plan are treated as Starter.
 
 ## Accounts and the API
 Accounts, sessions and each user's store live in D1 (tables in `schema.sql`). Route handlers:
@@ -116,8 +116,10 @@ which hands over to it) uploads them. A deploy without the build step stops with
 
 **Cloudflare Workers Builds** (the GitHub connection that deploys `main`) works with its default settings
 (no build command, deploy command `npx wrangler deploy`): on that runner, `scripts/postinstall.mjs` builds the
-Worker right after `npm install`, so the deploy finds it. You can also set the dashboard's Build command to
-`npx opennextjs-cloudflare build` and the Deploy command to `npx opennextjs-cloudflare deploy`; both ways work.
+Worker right after `npm install`, and the committed `.env` (`OPEN_NEXT_DEPLOY=true`, read by wrangler) makes
+`wrangler deploy` upload that build directly instead of handing over to `opennextjs-cloudflare deploy`, which would
+first open a remote session with Cloudflare to check caches this app doesn't use. You can also set the dashboard's
+Build command to `npx opennextjs-cloudflare build`; both ways work.
 
 Build-time packages (`next`, `@opennextjs/cloudflare`, `wrangler`, `typescript`, the type packages) are regular
 dependencies, so the build works even where development dependencies aren't installed.

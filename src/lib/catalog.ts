@@ -1,16 +1,15 @@
 // Plans and the template catalog as visitors see them (sign-up, pricing). Mirrors Dash.PLANS() and
 // Dash.TEMPLATES() in public/assets/dash.js, which the dashboards use, and the Worker's rules in plans.ts.
-export type PlanId = "free" | "starter" | "business" | "pro";
+export type PlanId = "starter" | "business" | "pro";
 export type Billing = "monthly" | "yearly";
 
 export type Plan = { id: PlanId; name: string; price: number; blurb: string; features: string[] };
 
-// Prices per month in Taka
+// Prices per month in Taka. Every plan comes with a free sub-domain, a custom domain and support.
 export const PLANS: Plan[] = [
-  { id: "free", name: "Free", price: 0, blurb: "Try Shopilier, free forever", features: ["5 page website", "3 products", "Free shopilier.com address"] },
-  { id: "starter", name: "Starter", price: 249, blurb: "For getting started online", features: ["10 page website", "20 products", "Custom domain + support"] },
-  { id: "business", name: "Business", price: 549, blurb: "For growing businesses", features: ["Unlimited pages", "100+ products", "Custom domain + support"] },
-  { id: "pro", name: "Pro", price: 2499, blurb: "Everything unlimited", features: ["Unlimited pages", "Unlimited products", "Unlimited staff"] },
+  { id: "starter", name: "Starter", price: 149, blurb: "For getting started online", features: ["10 page website", "10 products", "2 staff accounts", "Free sub-domain"] },
+  { id: "business", name: "Business", price: 549, blurb: "For growing businesses", features: ["Unlimited pages", "100+ products", "10+ staff accounts", "Free sub-domain"] },
+  { id: "pro", name: "Pro", price: 2499, blurb: "Everything unlimited", features: ["Unlimited pages", "Unlimited products", "Unlimited staff", "Free sub-domain"] },
 ];
 export const planById = (id: string | null | undefined) => PLANS.find((p) => p.id === id);
 export const taka = (n: number) => "৳" + Number(n).toLocaleString("en-US");

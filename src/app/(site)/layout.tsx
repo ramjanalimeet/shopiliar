@@ -7,7 +7,7 @@ import { VideoProvider } from "@/components/site/VideoModal";
 
 export const metadata: Metadata = {
   title: "Shopilier — Create Your Business Website Online",
-  description: "Shopilier is a Bangladeshi business that helps any business create a professional online store in minutes — without coding, designers, or technical skills. Start free.",
+  description: "Shopilier is a Bangladeshi business that helps any business create a professional online store in minutes — without coding, designers, or technical skills. Plans from ৳149 a month.",
   icons: ICONS,
 };
 

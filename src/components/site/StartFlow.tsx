@@ -188,7 +188,7 @@ export default function StartFlow() {
       case "plan": return (
         <>
           <Back step={s.start === "ai" ? "ai" : "template"} />
-          <Head title="Choose your plan" sub="Start free, or pick a paid plan with a custom domain and support. You can change it any time." />
+          <Head title="Choose your plan" sub="Every plan comes with a free sub-domain, a custom domain and support. You can change it any time." />
           <div className="start-toggle" role="group" aria-label="Billing period">
             <button type="button" className={s.billing === "monthly" ? "on" : undefined} aria-pressed={s.billing === "monthly"} onClick={() => set({ billing: "monthly" })}>Monthly</button>
             <button type="button" className={s.billing === "yearly" ? "on" : undefined} aria-pressed={s.billing === "yearly"} onClick={() => set({ billing: "yearly" })}>Yearly <small>Free domain</small></button>
@@ -233,9 +233,7 @@ export default function StartFlow() {
                   <div><dt>Plan</dt><dd>{plan.name} · {s.billing === "yearly" ? "Yearly" : "Monthly"} <button type="button" className="link-btn" onClick={() => go("plan")}>Change</button></dd></div>
                 </dl>
                 <div className="summary-total"><span>Total</span><b>{plan.price ? <Price plan={plan.id} billing={s.billing} /> : "Free"}</b></div>
-                {plan.price
-                  ? <div className="pay-note"><Icon name="info" /><span><b>Payment:</b> online payment with bKash, Nagad and card is coming soon. Your plan starts today and you won&apos;t be charged until payments are switched on.</span></div>
-                  : <div className="pay-note"><Icon name="info" /><span><b>No payment needed.</b> The Free plan is free forever — 5 pages, 3 products and your own shopilier.com address. Upgrade any time from your dashboard.</span></div>}
+                <div className="pay-note"><Icon name="info" /><span><b>Payment:</b> online payment with bKash, Nagad and card is coming soon. Your plan starts today and you won&apos;t be charged until payments are switched on.</span></div>
               </aside>
             </div>
           </>

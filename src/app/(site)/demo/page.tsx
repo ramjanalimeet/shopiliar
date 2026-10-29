@@ -37,14 +37,14 @@ export default function DemoPage() {
             <div className="try-card"><span className="try-num">1</span><h3>Add a product</h3><p>Open <b>Products</b> → <b>Add product</b>. Give it a name, price, photo and sizes or colours.</p></div>
             <div className="try-card"><span className="try-num">2</span><h3>Record an order</h3><p>Open <b>Orders</b> → <b>New order</b>, the way you&apos;d note a Facebook or phone order. Stock updates by itself.</p></div>
             <div className="try-card"><span className="try-num">3</span><h3>Customize the website</h3><p>Open <b>Online Store</b> → <b>Themes</b> → <b>Customize</b>. Click any part of the page to edit it, then publish.</p></div>
-            <div className="try-card"><span className="try-num">4</span><h3>Change the plan</h3><p>Open <b>Settings</b> → <b>Plan &amp; billing</b> and switch between Free, Starter, Business and Pro to see what each unlocks.</p></div>
+            <div className="try-card"><span className="try-num">4</span><h3>Change the plan</h3><p>Open <b>Settings</b> → <b>Plan &amp; billing</b> and switch between Starter, Business and Pro to see what each unlocks.</p></div>
           </div>
           <div className="demo-cta">
-            <a className="btn btn-dark btn-lg" href="/signup?plan=free">Open your own store free</a>
+            <a className="btn btn-dark btn-lg" href="/signup">Open your own store</a>
             <a className="btn btn-outline btn-lg" href="/pricing">See pricing</a>
           </div>
           <ul className="demo-perks">
-            <li><Check />Free plan, no card needed</li>
+            <li><Check />Plans from ৳149 a month</li>
             <li><Check />bKash, Nagad &amp; cash on delivery</li>
             <li><Check />Your store live in minutes</li>
           </ul>

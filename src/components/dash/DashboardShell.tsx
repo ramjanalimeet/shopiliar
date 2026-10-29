@@ -16,7 +16,7 @@ export default function DashboardShell({ demo = false }: { demo?: boolean }) {
           <span className="demo-bar-dot" aria-hidden="true" />
           <span className="demo-text"><b>Live demo</b><span className="demo-sep"> · </span><span className="demo-long">You&apos;re managing a sample store, Dhaka Threads. Everything works — your changes are saved in this browser only.</span><span className="demo-short">Sample store · saved in this browser</span></span>
           <button className="btn btn-ghost" type="button" id="demo-reset"><Icon name="undo" /><span>Reset demo</span></button>
-          <a className="btn btn-cta" href="/signup?plan=free" target="_top">Create your own store →</a>
+          <a className="btn btn-cta" href="/signup" target="_top">Create your own store →</a>
         </div>
       )}
       <div className="app">

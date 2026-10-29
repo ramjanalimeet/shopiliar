@@ -8,7 +8,7 @@ import { Dash } from "./dash";
 // It must run before the dashboard (demo.entry.ts calls it first).
 export const start = () => {
   const KEY = "shopilier.demo";
-  const PLANS = ["free", "starter", "business", "pro"];
+  const PLANS = ["starter", "business", "pro"];
   const realFetch = window.fetch.bind(window);
   const now = () => new Date().toISOString();
   const ago = (minutes) => new Date(Date.now() - minutes * 6e4).toISOString();
@@ -32,7 +32,7 @@ export const start = () => {
   const REPLIES = [
     "Thanks for trying the demo! In your real store a person from the Shopilier team answers here, usually within a few hours. Anything else you'd like to try?",
     "Got it 👍 This is a demo reply. On Starter, Business and Pro, real support replies land right here in your dashboard.",
-    "Thanks! When you open your own store (it's free to start at shopilier.com), this chat connects you straight to our team.",
+    "Thanks! When you open your own store (plans start at ৳149/month at shopilier.com), this chat connects you straight to our team.",
   ];
 
   // ---------- Storage ----------

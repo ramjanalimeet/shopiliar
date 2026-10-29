@@ -6,33 +6,33 @@ import SiteFooter from "@/components/site/SiteFooter";
 
 export const metadata: Metadata = {
   title: "Pricing — Shopilier",
-  description: "Shopilier plans in Bangladeshi Taka: start free with 5 pages and 3 products, or go Starter (৳249), Business (৳549) or Pro (৳2,499) for a custom domain, more products and support.",
+  description: "Shopilier plans in Bangladeshi Taka: Starter (৳149) with 10 products and 2 staff, Business (৳549) with 100+ products and 10+ staff, or Pro (৳2,499) with everything unlimited. Every plan includes a free sub-domain, a custom domain and support.",
 };
 
 const Yes = () => <span className="yes" aria-label="Included"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12.5l5 5L20 6.5" /></svg></span>;
 const No = () => <span className="no" aria-label="Not included">—</span>;
 type Cell = ReactNode;
-// Feature rows of the comparison table: Free, Starter, Business, Pro
-const ROWS: [string, Cell, Cell, Cell, Cell][] = [
-  ["Website pages", "5", "10", "Unlimited", "Unlimited"],
-  ["Products", "3", "20", "100+", "Unlimited"],
-  ["Sales", "Unlimited", "Unlimited", "Unlimited", "Unlimited"],
-  ["Free shopilier.com address", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
-  ["Custom domain", <No key="n" />, <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
-  ["Free custom domain", <No key="n" />, <No key="n" />, "Yearly plan", "Yearly plan"],
-  ["Staff accounts", <No key="n" />, "1", "5", "Unlimited"],
-  ["Free website", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
-  ["Free CMS access", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
-  ["Support chat", <No key="n" />, <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
+// Feature rows of the comparison table: Starter, Business, Pro
+const ROWS: [string, Cell, Cell, Cell][] = [
+  ["Website pages", "10", "Unlimited", "Unlimited"],
+  ["Products", "10", "100+", "Unlimited"],
+  ["Sales", "Unlimited", "Unlimited", "Unlimited"],
+  ["Staff accounts", "2", "10+", "Unlimited"],
+  ["Free sub-domain", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
+  ["Custom domain", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
+  ["Free custom domain", <No key="n" />, "Yearly plan", "Yearly plan"],
+  ["Free website", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
+  ["Free CMS access", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
+  ["Support chat", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
 ];
 const FAQ: [string, string][] = [
-  ["Is the Free plan really free?", "Yes — ৳0, forever, with no card needed. You get a 5 page website, 3 products and your own address at yourstore.shopilier.com. Upgrade whenever your business is ready."],
+  ["Which plan should I start with?", "Starter (৳149/month) gives you a 10 page website, 10 products, 2 staff accounts and your free sub-domain. Move up to Business when you need more products and staff, or Pro for no limits at all."],
   ["Which currency are the prices in?", "All prices are in Bangladeshi Taka (৳ BDT)."],
   ["What do I get with a yearly plan?", "You pay for 12 months at once. On Business and Pro plans, the yearly plan also comes with a free custom domain."],
-  ["Can I use my own domain?", "Yes, on Starter, Business and Pro you can connect a domain like www.yourbusiness.com. The Free plan uses your free shopilier.com address."],
+  ["Can I use my own domain?", "Yes, on every plan you can connect a domain like www.yourbusiness.com. Every plan also comes with a free sub-domain at yourstore.shopilier.com."],
   ["What is CMS access?", "The CMS is your dashboard for editing pages, adding products and updating your website — no coding needed. It's free on every plan."],
   ["Can I change my plan later?", "Yes. You can move to a bigger or smaller plan whenever your business needs change — your website and products stay as they are."],
-  ["How does support work?", "Starter, Business and Pro include free support: message the Shopilier team from the chat button in your dashboard. The Free plan has no support, but the Help Center is open to everyone."],
+  ["How does support work?", "Every plan includes free support: message the Shopilier team from the chat button in your dashboard. The Help Center is open to everyone too."],
 ];
 
 export default function PricingPage() {
@@ -41,8 +41,8 @@ export default function PricingPage() {
       <main className="container price-page">
         <section className="page-head">
           <span className="pill bn">প্ল্যান ও মূল্য</span>
-          <h1 className="bn">ফ্রিতে শুরু করুন,<br /><span className="gradient-text">নিজের গতিতে</span> বড় হোন</h1>
-          <p className="bn">লুকানো কোনো খরচ নেই — সব দাম টাকায়। আজই ফ্রি প্ল্যানে আপনার দোকান খুলুন, ব্যবসা বাড়লে এক ক্লিকেই প্ল্যান বদলে নিন।</p>
+          <h1 className="bn">মাত্র ৳১৪৯ থেকে শুরু করুন,<br /><span className="gradient-text">নিজের গতিতে</span> বড় হোন</h1>
+          <p className="bn">লুকানো কোনো খরচ নেই — সব দাম টাকায়। আজই আপনার দোকান খুলুন, ব্যবসা বাড়লে এক ক্লিকেই প্ল্যান বদলে নিন।</p>
         </section>
 
         <PricingCards />
@@ -50,7 +50,7 @@ export default function PricingPage() {
         <section className="perks" aria-label="Included in every plan">
           <div className="perk">
             <span className="perk-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M7 6.5h.01M10 6.5h.01" /></svg></span>
-            <div><h3>Free website</h3><p>Your online store is included with every plan, Free too.</p></div>
+            <div><h3>Free website</h3><p>Your online store and your free sub-domain are included with every plan.</p></div>
           </div>
           <div className="perk">
             <span className="perk-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13 7l4 4" /></svg></span>
@@ -58,7 +58,7 @@ export default function PricingPage() {
           </div>
           <div className="perk">
             <span className="perk-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 13v-1a8 8 0 0116 0v1" /><rect x="3" y="13" width="4" height="6" rx="1.5" /><rect x="17" y="13" width="4" height="6" rx="1.5" /><path d="M19 19c0 1.5-2 2.5-5 2.5" /></svg></span>
-            <div><h3>Support on paid plans</h3><p>Chat with our team from your dashboard on Starter, Business and Pro.</p></div>
+            <div><h3>Support on every plan</h3><p>Chat with our team from your dashboard on Starter, Business and Pro.</p></div>
           </div>
         </section>
 
@@ -67,7 +67,7 @@ export default function PricingPage() {
           <div className="compare-wrap">
             <table data-cat="ecommerce">
               <caption className="sr-only">Shopilier plans</caption>
-              <thead><tr><th scope="col">Features</th><th scope="col">Free<small>৳0</small></th><th scope="col">Starter<small>৳249/mo</small></th><th scope="col" className="hl">Business<small>৳549/mo</small></th><th scope="col">Pro<small>৳2,499/mo</small></th></tr></thead>
+              <thead><tr><th scope="col">Features</th><th scope="col">Starter<small>৳149/mo</small></th><th scope="col" className="hl">Business<small>৳549/mo</small></th><th scope="col">Pro<small>৳2,499/mo</small></th></tr></thead>
               <tbody>
                 {ROWS.map(([name, ...cells]) => (
                   <tr key={name}><th scope="row">{name}</th>{cells.map((c, i) => <td key={i}>{c}</td>)}</tr>
