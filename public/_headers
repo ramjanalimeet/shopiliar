@@ -1,14 +1,14 @@
 # Cache rules for the static files (Workers static assets read this file).
-# Browsers keep scripts and styles for 10 minutes and images for a day, refreshing them in
-# the background, so repeat visits and the dashboard open faster. Pages themselves stay fresh.
-# Rules don't overlap: a file matching two rules would get both Cache-Control values joined.
-# Next.js build output carries a hash in its name, so it can be kept for good.
+# Scripts and styles are checked on every load (a cheap 304 when unchanged), so a new deploy
+# never shows a new page with an old stylesheet or script. Images and the favicon rarely change
+# and are kept for a day, refreshed in the background. Next.js build output carries a hash in
+# its name, so it can be kept for good.
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 /assets/*.css
-  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+  Cache-Control: public, max-age=0, must-revalidate
 /assets/*.js
-  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+  Cache-Control: public, max-age=0, must-revalidate
 /assets/*.webp
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /assets/*.png
