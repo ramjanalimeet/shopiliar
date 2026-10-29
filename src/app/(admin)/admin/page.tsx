@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { preload } from "react-dom";
 import DashboardShell from "@/components/dash/DashboardShell";
-import DashboardApp from "@/components/dash/DashboardApp";
+import AdminApp from "@/components/dash/AdminApp";
 import { currentUserFromCookies } from "@/lib/auth";
 import { getEnv } from "@/lib/cf";
 
@@ -22,7 +22,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <DashboardShell />
-      <DashboardApp app="admin" />
+      <AdminApp />
     </>
   );
 }

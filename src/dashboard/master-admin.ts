@@ -2,8 +2,8 @@
 import { Dash } from "./dash";
 import { ShopilierInbox } from "./inbox";
 
-// Shopilier master dashboard (/master-admin): users, templates, payments and plans. Runs when this module loads.
-(() => {
+// Shopilier master dashboard (/master-admin): users, templates, payments and plans. start() runs once the shell is on the page.
+export const start = () => {
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, CATEGORIES } = Dash;
   const KEY = "shopiliar.master";
 
@@ -502,4 +502,4 @@ import { ShopilierInbox } from "./inbox";
   save(KEY, db);
   chrome();
   rerender = router(routes, "overview");
-})();
+};

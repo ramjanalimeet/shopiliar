@@ -4,8 +4,8 @@ import { ShopilierInbox } from "./inbox";
 import { SiteEditor } from "./editor";
 import { SiteKit } from "./site";
 
-// Shopilier store owner dashboard (/admin). Runs when this module loads, once the dashboard shell is on the page.
-(async () => {
+// Shopilier store owner dashboard (/admin). start() runs once the dashboard shell is on the page.
+export const start = async () => {
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, pixelLogo, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, limitText, withinLimit } = Dash;
   const PLANS = Dash.PLANS();
   const SIGN_IN = "/signin?next=" + encodeURIComponent(location.pathname + location.search);
@@ -2302,4 +2302,4 @@ import { SiteKit } from "./site";
   if (startHash) history.replaceState(null, "", "#/home");
   rerender = router(routes, "home", afterRender);
   if (startHash) { if (startHash[1] === "messages") openChat(); else openSettings(startHash[1] === "settings" ? "general" : startHash[1]); }
-})();
+};

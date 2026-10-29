@@ -5,8 +5,8 @@ import { Dash } from "./dash";
 // sample store. This file stands in for the account API: it answers every /api/* call those scripts
 // make and keeps the sample store in this browser (localStorage), so a visitor can try everything
 // (products, orders, the website editor, publishing, messages) without an account.
-// It must run before the dashboard (demo.entry.ts imports it first).
-(() => {
+// It must run before the dashboard (demo.entry.ts calls it first).
+export const start = () => {
   const KEY = "shopilier.demo";
   const PLANS = ["free", "starter", "business", "pro"];
   const realFetch = window.fetch.bind(window);
@@ -184,4 +184,4 @@ import { Dash } from "./dash";
     db = fresh();
     location.href = location.pathname;
   });
-})();
+};

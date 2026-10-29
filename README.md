@@ -35,8 +35,9 @@ fonts (the dashboards fetch only the ৳ sign from the Bengali font, in its own 
 
 ## Dashboards
 The store dashboard (`/admin`), the live demo and the master dashboard are TypeScript modules in `src/dashboard/`,
-bundled by Next.js. React renders each dashboard's shell (`src/components/dash/`) and `DashboardApp` loads the
-matching bundle once the page has hydrated; the dashboard then takes over the shell (icons, `#view`, the chat panel).
+bundled by Next.js. React renders each dashboard's shell (`src/components/dash/`), icons included, so nothing moves when the
+dashboard starts; `AdminApp`, `DemoApp` and `MasterApp` ship the matching bundle with the page and call its
+`start()` once the page has hydrated. The dashboard then takes over the shell (`#view`, the chat panel).
 
 | Module | What it is |
 |---|---|
@@ -47,7 +48,7 @@ matching bundle once the page has hydrated; the dashboard then takes over the sh
 | `password.ts` | Show/hide password fields in the dashboard |
 | `demo.ts` | Stands in for the account API on `/demo/app` (sample store in `localStorage`, `shopilier.demo`) |
 | `master-admin.ts` | The master dashboard (its data still lives in the browser) |
-| `*.entry.ts` | One entry per page, importing the pieces in the order they must run (`demo.ts` before the dashboard) |
+| `*.entry.ts` | One entry per page: `start()` runs the pieces in the order they must run (`demo.ts` before the dashboard) |
 
 These modules were ported from the original dashboard scripts and are marked `@ts-nocheck`: they run as written,
 with every feature intact (orders, products, the website editor with desktop/tablet/phone previews, versions and
