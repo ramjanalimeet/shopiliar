@@ -1,0 +1,13 @@
+# Cache rules for the static files (Workers static assets read this file).
+# Browsers keep scripts, styles and images for a while and refresh them in the background,
+# so repeat visits and the dashboard open faster. Pages themselves stay fresh.
+/assets/*
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+/admin/*.js
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+/assets/*.webp
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/*.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/favicon.ico
+  Cache-Control: public, max-age=86400

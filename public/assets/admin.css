@@ -931,6 +931,9 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
   .demo-bar .btn-ghost span { display: none; }
   .demo-bar .btn { padding: 0 10px; }
 }
+/* Inside the Demo page's frame the page around it already says it's a demo */
+.store-admin.demo.embedded .demo-bar .demo-long { display: none; }
+.store-admin.demo.embedded .demo-bar .demo-short { display: inline; }
 @media (max-width: 480px) {
-  .demo-bar .demo-sep, .demo-bar .demo-short { display: none; }
+  .store-admin.demo .demo-bar .demo-sep, .store-admin.demo .demo-bar .demo-short, .store-admin.demo.embedded .demo-bar .demo-short { display: none; }
 }

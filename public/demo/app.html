@@ -10,8 +10,9 @@
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@500;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@500;700&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@500;700&display=swap"></noscript>
   <link rel="stylesheet" href="/assets/dash.css">
   <link rel="stylesheet" href="/assets/admin.css">
   <link rel="stylesheet" href="/assets/editor.css">
@@ -22,7 +23,7 @@
     <span class="demo-bar-dot" aria-hidden="true"></span>
     <span class="demo-text"><b>Live demo</b><span class="demo-sep"> · </span><span class="demo-long">You're managing a sample store, Dhaka Threads. Everything works — your changes are saved in this browser only.</span><span class="demo-short">Sample store · saved in this browser</span></span>
     <button class="btn btn-ghost" type="button" id="demo-reset"><span data-icon="undo"></span><span>Reset demo</span></button>
-    <a class="btn btn-cta" href="/signup.html?plan=free">Create your own store →</a>
+    <a class="btn btn-cta" href="/signup.html?plan=free" target="_top">Create your own store →</a>
   </div>
   <div class="app">
     <aside class="side" id="dashboard-nav" aria-label="Dashboard navigation">
@@ -81,7 +82,7 @@
             <a role="menuitem" href="#/themes"><span data-icon="external"></span>My website</a>
             <button role="menuitem" type="button" data-settings="general"><span data-icon="settings"></span>Settings</button>
             <button role="menuitem" type="button" data-settings="billing"><span data-icon="billing"></span>Plan &amp; billing</button>
-            <a role="menuitem" href="/"><span data-icon="logout"></span>Exit demo</a>
+            <a role="menuitem" href="/" target="_top"><span data-icon="logout"></span>Exit demo</a>
             <button type="button" id="logout" hidden></button>
           </div>
         </div>

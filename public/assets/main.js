@@ -237,7 +237,7 @@ if (videoModal) {
     <div class="vp-stage"><div id="vp-yt"></div></div>
     <div class="vp-shield"></div>
     <div class="vp-cover">
-      <img class="vp-poster" src="https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg" alt="" onerror="this.onerror=null;this.src=this.src.replace('maxresdefault','hqdefault')">
+      <img class="vp-poster" data-src="https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg" alt="" onerror="this.onerror=null;this.src=this.src.replace('maxresdefault','hqdefault')">
       <span class="vp-spinner" aria-hidden="true"></span>
       <button class="vp-big" type="button" aria-label="Play">${icon(PLAY)}</button>
     </div>
@@ -309,6 +309,8 @@ if (videoModal) {
   const load = () => {
     if (player || !videoId) return;
     player = true; // loading
+    const poster = $(".vp-poster");
+    if (poster.dataset.src) { poster.src = poster.dataset.src; delete poster.dataset.src; }
     const create = () => {
       player = new YT.Player("vp-yt", {
         host: "https://www.youtube-nocookie.com",
@@ -329,8 +331,7 @@ if (videoModal) {
   };
 
   setState("idle");
-  // Warm up the player shortly after the page loads, or as soon as someone reaches for the button
-  addEventListener("load", () => setTimeout(load, 1500));
+  // The player (and its poster) load as soon as someone reaches for the button, not on every visit
   triggers.forEach((btn) => {
     ["pointerenter", "touchstart", "focus"].forEach((ev) => btn.addEventListener(ev, load, { once: true, passive: true }));
     btn.addEventListener("click", () => {
@@ -379,6 +380,29 @@ if (videoModal) {
   videoModal.addEventListener("click", (e) => { if (e.target === videoModal) videoModal.close(); });
   // Closing pauses; opening again carries on from the same spot
   videoModal.addEventListener("close", () => { wantPlay = false; pause(); if (document.fullscreenElement) document.exitFullscreen(); });
+}
+
+// Live demo (demo.html): the real dashboard loads into a browser-style frame.
+// Elsewhere a frame would only load when scrolled to or when "Start the live demo" is pressed.
+const demoStage = document.getElementById("demo-stage");
+if (demoStage) {
+  const iframe = document.getElementById("demo-iframe");
+  const start = document.getElementById("demo-start");
+  let started = false;
+  const startDemo = () => {
+    if (started) return;
+    started = true;
+    start.classList.add("loading");
+    iframe.addEventListener("load", () => demoStage.classList.add("ready"), { once: true });
+    iframe.src = iframe.dataset.src;
+  };
+  start.addEventListener("click", startDemo);
+  // On the Demo page the dashboard is the point, so it loads straight away
+  if ("autoload" in demoStage.dataset || location.hash === "#demo") startDemo();
+  else if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) { startDemo(); io.disconnect(); } }, { rootMargin: "200px 0px" });
+    io.observe(demoStage);
+  }
 }
 
 // Contact form: open the visitor's email app with the message filled in

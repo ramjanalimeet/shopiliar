@@ -169,6 +169,9 @@
     }
   };
 
+  // Inside the home page's demo frame: links leave the frame, and the bar is slimmer
+  if (window.self !== window.top) document.body.classList.add("embedded");
+
   // ---------- Demo bar ----------
   // "Reset demo" puts the sample store back the way it started (delegated, so it works whenever the bar is rendered)
   document.addEventListener("click", async (e) => {

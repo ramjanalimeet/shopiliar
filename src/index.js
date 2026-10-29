@@ -35,8 +35,9 @@ export default {
     // The store dashboard needs a signed-in user. Its scripts (app.js, editor.js) are plain files
     // that the public demo at /demo also loads, so only the page itself is kept behind sign-in.
     if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) {
-      const isFile = /\.(js|css|map|png|webp|svg)$/i.test(url.pathname);
-      if (!isFile && !(await currentUser(request, env))) {
+      // Plain files (app.js, editor.js) are public and cached like any asset (see public/_headers)
+      if (/\.(js|css|map|png|webp|svg)$/i.test(url.pathname)) return env.ASSETS.fetch(request);
+      if (!(await currentUser(request, env))) {
         const next = encodeURIComponent(url.pathname + url.search);
         return Response.redirect(new URL("/signin.html?next=" + next, url), 302);
       }
