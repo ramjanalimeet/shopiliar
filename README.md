@@ -1,31 +1,60 @@
 # Shopilier
 
-Marketing site for Shopilier — create your online store.
-
-Static HTML/CSS/JS, no build step. Site files live in `public/`. Links use clean URLs (`/pricing`, `/signup?plan=free`,
-`/demo/app`): Cloudflare serves `pricing.html` for `/pricing`, and a request for `/pricing.html` would cost a redirect first.
-Run the site locally the same way it's served in production:
+Shopilier — create your online store. A [Next.js](https://nextjs.org) app (App Router, TypeScript) deployed to
+Cloudflare Workers with [OpenNext](https://opennext.js.org/cloudflare), backed by the D1 database `shopiliar-db`.
 
 ```
-npx wrangler dev
+npm install
+npm run db:local      # creates the tables in a local D1 database (once)
+npm run dev           # http://localhost:3000 with the same bindings as production
 ```
 
-## Pages
-- `index.html` — Home
-- `templates.html` — Templates (search, sort and live preview)
-- `pricing.html` — Pricing (Free, Starter, Business and Pro; monthly / yearly toggle, FAQ)
-- `demo.html` — Live demo: the real store dashboard on a sample store, embedded in the middle of the page
-  (the bare dashboard it frames is `demo/app.html`, which also opens full screen)
-- `signin.html` — Sign in
-- `signup.html` — Get started: the step-by-step sign-up (see below)
-- `resources.html` — Resources: guide video and blog
-- `contact.html` — Contact Us (the form opens the visitor's email app)
-- `privacy.html` — Privacy Policy
+`npm run dev` runs `next dev` with wrangler's local bindings (D1, the sign-in rate limiter). Workers AI only runs on
+Cloudflare: "Create with AI" uses its simple rules locally unless you run `wrangler login` and start with
+`NEXT_DEV_REMOTE_BINDINGS=1 npm run dev`. Secrets for local development go in `.dev.vars` (see `.dev.vars.example`).
 
-Shared styles live in `public/assets/styles.css`, shared behaviour in `public/assets/main.js`. Deployed to Cloudflare Workers with `npx wrangler deploy` (see `wrangler.jsonc`).
+## Layout
+- `src/app/(site)/` — the public website: home, templates, pricing, demo, resources, contact, privacy, sign in and
+  the step-by-step sign-up. Server components with small client components for the interactive parts
+  (`src/components/site/`). Addresses that don't exist show the home page with a 404 status.
+- `src/app/(admin)/admin/` — the store owner dashboard. The page checks the session cookie on the server and sends
+  visitors to `/signin?next=…` otherwise.
+- `src/app/(demo-app)/demo/app/` — the live demo: the same dashboard on a sample store kept in the browser.
+- `src/app/(master)/master-admin/` — the business owner dashboard (protected with Cloudflare Access).
+- `src/app/api/`, `src/app/master-admin/api/`, `src/app/media/` — the account API as route handlers (below).
+- `src/lib/` — server code shared by the API: sessions and passwords (`auth.ts`, `crypto.ts`), request guards
+  (`http.ts`), account rules (`plans.ts`), support messages, Cloudflare Access token checks, Create with AI, media.
+- `src/lib/catalog.ts` — plans and the template catalog as visitors see them (sign-up, pricing).
+- `src/styles/` — the stylesheets, imported by the layouts and pages that need them.
+- `public/assets/` — images, the storefront renderer's stylesheet, and the dashboard scripts (see below).
+
+Each section has its own root layout (`RootHtml`), so the dashboards get their own `<body>` classes and fonts and
+never share the website's header. Google Fonts load without blocking the first paint (preload, then a print
+stylesheet switched on when it arrives), as before.
+
+## Dashboards
+The store dashboard (`/admin`), the live demo and the master dashboard are large vanilla-JavaScript apps. They were
+kept as they are and are served from `public/assets/`:
+
+| File | What it is |
+|---|---|
+| `dash.js` | Shared helpers, icons, `Dash.PLANS()` and `Dash.TEMPLATES()` |
+| `admin-app.js` | The store owner dashboard: orders, products, customers, analytics, marketing, discounts, settings |
+| `editor.js`, `site.js`, `site.css` | The website editor and the storefront renderer (`site.css` is loaded inside the preview frame) |
+| `inbox.js` | Chat with the Shopilier team |
+| `password.js` | Show/hide password fields in the dashboard |
+| `demo.js` | Stands in for the account API on `/demo/app` (sample store in `localStorage`, `shopilier.demo`) |
+| `master-admin.js` | The master dashboard (its data still lives in the browser) |
+
+React renders each dashboard's shell (`src/components/dash/`); `LegacyScripts` then loads the scripts in order once
+the page has hydrated. They find the same elements and ids they always did, so every feature works unchanged:
+orders, products, the website editor with desktop/tablet/phone previews, versions and backups, publishing, image
+uploads, plan limits, the support chat, and the demo's "Reset demo". Rewriting these engines as React components is
+a separate project; nothing else in the app depends on how they are built.
 
 ## Plans
-Defined once in `Dash.PLANS()` (`public/assets/dash.js`) and mirrored on the public Pricing page and in the Worker's `PLANS` list:
+Defined in `src/lib/catalog.ts` (sign-up and pricing), mirrored in `Dash.PLANS()` (`public/assets/dash.js`, the
+dashboards) and enforced by the API (`src/lib/plans.ts`):
 
 | Plan | Price | Pages | Products | Staff | Custom domain | Support |
 |---|---|---|---|---|---|---|
@@ -34,72 +63,47 @@ Defined once in `Dash.PLANS()` (`public/assets/dash.js`) and mirrored on the pub
 | Business | ৳549/mo | Unlimited | 100+ | 5 | Yes, free with yearly | Chat |
 | Pro | ৳2,499/mo | Unlimited | Unlimited | Unlimited | Yes, free with yearly | Chat |
 
-The store dashboard enforces these (Products, Pages, Staff, Settings → Domain, and the support chat), and accounts that never
-picked a plan start on Free.
+Accounts that never picked a plan start on Free.
 
-## Accounts
-`src/index.js` is the Worker. It serves `public/` and an account API backed by the D1 database `shopiliar-db` (tables in `schema.sql`):
+## Accounts and the API
+Accounts, sessions and each user's store live in D1 (tables in `schema.sql`). Route handlers:
 
-- `POST /api/signup`, `POST /api/signin`, `POST /api/signout` — passwords hashed with PBKDF2, session in an HttpOnly cookie, 10 attempts/min per IP
+- `POST /api/signup`, `POST /api/signin`, `POST /api/signout` — passwords hashed with PBKDF2, session in an HttpOnly
+  cookie, 10 attempts/min per IP (the `AUTH_LIMITER` rate limit binding)
 - `GET /api/me` — the signed-in account and its store
 - `PUT /api/store` — saves the store dashboard and account details
-
-- `GET /api/auth/google` — "Continue with Google". It signs people in once the Worker has Google keys:
-  create an OAuth client (Web application) in Google Cloud with the redirect URI
-  `https://<your site>/api/auth/google/callback`, then run
+- `POST /api/password` — change (or set) the password; signs out every other device
+- `GET /api/messages`, `POST /api/messages`, `GET|POST /api/messages/<id>` — support conversations
+- `POST /api/ai/site` — Create with AI (Workers AI, the `AI` binding, with simple rules as a fallback)
+- `POST /api/upload`, `GET /media/<id>` — images uploaded in the website editor (JPG/PNG/WebP/GIF up to 1.5 MB,
+  300 per account, stored in the D1 `media` table, which is created on first upload)
+- `GET /api/auth/google`, `GET /api/auth/google/callback` — "Continue with Google". Create an OAuth client
+  (Web application) in Google Cloud with the redirect URI `https://<your site>/api/auth/google/callback`, then run
   `npx wrangler secret put GOOGLE_CLIENT_ID` and `npx wrangler secret put GOOGLE_CLIENT_SECRET`
+- `/master-admin/api/users`, `/master-admin/api/conversations…` — the master dashboard's API. Cloudflare Access
+  guards `/master-admin`, and these handlers verify the signed Access token (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` in
+  `wrangler.jsonc`). Locally, `ACCESS_DEV_BYPASS=1` in `.dev.vars` lets you open it without Access.
 
-`/admin` redirects to sign in when there is no session (its scripts, `/admin/app.js` and `/admin/editor.js`, are served to
-everyone because the demo loads them too). Local development:
-
-```
-npx wrangler d1 execute shopiliar-db --local --file=schema.sql
-npx wrangler dev
-```
+Writes must come from this site (the `Origin` header is checked) and send JSON, except image uploads.
 
 ## Get started (sign-up)
-`signup.html` + `assets/start.js` walk new users through: pick a template or **Create with AI** →
-plan → account, then open their dashboard. Links from Pricing and Templates skip the steps already chosen.
-Create with AI calls `POST /api/ai/site`, which uses Workers AI (the `AI` binding) and falls back to simple
-rules when AI isn't available. Online payment isn't connected yet; the plan starts without charging.
-
-## Dashboards
-- `/admin` — the store owner dashboard (`admin/app.js`): orders, products, customers, analytics,
-  marketing, discounts and settings. Online Store opens Themes (desktop and phone preview, Customize,
-  versions & backups), Pages, Navigation (menu order) and Preferences (search listing, social links).
-  Settings (a popup) holds General, Plan & billing, Domain, Payments, Notifications, Account & security
-  and Help Center. Messages with the Shopilier team open from the green chat button at the bottom right.
-  Shopilier is for online stores only.
-- `/master-admin` — business owner dashboard: overview, users, templates (add, customize,
-  publish/unpublish, duplicate, delete), payments, plans & pricing, activity, settings.
-
-Shared files: `public/assets/dash.css` and `public/assets/dash.js`.
+`/signup` (`src/components/site/StartFlow.tsx`) walks new users through: pick a template or **Create with AI** →
+plan → account, then opens their dashboard. Links from Pricing (`?plan=&billing=`) and Templates (`?template=`) skip
+the steps already chosen. Text written with AI is handed to the new dashboard through `sessionStorage`. Online
+payment isn't connected yet; the plan starts without charging.
 
 ## Speed
-Fonts load without blocking the first paint (`preload` + `media="print"` swap), the video player and its
-poster only load when someone reaches for the play button, the demo page's frame loads the dashboard on its own, `/admin` preloads `/api/me` alongside its scripts, `public/_headers` lets browsers cache
-scripts, styles and images (10 minutes, a day for images, refreshed in the background), and internal links skip the
-`.html` → clean-URL redirect.
+Marketing pages are prerendered at build time. Google Fonts don't block the first paint, the video player and its
+poster only load when someone reaches for a play button, the demo page's frame loads the dashboard on its own, `/admin`
+preloads `/api/me` alongside its scripts, and `public/_headers` lets browsers cache scripts, styles and images
+(10 minutes, a day for images, refreshed in the background; Next.js build output for good). The old `.html`
+addresses redirect to the clean URLs.
 
-## Live demo (`demo.html`)
-`demo/app.html` is the store dashboard shell with a demo bar on top, loading the same scripts as `/admin`;
-`demo.html` shows it in a browser-style frame with "things to try" underneath.
-`assets/demo.js` loads first and stands in for the account API: it answers `/api/me`, `/api/store`, `/api/messages`,
-`/api/password` and `/api/upload` in the browser and keeps the sample store ("Dhaka Threads") in `localStorage`
-(`shopilier.demo`). Visitors can add products, record orders, customize and publish the website, and chat (replies are
-canned); uploaded photos are kept inline as data URLs. "Reset demo" clears the saved sample store.
+## Deploying
+```
+npm run preview       # builds with OpenNext and runs the Worker locally (wrangler dev)
+npm run deploy        # builds and deploys to Cloudflare Workers (see wrangler.jsonc)
+npm run db:remote     # applies schema.sql to the production database
+```
 
-## Website editor
-Online Store → Themes → **Customize** opens the full-screen editor (`admin/editor.js`, `assets/editor.css`).
-Each page is a list of sections (hero, products, featured, categories, about, testimonials, blog,
-newsletter, contact, FAQ, image banner, custom); every section can also hold extra elements
-(heading, text, button, image, spacer, divider). The header and footer are shared by all pages.
-The website itself is rendered by `assets/site.js` with `assets/site.css`, in an iframe at desktop,
-tablet or phone width, and the same renderer powers the Themes previews and "View your store".
-
-Images uploaded in the editor go to `POST /api/upload` (signed in, JPG/PNG/WebP/GIF up to 1.5 MB,
-300 per account; the browser shrinks photos to 1600px first). They're stored in the D1 `media`
-table, which the Worker creates on first upload, and served from `/media/<id>`.
-
-The store dashboard (`/admin`) is saved to the signed-in account. The master dashboard still keeps
-its data in the browser (`localStorage`) and is protected with Cloudflare Access.
+After changing `wrangler.jsonc`, run `npm run cf-typegen` to refresh `cloudflare-env.d.ts`.

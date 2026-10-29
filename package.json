@@ -1,0 +1,33 @@
+{
+  "name": "shopilier",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Shopilier — create your online store. Next.js app deployed to Cloudflare Workers.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
+    "db:local": "wrangler d1 execute shopiliar-db --local --file=schema.sql",
+    "db:remote": "wrangler d1 execute shopiliar-db --remote --file=schema.sql"
+  },
+  "dependencies": {
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.14",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.155.0"
+  },
+  "engines": {
+    "node": ">=20.9"
+  }
+}

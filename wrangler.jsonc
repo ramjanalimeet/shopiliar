@@ -1,13 +1,13 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "shopiliar",
-  "main": "src/index.js",
+  // The Next.js app, bundled for Workers by @opennextjs/cloudflare (`npm run deploy`)
+  "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
-    "directory": "./public",
-    "binding": "ASSETS",
-    "not_found_handling": "404-page",
-    // The Worker handles the account API and checks sign-in before serving /admin
-    "run_worker_first": ["/api/*", "/admin", "/admin/*", "/master-admin/api/*", "/media/*"]
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
   },
   "d1_databases": [
     { "binding": "DB", "database_name": "shopiliar-db", "database_id": "45d1c9c1-3aa1-4ac7-900d-322fc8a738ca" }
