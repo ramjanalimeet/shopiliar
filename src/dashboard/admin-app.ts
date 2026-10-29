@@ -179,7 +179,7 @@ export const start = async () => {
     document.getElementById("me-store").textContent = siteUrl();
     document.getElementById("menu-name").textContent = account.name;
     document.getElementById("me-email").textContent = account.email;
-    document.getElementById("me-plan").textContent = plan().price ? plan().name + " · " + (account.billing === "yearly" ? "Yearly" : "Monthly") : "Free plan";
+    document.getElementById("me-plan").textContent = plan().name + " · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
     chatFab.classList.toggle("locked", !hasSupport());
   };
   const profileBtn = document.getElementById("profile-btn");
@@ -1509,7 +1509,7 @@ export const start = async () => {
     chatPanel.hidden = false;
     chatFab.setAttribute("aria-expanded", "true");
     document.body.classList.add("chat-open");
-    // The Free plan has no support: show what the chat is and how to get it
+    // A plan without support (none today) sees what the chat is and how to get it
     if (!hasSupport()) {
       chatRoot.innerHTML = `<div class="chat-locked"><span class="chat-locked-ico">${icon("lock")}</span>
         <b>Support chat comes with the paid plans</b>
@@ -1894,7 +1894,7 @@ export const start = async () => {
     staff: { name: "Order handler", text: "Only orders and customers", perms: ["orders", "customers"] },
     custom: { name: "Custom", text: "Pick exactly what they can open", perms: [] },
   };
-  // How many staff a plan allows (null = unlimited). Free has none: the owner runs the store alone.
+  // How many staff a plan allows (null = unlimited)
   const staffLimit = () => (plan().staff === undefined ? 1 : plan().staff);
   const staffDialog = (m) => {
     const role = m?.role || "manager";
@@ -1962,9 +1962,9 @@ export const start = async () => {
     domain: () => {
       const st = store.settings, freeDomain = hasFreeDomain();
       return `<h2>Domain</h2><p class="muted">Where customers find your website.</p>
-        <div class="s-card"><b>Free address</b><p class="muted" style="margin-top:4px">${esc(st.subdomain)}.shopilier.com</p></div>
+        <div class="s-card"><b>Free sub-domain</b><p class="muted" style="margin-top:4px">${esc(st.subdomain)}.shopilier.com</p></div>
         ${freeDomain ? `<div class="callout green"><span class="ico">${icon("gift")}</span><div><b>Your yearly ${esc(plan().name)} plan includes a free custom domain.</b></div></div>` : ""}
-        ${plan().domain ? "" : `<div class="callout blue"><span class="ico">${icon("globe")}</span><div><b>Your own domain (like www.yourbusiness.com) comes with Starter and up.</b> On the Free plan your website lives at ${esc(st.subdomain)}.shopilier.com. <button type="button" class="link st-up" data-tab="billing">Upgrade to connect a domain</button>.</div></div>`}
+        ${plan().domain ? "" : `<div class="callout blue"><span class="ico">${icon("globe")}</span><div><b>Your own domain (like www.yourbusiness.com) comes with Starter and up.</b> Until then your website lives at ${esc(st.subdomain)}.shopilier.com. <button type="button" class="link st-up" data-tab="billing">Upgrade to connect a domain</button>.</div></div>`}
         <div class="s-card"${plan().domain ? "" : ' style="opacity:.55;pointer-events:none" aria-disabled="true"'}>
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
             <div class="field" style="flex:1;margin:0;min-width:200px"><label for="s-domain">Custom domain</label><input class="input" id="s-domain" placeholder="www.yourbusiness.com" value="${esc(st.domain)}"></div>
@@ -2026,12 +2026,12 @@ export const start = async () => {
         ${[
           ["How do I add a product?", "Go to Products and click Add product. Give it a name, price and stock, then save."],
           ["How do I change how my website looks?", "Open Online Store → Themes and click Customize. Click any part of your website to edit it, add sections, and preview it on desktop, tablet and mobile."],
-          ["How do I publish my website?", "In the website editor, click Publish website. Your site goes live at your free shopilier.com address."],
+          ["How do I publish my website?", "In the website editor, click Publish website. Your site goes live at your free sub-domain (yourstore.shopilier.com)."],
           ["Can I go back to an earlier version of my website?", "Yes. Online Store → Themes → Website backups. Click Save a backup any time; a backup is also saved every time you publish. Click Preview to look at a backup, or ⋯ → Publish to bring it back."],
-          ["Can I use my own domain?", "Yes, on Starter and up. Open Settings → Domain and add your domain. Yearly Business and Pro plans include a free domain. The Free plan uses your shopilier.com address."],
+          ["Can I use my own domain?", "Yes, on every plan. Open Settings → Domain and add your domain. Yearly Business and Pro plans include a free domain."],
           ["How do I record an order from Facebook or phone?", "Go to Orders and click New order. Stock goes down automatically."],
           ["How do I change my plan?", "Open Settings → Plan & billing and choose Switch next to the plan you want."],
-          ["How do I contact the Shopilier team?", "On Starter, Business and Pro, click the green chat button at the bottom right of your dashboard. Pick what it's about (a question, a complaint, billing or a website problem) and we'll reply right there."],
+          ["How do I contact the Shopilier team?", "Click the green chat button at the bottom right of your dashboard. Pick what it's about (a question, a complaint, billing or a website problem) and we'll reply right there."],
         ].map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join("")}
       </div>
       ${hasSupport() ? `<div class="s-card help-chat"><div><b>Still need help?</b><p class="muted small">Send a message to the Shopilier team.</p></div><button class="btn btn-primary" type="button" data-action="open-chat">${icon("chat")}Chat with us</button></div>`

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { b64, hashPassword, randomBytes, sha256, unb64 } from "./crypto";
 import { getCookie } from "./http";
-import { CATEGORY } from "./plans";
+import { CATEGORY, currentPlan } from "./plans";
 
 export const SESSION_COOKIE = "shopiliar_session";
 export const REMEMBER_DAYS = 30;
@@ -56,7 +56,7 @@ export const clearSessionCookie = (res: Response) => {
 };
 
 export const publicAccount = (u: Omit<UserRow, "id" | "password_salt"> & { password_hash?: string }) => ({
-  name: u.name, business: u.business, email: u.email, category: CATEGORY, plan: u.plan, billing: u.billing, template: u.template, createdAt: u.created_at,
+  name: u.name, business: u.business, email: u.email, category: CATEGORY, plan: currentPlan(u.plan), billing: u.billing, template: u.template, createdAt: u.created_at,
   hasPassword: !!u.password_hash,
 });
 

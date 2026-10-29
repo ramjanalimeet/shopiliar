@@ -61,12 +61,12 @@ dashboards) and enforced by the API (`src/lib/plans.ts`):
 
 | Plan | Price | Pages | Products | Staff | Custom domain | Support |
 |---|---|---|---|---|---|---|
-| Free | ৳0 | 5 | 3 | — | — (free sub-domain) | — |
-| Starter | ৳249/mo | 10 | 20 | 1 | Yes | Chat |
-| Business | ৳549/mo | Unlimited | 100+ | 5 | Yes, free with yearly | Chat |
+| Starter | ৳149/mo | 10 | 10 | 2 | Yes | Chat |
+| Business | ৳549/mo | Unlimited | 100+ | 10+ | Yes, free with yearly | Chat |
 | Pro | ৳2,499/mo | Unlimited | Unlimited | Unlimited | Yes, free with yearly | Chat |
 
-Accounts that never picked a plan start on Free.
+Every plan includes a free sub-domain (yourstore.shopilier.com). Accounts that never picked a plan start on Starter;
+accounts still on the retired Free plan are treated as Starter.
 
 ## Accounts and the API
 Accounts, sessions and each user's store live in D1 (tables in `schema.sql`). Route handlers:

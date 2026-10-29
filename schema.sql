@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'ecommerce', -- always ecommerce (online stores only)
-  plan TEXT NOT NULL DEFAULT 'free',               -- free, starter, business or pro (the Worker always sets it)
+  plan TEXT NOT NULL DEFAULT 'starter',            -- starter, business or pro (the API always sets it; old rows may still say free)
   billing TEXT NOT NULL DEFAULT 'monthly',
   template TEXT NOT NULL DEFAULT 'luxe-store',
   created_at TEXT NOT NULL
