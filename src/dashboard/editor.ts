@@ -1,7 +1,10 @@
+// @ts-nocheck — ported as-is from the original dashboard script; types can be tightened over time.
+import { SiteKit } from "./site";
+
 // Shopilier website editor (/admin#/website): a visual editor beside the dashboard sidebar.
 // The website renders in an iframe at desktop, tablet or phone width. Click a
 // section to edit its content in the right-hand panel.
-window.SiteEditor = (() => {
+export const SiteEditor = (() => {
   const K = SiteKit;
   const { esc } = K;
 

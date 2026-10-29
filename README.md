@@ -25,32 +25,35 @@ Cloudflare: "Create with AI" uses its simple rules locally unless you run `wrang
 - `src/lib/` — server code shared by the API: sessions and passwords (`auth.ts`, `crypto.ts`), request guards
   (`http.ts`), account rules (`plans.ts`), support messages, Cloudflare Access token checks, Create with AI, media.
 - `src/lib/catalog.ts` — plans and the template catalog as visitors see them (sign-up, pricing).
+- `src/dashboard/` — the dashboards themselves (see below).
 - `src/styles/` — the stylesheets, imported by the layouts and pages that need them.
-- `public/assets/` — images, the storefront renderer's stylesheet, and the dashboard scripts (see below).
+- `public/assets/` — images and the storefront renderer's stylesheet (`site.css`, loaded inside the preview frame).
 
 Each section has its own root layout (`RootHtml`), so the dashboards get their own `<body>` classes and fonts and
 never share the website's header. Google Fonts load as normal stylesheets, so each page paints once in the right
 fonts (the dashboards fetch only the ৳ sign from the Bengali font, in its own small request).
 
 ## Dashboards
-The store dashboard (`/admin`), the live demo and the master dashboard are large vanilla-JavaScript apps. They were
-kept as they are and are served from `public/assets/`:
+The store dashboard (`/admin`), the live demo and the master dashboard are TypeScript modules in `src/dashboard/`,
+bundled by Next.js. React renders each dashboard's shell (`src/components/dash/`), icons included, so nothing moves when the
+dashboard starts; `AdminApp`, `DemoApp` and `MasterApp` ship the matching bundle with the page and call its
+`start()` once the page has hydrated. The dashboard then takes over the shell (`#view`, the chat panel).
 
-| File | What it is |
+| Module | What it is |
 |---|---|
-| `dash.js` | Shared helpers, icons, `Dash.PLANS()` and `Dash.TEMPLATES()` |
-| `admin-app.js` | The store owner dashboard: orders, products, customers, analytics, marketing, discounts, settings |
-| `editor.js`, `site.js`, `site.css` | The website editor and the storefront renderer (`site.css` is loaded inside the preview frame) |
-| `inbox.js` | Chat with the Shopilier team |
-| `password.js` | Show/hide password fields in the dashboard |
-| `demo.js` | Stands in for the account API on `/demo/app` (sample store in `localStorage`, `shopilier.demo`) |
-| `master-admin.js` | The master dashboard (its data still lives in the browser) |
+| `dash.ts` | Shared helpers, icons, `Dash.PLANS()` and `Dash.TEMPLATES()` |
+| `admin-app.ts` | The store owner dashboard: orders, products, customers, analytics, marketing, discounts, settings |
+| `editor.ts`, `site.ts` | The website editor and the storefront renderer (`public/assets/site.css` is loaded inside the preview frame) |
+| `inbox.ts` | Chat with the Shopilier team |
+| `password.ts` | Show/hide password fields in the dashboard |
+| `demo.ts` | Stands in for the account API on `/demo/app` (sample store in `localStorage`, `shopilier.demo`) |
+| `master-admin.ts` | The master dashboard (its data still lives in the browser) |
+| `*.entry.ts` | One entry per page: `start()` runs the pieces in the order they must run (`demo.ts` before the dashboard) |
 
-React renders each dashboard's shell (`src/components/dash/`); `LegacyScripts` then loads the scripts in order once
-the page has hydrated. They find the same elements and ids they always did, so every feature works unchanged:
-orders, products, the website editor with desktop/tablet/phone previews, versions and backups, publishing, image
-uploads, plan limits, the support chat, and the demo's "Reset demo". Rewriting these engines as React components is
-a separate project; nothing else in the app depends on how they are built.
+These modules were ported from the original dashboard scripts and are marked `@ts-nocheck`: they run as written,
+with every feature intact (orders, products, the website editor with desktop/tablet/phone previews, versions and
+backups, publishing, image uploads, plan limits, the support chat, "Reset demo"), and their types can be tightened
+piece by piece.
 
 ## Plans
 Defined in `src/lib/catalog.ts` (sign-up and pricing), mirrored in `Dash.PLANS()` (`public/assets/dash.js`, the
@@ -96,8 +99,8 @@ payment isn't connected yet; the plan starts without charging.
 Marketing pages are prerendered at build time. Fonts load as one stylesheet per page (so the page paints once, in the
 right fonts), the video player and its poster only load when someone reaches for a play button, the demo page's frame
 loads the dashboard on its own, and `/admin` preloads `/api/me` alongside its scripts. `public/_headers` keeps images
-for a day while the dashboard scripts and styles in `public/assets` are revalidated on every load (so a deploy never
-pairs a new page with an old file); Next.js build output carries a hash in its name and is kept for good. The old
+for a day while the storefront stylesheet in `public/assets` is revalidated on every load (so a deploy never pairs a
+new page with an old file); Next.js build output, dashboards included, carries a hash in its name and is kept for good. The old
 `.html` addresses redirect to the clean URLs.
 
 ## Deploying
@@ -111,13 +114,10 @@ The Worker is built in two steps: `npx opennextjs-cloudflare build` turns the Ne
 `.open-next/worker.js` and `.open-next/assets`, then `npx opennextjs-cloudflare deploy` (or `npx wrangler deploy`,
 which hands over to it) uploads them. A deploy without the build step stops with "Open Next build not found".
 
-**Cloudflare Workers Builds** (the GitHub connection that deploys `main`): in the Cloudflare dashboard open
-Workers & Pages → `shopiliar` → Settings → Build and set
-
-| Setting | Value |
-|---|---|
-| Build command | `npx opennextjs-cloudflare build` |
-| Deploy command | `npx opennextjs-cloudflare deploy` |
+**Cloudflare Workers Builds** (the GitHub connection that deploys `main`) works with its default settings
+(no build command, deploy command `npx wrangler deploy`): on that runner, `scripts/postinstall.mjs` builds the
+Worker right after `npm install`, so the deploy finds it. You can also set the dashboard's Build command to
+`npx opennextjs-cloudflare build` and the Deploy command to `npx opennextjs-cloudflare deploy`; both ways work.
 
 Build-time packages (`next`, `@opennextjs/cloudflare`, `wrangler`, `typescript`, the type packages) are regular
 dependencies, so the build works even where development dependencies aren't installed.

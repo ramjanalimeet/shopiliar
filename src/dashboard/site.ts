@@ -1,6 +1,7 @@
+// @ts-nocheck — ported as-is from the original dashboard script; types can be tightened over time.
 // Shopilier storefront: the section model, defaults and renderer shared by the
 // website editor, the Themes previews and "View your store".
-window.SiteKit = (() => {
+export const SiteKit = (() => {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const uid = (p) => p + Math.random().toString(36).slice(2, 9);
   const taka = (n) => "৳" + Number(n || 0).toLocaleString("en-IN");
