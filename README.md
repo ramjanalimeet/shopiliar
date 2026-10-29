@@ -76,10 +76,10 @@ rules when AI isn't available. Online payment isn't connected yet; the plan star
 Shared files: `public/assets/dash.css` and `public/assets/dash.js`.
 
 ## Speed
-Fonts load without blocking the first paint (`preload` + `media="print"` swap), the video player and its
-poster only load when someone reaches for the play button, the demo page's frame loads the dashboard on its own, `/admin` preloads `/api/me` alongside its scripts, `public/_headers` lets browsers cache
-scripts, styles and images (10 minutes, a day for images, refreshed in the background), and internal links skip the
-`.html` → clean-URL redirect.
+Fonts load as one stylesheet per page (so the page paints once, in the right fonts), the video player and its
+poster only load when someone reaches for the play button, `/admin` preloads `/api/me` alongside its scripts,
+`public/_headers` keeps images for a day while scripts and styles are revalidated on every load (so a deploy never
+pairs a new page with an old file), and internal links use clean URLs with no redirect hop.
 
 ## Live demo (`demo.html`)
 `demo/app.html` is the store dashboard shell with a demo bar on top, loading the same scripts as `/admin`;
