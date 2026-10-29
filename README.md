@@ -29,8 +29,8 @@ Cloudflare: "Create with AI" uses its simple rules locally unless you run `wrang
 - `public/assets/` — images, the storefront renderer's stylesheet, and the dashboard scripts (see below).
 
 Each section has its own root layout (`RootHtml`), so the dashboards get their own `<body>` classes and fonts and
-never share the website's header. Google Fonts load without blocking the first paint (preload, then a print
-stylesheet switched on when it arrives), as before.
+never share the website's header. Google Fonts load as normal stylesheets, so each page paints once in the right
+fonts (the dashboards fetch only the ৳ sign from the Bengali font, in its own small request).
 
 ## Dashboards
 The store dashboard (`/admin`), the live demo and the master dashboard are large vanilla-JavaScript apps. They were
@@ -93,11 +93,12 @@ the steps already chosen. Text written with AI is handed to the new dashboard th
 payment isn't connected yet; the plan starts without charging.
 
 ## Speed
-Marketing pages are prerendered at build time. Google Fonts don't block the first paint, the video player and its
-poster only load when someone reaches for a play button, the demo page's frame loads the dashboard on its own, `/admin`
-preloads `/api/me` alongside its scripts, and `public/_headers` lets browsers cache scripts, styles and images
-(10 minutes, a day for images, refreshed in the background; Next.js build output for good). The old `.html`
-addresses redirect to the clean URLs.
+Marketing pages are prerendered at build time. Fonts load as one stylesheet per page (so the page paints once, in the
+right fonts), the video player and its poster only load when someone reaches for a play button, the demo page's frame
+loads the dashboard on its own, and `/admin` preloads `/api/me` alongside its scripts. `public/_headers` keeps images
+for a day while the dashboard scripts and styles in `public/assets` are revalidated on every load (so a deploy never
+pairs a new page with an old file); Next.js build output carries a hash in its name and is kept for good. The old
+`.html` addresses redirect to the clean URLs.
 
 ## Deploying
 ```
