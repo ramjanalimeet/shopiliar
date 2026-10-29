@@ -116,8 +116,10 @@ which hands over to it) uploads them. A deploy without the build step stops with
 
 **Cloudflare Workers Builds** (the GitHub connection that deploys `main`) works with its default settings
 (no build command, deploy command `npx wrangler deploy`): on that runner, `scripts/postinstall.mjs` builds the
-Worker right after `npm install`, so the deploy finds it. You can also set the dashboard's Build command to
-`npx opennextjs-cloudflare build` and the Deploy command to `npx opennextjs-cloudflare deploy`; both ways work.
+Worker right after `npm install`, and the committed `.env` (`OPEN_NEXT_DEPLOY=true`, read by wrangler) makes
+`wrangler deploy` upload that build directly instead of handing over to `opennextjs-cloudflare deploy`, which would
+first open a remote session with Cloudflare to check caches this app doesn't use. You can also set the dashboard's
+Build command to `npx opennextjs-cloudflare build`; both ways work.
 
 Build-time packages (`next`, `@opennextjs/cloudflare`, `wrangler`, `typescript`, the type packages) are regular
 dependencies, so the build works even where development dependencies aren't installed.
