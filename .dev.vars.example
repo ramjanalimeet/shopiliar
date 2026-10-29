@@ -1,0 +1,6 @@
+# Copy to .dev.vars for local development (never commit .dev.vars).
+# "Continue with Google": an OAuth client (Web application) whose redirect URI is http://localhost:3000/api/auth/google/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# Lets you open /master-admin locally without Cloudflare Access. Never set this in production.
+ACCESS_DEV_BYPASS=1

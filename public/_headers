@@ -1,12 +1,13 @@
 # Cache rules for the static files (Workers static assets read this file).
 # Scripts and styles are checked on every load (a cheap 304 when unchanged), so a new deploy
 # never shows a new page with an old stylesheet or script. Images and the favicon rarely change
-# and are kept for a day, refreshed in the background.
+# and are kept for a day, refreshed in the background. Next.js build output carries a hash in
+# its name, so it can be kept for good.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
 /assets/*.css
   Cache-Control: public, max-age=0, must-revalidate
 /assets/*.js
-  Cache-Control: public, max-age=0, must-revalidate
-/admin/*.js
   Cache-Control: public, max-age=0, must-revalidate
 /assets/*.webp
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
