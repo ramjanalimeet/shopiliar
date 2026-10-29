@@ -1,0 +1,16 @@
+# Cache rules for the static files (Workers static assets read this file).
+# Browsers keep scripts and styles for 10 minutes and images for a day, refreshing them in
+# the background, so repeat visits and the dashboard open faster. Pages themselves stay fresh.
+# Rules don't overlap: a file matching two rules would get both Cache-Control values joined.
+/assets/*.css
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+/assets/*.js
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+/admin/*.js
+  Cache-Control: public, max-age=600, stale-while-revalidate=86400
+/assets/*.webp
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/*.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/favicon.ico
+  Cache-Control: public, max-age=86400

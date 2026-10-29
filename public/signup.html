@@ -10,24 +10,28 @@
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500&display=swap"></noscript>
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/start.css">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@500;700&text=%E0%A7%B3&display=swap"></noscript>
 </head>
 <body>
   <header class="site-header">
     <div class="container">
-      <a class="brand" href="index.html"><img class="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="">Shopilier</a>
+      <a class="brand" href="/"><img class="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="">Shopilier</a>
       <nav class="main-nav" aria-label="Main">
-        <a href="index.html">Home</a>
-        <a href="templates.html">Templates</a>
-        <a href="pricing.html">Pricing</a>
-        <a href="demo/">Demo</a>
+        <a href="/">Home</a>
+        <a href="/templates">Templates</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/demo">Demo</a>
       </nav>
       <div class="auth">
-        <a class="btn btn-outline" href="signin.html">Sign in</a>
-        <a class="btn btn-dark" href="signup.html">Sign up</a>
+        <a class="btn btn-outline" href="/signin">Sign in</a>
+        <a class="btn btn-dark" href="/signup">Sign up</a>
       </div>
       <button class="menu-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
     </div>

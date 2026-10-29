@@ -2,7 +2,7 @@
 (async () => {
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, pixelLogo, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, limitText, withinLimit } = Dash;
   const PLANS = Dash.PLANS();
-  const SIGN_IN = "/signin.html?next=" + encodeURIComponent(location.pathname + location.search);
+  const SIGN_IN = "/signin?next=" + encodeURIComponent(location.pathname + location.search);
 
   // ---------- Data (saved to the signed-in account by the Worker) ----------
   let me;
@@ -189,7 +189,7 @@
     toggleMenu(false);
     if (saveTimer) await saveNow();
     await fetch("/api/signout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
-    location.href = "/signin.html";
+    location.href = "/signin";
   });
 
   // ---------- Helpers ----------

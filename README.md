@@ -2,17 +2,20 @@
 
 Marketing site for Shopilier — create your online store.
 
-Static HTML/CSS/JS, no build step. Site files live in `public/`. Open `public/index.html` in a browser or serve the folder:
+Static HTML/CSS/JS, no build step. Site files live in `public/`. Links use clean URLs (`/pricing`, `/signup?plan=free`,
+`/demo/app`): Cloudflare serves `pricing.html` for `/pricing`, and a request for `/pricing.html` would cost a redirect first.
+Run the site locally the same way it's served in production:
 
 ```
-python3 -m http.server 8000 -d public
+npx wrangler dev
 ```
 
 ## Pages
 - `index.html` — Home
 - `templates.html` — Templates (search, sort and live preview)
 - `pricing.html` — Pricing (Free, Starter, Business and Pro; monthly / yearly toggle, FAQ)
-- `demo/` — Live demo: the real store dashboard on a sample store, no sign-up (see below)
+- `demo.html` — Live demo: the real store dashboard on a sample store, embedded in the middle of the page
+  (the bare dashboard it frames is `demo/app.html`, which also opens full screen)
 - `signin.html` — Sign in
 - `signup.html` — Get started: the step-by-step sign-up (see below)
 - `resources.html` — Resources: guide video and blog
@@ -72,8 +75,15 @@ rules when AI isn't available. Online payment isn't connected yet; the plan star
 
 Shared files: `public/assets/dash.css` and `public/assets/dash.js`.
 
-## Live demo (`/demo`)
-`demo/index.html` is the store dashboard shell with a demo bar on top, loading the same scripts as `/admin`.
+## Speed
+Fonts load without blocking the first paint (`preload` + `media="print"` swap), the video player and its
+poster only load when someone reaches for the play button, the demo page's frame loads the dashboard on its own, `/admin` preloads `/api/me` alongside its scripts, `public/_headers` lets browsers cache
+scripts, styles and images (10 minutes, a day for images, refreshed in the background), and internal links skip the
+`.html` → clean-URL redirect.
+
+## Live demo (`demo.html`)
+`demo/app.html` is the store dashboard shell with a demo bar on top, loading the same scripts as `/admin`;
+`demo.html` shows it in a browser-style frame with "things to try" underneath.
 `assets/demo.js` loads first and stands in for the account API: it answers `/api/me`, `/api/store`, `/api/messages`,
 `/api/password` and `/api/upload` in the browser and keeps the sample store ("Dhaka Threads") in `localStorage`
 (`shopilier.demo`). Visitors can add products, record orders, customize and publish the website, and chat (replies are
