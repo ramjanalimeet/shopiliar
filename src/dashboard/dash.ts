@@ -1,6 +1,6 @@
+// @ts-nocheck — ported as-is from the original dashboard script; types can be tightened over time.
 // Shared helpers for the Shopilier dashboards (/admin and /master-admin).
-// Data is kept in this browser (localStorage) until a backend is connected.
-const Dash = (() => {
+export const Dash = (() => {
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const taka = (n) => "৳" + Math.round(Number(n) || 0).toLocaleString("en-IN");
   const uid = (p = "id") => p + "_" + Math.random().toString(36).slice(2, 9);

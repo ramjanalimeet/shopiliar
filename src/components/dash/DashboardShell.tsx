@@ -1,4 +1,4 @@
-// The store dashboard shell (/admin and the live demo at /demo/app). The scripts in public/assets fill it:
+// The store dashboard shell (/admin and the live demo at /demo/app). The dashboard (src/dashboard) fills it:
 // <span data-icon> placeholders become icons, #view gets each page, the chat panel its conversations.
 const I = ({ name }: { name: string }) => <span data-icon={name} />;
 

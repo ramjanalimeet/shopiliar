@@ -1,4 +1,8 @@
-// Shopilier master dashboard (/master-admin): users, templates, payments and plans.
+// @ts-nocheck — ported as-is from the original dashboard script; types can be tightened over time.
+import { Dash } from "./dash";
+import { ShopilierInbox } from "./inbox";
+
+// Shopilier master dashboard (/master-admin): users, templates, payments and plans. Runs when this module loads.
 (() => {
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, save, remove, toast, dialog, confirm, router, bars, icon, hydrateIcons, siteHTML, limitText, CATEGORIES } = Dash;
   const KEY = "shopiliar.master";

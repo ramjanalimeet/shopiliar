@@ -1,4 +1,10 @@
-// Shopilier store owner dashboard (/admin)
+// @ts-nocheck — ported as-is from the original dashboard script; types can be tightened over time.
+import { Dash } from "./dash";
+import { ShopilierInbox } from "./inbox";
+import { SiteEditor } from "./editor";
+import { SiteKit } from "./site";
+
+// Shopilier store owner dashboard (/admin). Runs when this module loads, once the dashboard shell is on the page.
 (async () => {
   const { esc, taka, uid, day, daysAgo, avatar, tag, load, toast, PIXELS, pixelLogo, normalizePixelId, trackingCode, dialog, confirm, router, bars, icon, hydrateIcons, limitText, withinLimit } = Dash;
   const PLANS = Dash.PLANS();

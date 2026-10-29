@@ -1,7 +1,10 @@
+// @ts-nocheck — ported as-is from the original dashboard script; types can be tightened over time.
+import { Dash } from "./dash";
+
 // Support inbox used by both dashboards.
 // mode "user": a customer talking to the Shopilier team (/api/messages).
 // mode "admin": the master panel answering every customer (/master-admin/api/...).
-window.ShopilierInbox = (root, { mode, onUnread }) => {
+export const ShopilierInbox = (root, { mode, onUnread }) => {
   const { esc, icon, toast, dialog } = Dash;
   const admin = mode === "admin";
   const base = admin ? "/master-admin/api/conversations" : "/api/messages";
@@ -192,7 +195,7 @@ window.ShopilierInbox = (root, { mode, onUnread }) => {
 };
 
 // Unread count for a sidebar badge, without opening the inbox
-window.ShopilierInbox.unread = async (mode) => {
+ShopilierInbox.unread = async (mode) => {
   try {
     const res = await fetch(mode === "admin" ? "/master-admin/api/conversations" : "/api/messages");
     if (!res.ok) return 0;

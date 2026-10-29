@@ -1,8 +1,11 @@
-// Demo dashboard (/demo): the real store dashboard (admin/app.js, editor.js, inbox.js) running on a
+// @ts-nocheck — ported as-is from the original dashboard script; types can be tightened over time.
+import { Dash } from "./dash";
+
+// Demo dashboard (/demo/app): the real store dashboard (admin-app.ts, editor.ts, inbox.ts) running on a
 // sample store. This file stands in for the account API: it answers every /api/* call those scripts
 // make and keeps the sample store in this browser (localStorage), so a visitor can try everything
 // (products, orders, the website editor, publishing, messages) without an account.
-// It must load before the dashboard scripts.
+// It must run before the dashboard (demo.entry.ts imports it first).
 (() => {
   const KEY = "shopilier.demo";
   const PLANS = ["free", "starter", "business", "pro"];
@@ -11,8 +14,7 @@
   const ago = (minutes) => new Date(Date.now() - minutes * 6e4).toISOString();
   const clean = (v, max) => String(v ?? "").trim().slice(0, max);
   const uid = () => "demo_" + Math.random().toString(36).slice(2, 10);
-  // Dash (dash.js) is a top-level const, so it isn't on window; it exists once the dashboard scripts have loaded
-  const dash = () => (typeof Dash === "object" ? Dash : null);
+  const dash = () => Dash;
 
   // The sample store owner. account.demo makes the dashboard seed sample products, customers and orders.
   const ACCOUNT = () => ({

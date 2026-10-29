@@ -1,3 +1,4 @@
+// @ts-nocheck — ported as-is from the original dashboard script; types can be tightened over time.
 // Adds a show/hide "eye" button to every password field, including ones added later.
 (() => {
   const eye = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
