@@ -2,10 +2,12 @@
 
 Marketing site for Shopilier — create your online store.
 
-Static HTML/CSS/JS, no build step. Site files live in `public/`. Open `public/index.html` in a browser or serve the folder:
+Static HTML/CSS/JS, no build step. Site files live in `public/`. Links use clean URLs (`/pricing`, `/signup?plan=free`,
+`/demo/app`): Cloudflare serves `pricing.html` for `/pricing`, and a request for `/pricing.html` would cost a redirect first.
+Run the site locally the same way it's served in production:
 
 ```
-python3 -m http.server 8000 -d public
+npx wrangler dev
 ```
 
 ## Pages
@@ -75,8 +77,9 @@ Shared files: `public/assets/dash.css` and `public/assets/dash.js`.
 
 ## Speed
 Fonts load without blocking the first paint (`preload` + `media="print"` swap), the video player and its
-poster only load when someone reaches for the play button, the demo page's frame loads the dashboard on its own, `/admin` preloads `/api/me` alongside its scripts, and `public/_headers` lets browsers cache
-scripts, styles and images (10 minutes, a day for images, refreshed in the background).
+poster only load when someone reaches for the play button, the demo page's frame loads the dashboard on its own, `/admin` preloads `/api/me` alongside its scripts, `public/_headers` lets browsers cache
+scripts, styles and images (10 minutes, a day for images, refreshed in the background), and internal links skip the
+`.html` → clean-URL redirect.
 
 ## Live demo (`demo.html`)
 `demo/app.html` is the store dashboard shell with a demo bar on top, loading the same scripts as `/admin`;

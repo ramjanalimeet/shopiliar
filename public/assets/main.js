@@ -153,7 +153,7 @@ if (billing) {
       price.textContent = taka(yearly && month ? month * 12 : month);
       card.querySelector("[data-per]").textContent = yearly && month ? "/year" : "/month";
       card.querySelector("[data-bill]").textContent = !month ? "Free forever · no card needed" : yearly ? "৳" + taka(month) + "/month, billed yearly" : "Billed monthly";
-      card.querySelector("[data-plan-link]").href = "signup.html?plan=" + card.dataset.plan + "&billing=" + (yearly ? "yearly" : "monthly");
+      card.querySelector("[data-plan-link]").href = "/signup?plan=" + card.dataset.plan + "&billing=" + (yearly ? "yearly" : "monthly");
     });
   };
   billing.addEventListener("click", (e) => {
@@ -382,7 +382,7 @@ if (videoModal) {
   videoModal.addEventListener("close", () => { wantPlay = false; pause(); if (document.fullscreenElement) document.exitFullscreen(); });
 }
 
-// Live demo (demo.html): the real dashboard loads into a browser-style frame.
+// Live demo (/demo): the real dashboard loads into a browser-style frame.
 // Elsewhere a frame would only load when scrolled to or when "Start the live demo" is pressed.
 const demoStage = document.getElementById("demo-stage");
 if (demoStage) {

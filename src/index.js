@@ -39,7 +39,7 @@ export default {
       if (/\.(js|css|map|png|webp|svg)$/i.test(url.pathname)) return env.ASSETS.fetch(request);
       if (!(await currentUser(request, env))) {
         const next = encodeURIComponent(url.pathname + url.search);
-        return Response.redirect(new URL("/signin.html?next=" + next, url), 302);
+        return Response.redirect(new URL("/signin?next=" + next, url), 302);
       }
       const asset = await env.ASSETS.fetch(request);
       const res = new Response(asset.body, asset);
@@ -433,7 +433,7 @@ const googleRedirectUri = (url) => url.origin + "/api/auth/google/callback";
 const nextPath = (v) => (/^\/admin(\/|$)/.test(v || "") ? v : "/admin/");
 
 async function googleStart(env, url) {
-  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return redirect(url, "/signin.html?error=google_off");
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return redirect(url, "/signin?error=google_off");
   const state = b64(randomBytes(24));
   // Remember what was picked on the Templates / Pricing pages for a new account
   const pick = {
@@ -459,7 +459,7 @@ async function googleStart(env, url) {
 
 async function googleCallback(request, env, url) {
   const fail = (code) => {
-    const res = redirect(url, "/signin.html?error=" + code);
+    const res = redirect(url, "/signin?error=" + code);
     res.headers.append("Set-Cookie", `${GOOGLE_STATE_COOKIE}=; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
     return res;
   };
