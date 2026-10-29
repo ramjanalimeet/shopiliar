@@ -61,7 +61,7 @@ dashboards) and enforced by the API (`src/lib/plans.ts`):
 
 | Plan | Price | Pages | Products | Staff | Custom domain | Support |
 |---|---|---|---|---|---|---|
-| Free | ৳0 | 5 | 3 | — | — (shopilier.com address) | — |
+| Free | ৳0 | 5 | 3 | — | — (free sub-domain) | — |
 | Starter | ৳249/mo | 10 | 20 | 1 | Yes | Chat |
 | Business | ৳549/mo | Unlimited | 100+ | 5 | Yes, free with yearly | Chat |
 | Pro | ৳2,499/mo | Unlimited | Unlimited | Unlimited | Yes, free with yearly | Chat |

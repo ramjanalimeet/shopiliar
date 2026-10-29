@@ -13,7 +13,7 @@ type Card = { id: PlanId; button: string; cta: string; popular?: boolean; gift?:
 const EVERY: Line[] = [{ text: "Free website" }, { text: "Free CMS access" }, { text: "Free support" }];
 const CARDS: Card[] = [
   { id: "free", button: "btn-outline", cta: "Start for free",
-    lines: [{ text: <><b>5</b> page website</> }, { text: <><b>3</b> products</> }, { text: <><b>Unlimited</b> sales</> }, { text: <>Free <b>shopilier.com</b> address</> }],
+    lines: [{ text: <><b>5</b> page website</> }, { text: <><b>3</b> products</> }, { text: <><b>Unlimited</b> sales</> }, { text: <>Free <b>sub-domain</b></> }],
     included: [{ text: "Free website" }, { text: "Free CMS access" }, { text: "Custom domain", no: true }, { text: "Support", no: true }] },
   { id: "starter", button: "btn-dark", cta: "Get Starter",
     lines: [{ text: <><b>10</b> page website</> }, { text: <><b>20</b> products</> }, { text: <><b>Unlimited</b> sales</> }, { text: "Custom domain" }], included: EVERY },

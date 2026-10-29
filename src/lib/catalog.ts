@@ -7,7 +7,7 @@ export type Plan = { id: PlanId; name: string; price: number; blurb: string; fea
 
 // Prices per month in Taka
 export const PLANS: Plan[] = [
-  { id: "free", name: "Free", price: 0, blurb: "Try Shopilier, free forever", features: ["5 page website", "3 products", "Free shopilier.com address"] },
+  { id: "free", name: "Free", price: 0, blurb: "Try Shopilier, free forever", features: ["5 page website", "3 products", "Free sub-domain"] },
   { id: "starter", name: "Starter", price: 249, blurb: "For getting started online", features: ["10 page website", "20 products", "Custom domain + support"] },
   { id: "business", name: "Business", price: 549, blurb: "For growing businesses", features: ["Unlimited pages", "100+ products", "Custom domain + support"] },
   { id: "pro", name: "Pro", price: 2499, blurb: "Everything unlimited", features: ["Unlimited pages", "Unlimited products", "Unlimited staff"] },

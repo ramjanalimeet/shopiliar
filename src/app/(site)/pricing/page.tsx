@@ -17,7 +17,7 @@ const ROWS: [string, Cell, Cell, Cell, Cell][] = [
   ["Website pages", "5", "10", "Unlimited", "Unlimited"],
   ["Products", "3", "20", "100+", "Unlimited"],
   ["Sales", "Unlimited", "Unlimited", "Unlimited", "Unlimited"],
-  ["Free shopilier.com address", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
+  ["Free sub-domain", <Yes key="y" />, <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
   ["Custom domain", <No key="n" />, <Yes key="y" />, <Yes key="y" />, <Yes key="y" />],
   ["Free custom domain", <No key="n" />, <No key="n" />, "Yearly plan", "Yearly plan"],
   ["Staff accounts", <No key="n" />, "1", "5", "Unlimited"],
