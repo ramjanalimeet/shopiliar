@@ -106,4 +106,19 @@ npm run deploy        # builds and deploys to Cloudflare Workers (see wrangler.j
 npm run db:remote     # applies schema.sql to the production database
 ```
 
+The Worker is built in two steps: `npx opennextjs-cloudflare build` turns the Next.js app into
+`.open-next/worker.js` and `.open-next/assets`, then `npx opennextjs-cloudflare deploy` (or `npx wrangler deploy`,
+which hands over to it) uploads them. A deploy without the build step stops with "Open Next build not found".
+
+**Cloudflare Workers Builds** (the GitHub connection that deploys `main`): in the Cloudflare dashboard open
+Workers & Pages → `shopiliar` → Settings → Build and set
+
+| Setting | Value |
+|---|---|
+| Build command | `npx opennextjs-cloudflare build` |
+| Deploy command | `npx opennextjs-cloudflare deploy` |
+
+Build-time packages (`next`, `@opennextjs/cloudflare`, `wrangler`, `typescript`, the type packages) are regular
+dependencies, so the build works even where development dependencies aren't installed.
+
 After changing `wrangler.jsonc`, run `npm run cf-typegen` to refresh `cloudflare-env.d.ts`.
