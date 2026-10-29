@@ -114,13 +114,10 @@ The Worker is built in two steps: `npx opennextjs-cloudflare build` turns the Ne
 `.open-next/worker.js` and `.open-next/assets`, then `npx opennextjs-cloudflare deploy` (or `npx wrangler deploy`,
 which hands over to it) uploads them. A deploy without the build step stops with "Open Next build not found".
 
-**Cloudflare Workers Builds** (the GitHub connection that deploys `main`): in the Cloudflare dashboard open
-Workers & Pages → `shopiliar` → Settings → Build and set
-
-| Setting | Value |
-|---|---|
-| Build command | `npx opennextjs-cloudflare build` |
-| Deploy command | `npx opennextjs-cloudflare deploy` |
+**Cloudflare Workers Builds** (the GitHub connection that deploys `main`) works with its default settings
+(no build command, deploy command `npx wrangler deploy`): on that runner, `scripts/postinstall.mjs` builds the
+Worker right after `npm install`, so the deploy finds it. You can also set the dashboard's Build command to
+`npx opennextjs-cloudflare build` and the Deploy command to `npx opennextjs-cloudflare deploy`; both ways work.
 
 Build-time packages (`next`, `@opennextjs/cloudflare`, `wrangler`, `typescript`, the type packages) are regular
 dependencies, so the build works even where development dependencies aren't installed.
