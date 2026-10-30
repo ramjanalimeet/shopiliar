@@ -8,11 +8,11 @@ const DEVICES: Record<string, [number, number]> = { desktop: [1440, 900], tablet
 type Device = keyof typeof DEVICES;
 type Sort = "pop" | "new" | "az";
 
-// Verified by Shopilier: a green tick after each template's name
-const Verified = () => (
-  <svg className="tcard-verified" viewBox="0 0 24 24" role="img" aria-label="Verified by Shopilier"><title>Verified by Shopilier</title>
-    <path fill="currentColor" d="M12 1.8l2.4 1.8 3-.2 1 2.8 2.5 1.7-.9 2.9.9 2.9-2.5 1.7-1 2.8-3-.2L12 22.2l-2.4-1.8-3 .2-1-2.8-2.5-1.7.9-2.9-.9-2.9L5.6 6.6l1-2.8 3 .2z" />
-    <path d="M8 12.3l2.7 2.7L16.2 9.5" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+// Verified by Shopilier: a brand-green badge (a rounded seal with a white tick)
+const VerifiedBadge = () => (
+  <svg className="tcard-badge" viewBox="0 0 22 22" aria-hidden="true">
+    <path fill="currentColor" d="M20.4 11c0-1.3-.8-2.5-2-3 .4-1.3.1-2.7-.9-3.6-.9-.9-2.3-1.2-3.6-.9-.5-1.2-1.7-2-3-2s-2.5.8-3 2c-1.3-.4-2.7-.1-3.6.9-.9.9-1.2 2.3-.9 3.6-1.2.5-2 1.7-2 3s.8 2.5 2 3c-.4 1.3-.1 2.7.9 3.6.9.9 2.3 1.2 3.6.9.5 1.2 1.7 2 3 2s2.5-.8 3-2c1.3.4 2.7.1 3.6-.9.9-.9 1.2-2.3.9-3.6 1.2-.5 2-1.7 2-3z" />
+    <path d="M7.2 11.3l2.5 2.5 5.1-5.3" fill="none" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -98,8 +98,11 @@ export default function TemplatesBrowser({ children }: { children: ReactNode }) 
               {card.shot(false)}
               <div className="tcard-foot">
                 <div>
-                  <h3>{card.name}<Verified /></h3>
-                  <span className="tcard-langs" title="Every template works in Bangla and English">বাংলা · English</span>
+                  <h3>{card.name}</h3>
+                  <div className="tcard-meta">
+                    <span className="tcard-verified" title="Checked and verified by Shopilier"><VerifiedBadge />Verified</span>
+                    <span className="tcard-langs" title="Every template works in Bangla and English">বাংলা / English</span>
+                  </div>
                   <p className="bn">{card.desc}</p>
                 </div>
                 <div className="tcard-actions">
