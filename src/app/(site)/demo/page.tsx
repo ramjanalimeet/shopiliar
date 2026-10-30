@@ -15,8 +15,8 @@ export default function DemoPage() {
       <main className="container demo-page">
         <section className="page-head">
           <span className="pill">Live demo</span>
-          <h1>Try the dashboard <span className="gradient-text">live</span></h1>
-          <p>This is the real Shopilier dashboard running on a sample store, Dhaka Threads. Add a product, record an order, customize the website and publish it — nothing to install, no sign-up.</p>
+          <h1 className="bn">ড্যাশবোর্ডটি <span className="gradient-text">সরাসরি</span> চালিয়ে দেখুন</h1>
+          <p className="bn">এটি Shopilier-এর আসল ড্যাশবোর্ড, যা Dhaka Threads নামের একটি স্যাম্পল দোকানে চলছে। প্রোডাক্ট যোগ করুন, অর্ডার লিখে রাখুন, ওয়েবসাইট কাস্টমাইজ করে পাবলিশ করুন — কিছু ইনস্টল করতে হবে না, সাইন-আপও লাগবে না।</p>
         </section>
 
         <section className="demo-section" id="demo" aria-label="Live demo of the Shopilier dashboard">
