@@ -304,6 +304,8 @@ export const SiteKit = (() => {
   const STARTERS = {
     "luxe-store": {
       lang: "bn",
+      // The sample brand's logo in the Templates page preview (new stores start without one, so their own name shows)
+      previewLogo: FASHION_IMG("logo"),
       site: () => ({
         lang: "bn", headingFont: "bangla", bodyFont: "bangla", radius: "soft",
         about: "আমরা আরামদায়ক, টেকসই আর স্টাইলিশ টি-শার্ট বানাই। প্রতিটি ডিজাইন যত্ন করে বাছাই করা, আর সারা বাংলাদেশে পৌঁছে দিই দ্রুত।",
@@ -372,6 +374,7 @@ export const SiteKit = (() => {
     const site = applyStarter({ name: brand || "My Store", template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, phone: "01700-000000", email: "hello@example.com", address: "ঢাকা, বাংলাদেশ", social: { facebook: "#", instagram: "#", youtube: "#", tiktok: "#" } }, t.id);
     const pages = starterPages(t.id) || [{ id: uid("pg"), title: "Home", slug: "", inNav: true }];
     const products = sampleProducts(t.id);
+    if (STARTERS[t.id] && STARTERS[t.id].previewLogo && site.header) site.header.logo = STARTERS[t.id].previewLogo;
     ensure(site, pages, { products });
     return { site, pages, products };
   };
