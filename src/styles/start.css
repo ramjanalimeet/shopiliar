@@ -82,7 +82,7 @@
 .start-toggle button.on { background: var(--ink); color: #fff; }
 .start-toggle small { font-size: 11px; background: var(--brand-soft); color: var(--brand-text); padding: 2px 8px; border-radius: 999px; margin-left: 4px; font-weight: 600; }
 .start-toggle button.on small { background: rgba(65, 162, 18, .28); color: #9be07a; }
-.plan-pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.plan-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 860px; margin: 0 auto; }
 .plan-option { position: relative; display: flex; flex-direction: column; gap: 10px; text-align: left; background: #fff; border: 1.5px solid #eceef2; border-radius: 18px; padding: 22px 20px; transition: border-color .15s, box-shadow .15s, transform .15s; }
 .plan-option:hover { border-color: var(--brand); box-shadow: var(--shadow); transform: translateY(-2px); }
 .plan-option.on { border-color: var(--brand); background: var(--brand-soft); }
@@ -116,8 +116,8 @@
 .pay-note { display: flex; gap: 10px; align-items: flex-start; background: var(--brand-soft); color: var(--brand-deep); border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.5; }
 .pay-note svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
 
-@media (max-width: 1100px) {
-  .plan-pick { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 900px) {
+  .plan-pick { grid-template-columns: repeat(2, 1fr); max-width: 600px; }
 }
 @media (max-width: 900px) {
   .tpl-pick { grid-template-columns: 1fr; max-width: 520px; margin: 0 auto; }
