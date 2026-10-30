@@ -5,7 +5,12 @@ import { clean } from "./http";
 
 // Tried in order; Cloudflare retires models over time (plain llama-3.1-8b-instruct went in May 2026)
 const AI_MODELS = ["@cf/meta/llama-3.1-8b-instruct-fast", "@cf/zai-org/glm-4.7-flash"];
-export const TEMPLATE_IDS = ["luxe-store", "saas-landing", "launchly-landing", "bistro-restaurant", "growify-agency", "fixly-services", "nova-portfolio", "writely-blog", "mia-personal"];
+// Template ids and what each one is for (see src/lib/catalog.ts)
+export const TEMPLATE_NAMES: Record<string, string> = {
+  "luxe-store": "Fashion & Clothing", "saas-landing": "Electronics & Gadgets", "mia-personal": "Beauty & Cosmetics", "bistro-restaurant": "Grocery & Food",
+  "growify-agency": "Home & Furniture", "nova-portfolio": "Jewelry & Accessories", "writely-blog": "Single Product (story-led)", "fixly-services": "Single Product (what's inside, warranty)", "launchly-landing": "Single Product (launch, pre-orders)",
+};
+export const TEMPLATE_IDS = Object.keys(TEMPLATE_NAMES);
 
 export type SiteDraft = { template: string; headline: string; sub: string; cta: string; about: string; source: "ai" | "basic"; fallback?: string };
 
@@ -19,7 +24,7 @@ export async function draftSite(env: CloudflareEnv, input: { name: string; about
   const messages = [
     { role: "system", content: "You write short, friendly website copy for small businesses in Bangladesh. Reply with one JSON object only, no other text." },
     { role: "user", content: `Business name: ${name}\nCity: ${city}\nType: online shop\nWhat they do: ${about}\n\n` +
-      `Return JSON with keys: "template" (one of ${TEMPLATE_IDS.map((t) => `"${t}"`).join(", ")} - pick the closest style), "headline" (max 50 characters), "sub" (one sentence, max 100 characters), "cta" (button text, max 18 characters), "about" (2 sentences for an About section, max 260 characters).` },
+      `Return JSON with keys: "template" (one of ${TEMPLATE_IDS.map((t) => `"${t}" for ${TEMPLATE_NAMES[t]}`).join(", ")} - pick the closest fit), "headline" (max 50 characters), "sub" (one sentence, max 100 characters), "cta" (button text, max 18 characters), "about" (2 sentences for an About section, max 260 characters).` },
   ];
   let lastError = "";
   for (const model of AI_MODELS) {
@@ -59,8 +64,12 @@ function aiResult(parsed: Record<string, unknown>, basic: ReturnType<typeof basi
 
 function basicSite(name: string, about: string) {
   const has = (...words: string[]) => words.some((w) => about.toLowerCase().includes(w));
-  const template = has("software", "app", "saas", "tech") ? "saas-landing" : has("launch", "pre-order", "preorder") ? "launchly-landing"
-    : has("restaurant", "cafe", "café", "food", "bakery", "coffee") ? "bistro-restaurant" : "luxe-store";
+  const template = has("phone", "mobile", "gadget", "electronic", "laptop", "earbud") ? "saas-landing"
+    : has("beauty", "cosmetic", "skincare", "skin care", "makeup", "perfume") ? "mia-personal"
+    : has("grocery", "food", "restaurant", "cafe", "café", "bakery", "sweet", "fish", "rice") ? "bistro-restaurant"
+    : has("furniture", "home decor", "decor", "sofa", "lamp") ? "growify-agency"
+    : has("jewel", "gold", "silver", "watch", "accessor") ? "nova-portfolio"
+    : has("launch", "pre-order", "preorder", "single product", "one product") ? "launchly-landing" : "luxe-store";
   const first = about.split(/(?<=[.!?])\s/)[0].slice(0, 110);
   return {
     template,

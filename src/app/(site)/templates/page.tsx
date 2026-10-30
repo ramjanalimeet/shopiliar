@@ -5,7 +5,7 @@ import TemplatesBrowser from "@/components/site/TemplatesBrowser";
 
 export const metadata: Metadata = {
   title: "Templates — Shopilier",
-  description: "Free online store templates for Bangladeshi businesses: fashion, beauty, electronics, food, home, jewellery and more. Pick one, add products and go live today.",
+  description: "Premium online store templates for Bangladeshi businesses: fashion, electronics, beauty, grocery, home, jewelry and single-product shops. Pick one, add products and go live today.",
 };
 
 export default function TemplatesPage() {
@@ -14,8 +14,7 @@ export default function TemplatesPage() {
       <TemplatesBrowser>
         <section className="tpl-head">
           <span className="pill">Templates for online stores</span>
-          <h1 className="tpl-title">Store templates made for <span className="gradient-text">selling</span></h1>
-          <p className="tpl-sub">Every template is built for selling online in Bangladesh — bKash, Nagad and cash on delivery included. Pick one for free, add your products and go live today. Switch designs any time without losing anything.</p>
+          <h1 className="tpl-title bn">অনলাইনে ব্যবসার জন্য <span className="gradient-text">প্রিমিয়াম</span> টেমপ্লেট</h1>
         </section>
       </TemplatesBrowser>
       <SiteFooter />
