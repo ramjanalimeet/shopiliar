@@ -45,7 +45,7 @@ const Price = ({ plan, billing }: { plan: PlanId; billing: Billing }) => {
 // A tiny mock of the template's home page
 const Mini = ({ t, copy = {} }: { t: Template; copy?: Partial<Draft> }) => (
   <div className="mini" style={{ "--bg": t.bg, "--fg": t.text, "--ac": t.accent } as CSSProperties}>
-    <div className="mini-nav"><b>{copy.name || t.name.split(" ")[0]}</b><span></span><span></span><span></span></div>
+    <div className="mini-nav"><b>{copy.name || t.brand}</b><span></span><span></span><span></span></div>
     <div className="mini-hero"><strong>{copy.headline || t.headline}</strong><p>{copy.sub || t.sub}</p><i>{copy.cta || t.cta}</i></div>
   </div>
 );

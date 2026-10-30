@@ -1,24 +1,22 @@
 "use client";
-// Templates: search, sort, filter by what you sell, and a live preview at desktop, tablet or phone size
+// Templates: search, sort, and a live preview at desktop, tablet or phone size
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { templateById } from "@/lib/catalog";
 import { TEMPLATE_CARDS } from "./template-shots";
 
-const NICHES: [string, string][] = [
-  ["", "All stores"], ["fashion", "Fashion & Clothing"], ["beauty", "Beauty & Cosmetics"], ["electronics", "Electronics & Gadgets"],
-  ["food", "Food & Grocery"], ["home", "Home & Furniture"], ["jewellery", "Jewellery & Accessories"], ["kids", "Kids & Toys"],
-  ["books", "Books & Stationery"], ["crafts", "Handicrafts & Art"], ["health", "Health & Fitness"],
-];
 // Real screen sizes (CSS pixels) for each preview mode
 const DEVICES: Record<string, [number, number]> = { desktop: [1440, 900], tablet: [768, 1024], mobile: [390, 844] };
 type Device = keyof typeof DEVICES;
 type Sort = "pop" | "new" | "az";
+
+// The "Use this template" button takes the template's own accent colour
+const accentStyle = (id: string) => { const t = templateById(id); return t ? { background: t.accent, borderColor: t.accent } : undefined; };
 
 const PreviewIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>;
 
 export default function TemplatesBrowser({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("pop");
-  const [niche, setNiche] = useState(""); // what the visitor sells; "" is every store
   const [preview, setPreview] = useState<string | null>(null);
   const [device, setDevice] = useState<Device>("desktop");
   const [scale, setScale] = useState(1);
@@ -29,9 +27,9 @@ export default function TemplatesBrowser({ children }: { children: ReactNode }) 
 
   const cards = useMemo(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    const shown = TEMPLATE_CARDS.filter((c) => (!niche || c.niches.includes(niche)) && terms.every((t) => c.search.includes(t)));
+    const shown = TEMPLATE_CARDS.filter((c) => terms.every((t) => c.search.includes(t)));
     return [...shown].sort((a, b) => (sort === "az" ? a.name.localeCompare(b.name) : sort === "new" ? a.newest - b.newest : a.pop - b.pop));
-  }, [query, sort, niche]);
+  }, [query, sort]);
   const current = TEMPLATE_CARDS.find((c) => c.id === preview);
 
   // Fit the pretend screen into the popup, scaling it down when the window is smaller than the device
@@ -90,25 +88,21 @@ export default function TemplatesBrowser({ children }: { children: ReactNode }) 
             </label>
           </div>
         </div>
-        <div className="tpl-niches" id="tpl-niches" role="group" aria-label="Filter by what you sell">
-          <span className="tpl-niches-label">What do you sell?</span>
-          {NICHES.map(([id, name]) => (
-            <button key={id} type="button" className={niche === id ? "on" : undefined} data-niche={id} aria-pressed={niche === id} onClick={() => setNiche(id)}>{name}</button>
-          ))}
-        </div>
         <section className="tpl-list" id="tpl-list">
           {cards.map((card) => (
             <article key={card.id} className="tcard" data-name={card.name}>
               {card.shot(false)}
               <div className="tcard-foot">
                 <div><h3>{card.name}</h3><p>{card.desc}</p></div>
-                <a className="btn btn-dark" href={`/signup?template=${card.id}`}>Use this template</a>
-                <button className="btn btn-preview" type="button" onClick={(e) => openPreview(card.id, e.currentTarget)}><PreviewIcon />Preview</button>
+                <div className="tcard-actions">
+                  <a className="btn btn-dark" href={`/signup?template=${card.id}`} style={accentStyle(card.id)}>Use this template →</a>
+                  <button className="btn btn-preview" type="button" onClick={(e) => openPreview(card.id, e.currentTarget)}><PreviewIcon />Preview</button>
+                </div>
               </div>
             </article>
           ))}
         </section>
-        <p className="empty" id="tpl-empty" hidden={cards.length > 0}>No templates match. Try another word or pick a different niche — every template can sell any product.</p>
+        <p className="empty" id="tpl-empty" hidden={cards.length > 0}>No templates match. Try another word — every template can sell any product.</p>
       </main>
 
       <div className="modal" id="tpl-modal" hidden={!preview} role="dialog" aria-modal="true" aria-labelledby="tpl-modal-title"
