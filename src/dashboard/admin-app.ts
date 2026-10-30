@@ -1045,7 +1045,7 @@ export const start = async () => {
             <div class="pf-stack">
               <div class="card"><div class="card-head"><span class="card-title">Store details<small>Header, footer and Contact section</small></span></div><div class="card-body">
                   ${text("name", "Website name", s.name, { max: 40, ph: "My Store" })}
-                  ${image("header.logo", "Logo", h.logo, "Shown instead of the name in the header. A wide PNG with a clear background works best.")}
+                  ${image("header.logo", "Logo", h.logo, "Shown as a square with rounded corners, with your website name beside it, in the header and footer. A square image (512 × 512) works best.")}
                   <div class="row">${text("phone", "Phone", s.phone, { max: 30, ph: "01XXX-XXXXXX" })}${text("email", "Email", s.email, { max: 120, ph: "hello@yourstore.com", type: "email" })}</div>
                   ${text("address", "Address", s.address, { max: 160, ph: "House, road, area, city" })}
               </div></div>

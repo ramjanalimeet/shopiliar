@@ -304,6 +304,8 @@ export const SiteKit = (() => {
   const STARTERS = {
     "luxe-store": {
       lang: "bn",
+      // The sample brand's logo in the Templates page preview (new stores start without one, so their own name shows)
+      previewLogo: FASHION_IMG("logo"),
       site: () => ({
         lang: "bn", headingFont: "bangla", bodyFont: "bangla", radius: "soft",
         about: "আমরা আরামদায়ক, টেকসই আর স্টাইলিশ টি-শার্ট বানাই। প্রতিটি ডিজাইন যত্ন করে বাছাই করা, আর সারা বাংলাদেশে পৌঁছে দিই দ্রুত।",
@@ -372,6 +374,7 @@ export const SiteKit = (() => {
     const site = applyStarter({ name: brand || "My Store", template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, phone: "01700-000000", email: "hello@example.com", address: "ঢাকা, বাংলাদেশ", social: { facebook: "#", instagram: "#", youtube: "#", tiktok: "#" } }, t.id);
     const pages = starterPages(t.id) || [{ id: uid("pg"), title: "Home", slug: "", inNav: true }];
     const products = sampleProducts(t.id);
+    if (STARTERS[t.id] && STARTERS[t.id].previewLogo && site.header) site.header.logo = STARTERS[t.id].previewLogo;
     ensure(site, pages, { products });
     return { site, pages, products };
   };
@@ -708,6 +711,13 @@ export const SiteKit = (() => {
     return `<div class="dd-panel dd-${style}"><div class="dd-in">${body}</div></div>`;
   };
 
+  // The store's logo as a square with rounded corners, with the website name beside it
+  // (header.hideName shows the logo alone)
+  const brand = (site, tag, cls) => {
+    const h = site.header || {}, name = site.name || "My Store", logo = safeImg(h.logo);
+    const showName = !logo || !h.hideName;
+    return `<${tag} class="${cls}${logo ? " has-mark" : ""}"${tag === "a" ? ' href="/"' : ""}>${logo ? `<img class="logo-mark" src="${esc(logo)}" alt="${showName ? "" : esc(name)}">` : ""}${showName ? `<span class="logo-name">${esc(name)}</span>` : ""}</${tag}>`;
+  };
   const renderHeader = (site, pages, opts) => {
     const h = site.header;
     const T = (s) => tr(site, s);
@@ -716,7 +726,7 @@ export const SiteKit = (() => {
     return `<header class="s-header" data-sid="header" style="${sectionStyle(h.style)}">
       ${h.announcement?.show && h.announcement.text ? `<div class="announce" style="${esc(announceStyle(h.announcement))}">${h.announcement.link ? `<a href="${esc(safeLink(h.announcement.link))}">${esc(h.announcement.text)}${svg("arrow")}</a>` : esc(h.announcement.text)}</div>` : ""}
       <div class="wrap nav">
-        <a class="logo" href="/">${safeImg(h.logo) ? `<img src="${esc(h.logo)}" alt="${esc(site.name)}">` : esc(site.name || "My Store")}</a>
+        ${brand(site, "a", "logo")}
         <nav class="menu">${navPages(pages).map((p, i) => {
           const a = `<a href="${esc(pageHref(p))}"${opts.page && p.id === opts.page.id ? ' class="on"' : ""}>${esc(p.title)}</a>`;
           const kids = navChildren(pages, p);
@@ -733,7 +743,7 @@ export const SiteKit = (() => {
     const T = (s) => tr(site, s);
     return `<footer class="s-footer" data-sid="footer" style="${sectionStyle(f.style)}">
       <div class="wrap foot-grid">
-        <div><b class="logo">${esc(site.name || "My Store")}</b>${f.text ? `<p>${esc(f.text)}</p>` : ""}</div>
+        <div>${brand(site, "b", "logo")}${f.text ? `<p>${esc(f.text)}</p>` : ""}</div>
         ${f.showMenu ? `<div><b>${esc(T("Pages"))}</b>${navPages(pages).map((p) => `<a href="${esc(pageHref(p))}">${esc(p.title)}</a>`).join("")}</div>` : ""}
         ${f.showContact ? `<div><b>${esc(T("Contact"))}</b>${[site.phone, site.email, site.address].filter(Boolean).map((v) => `<span>${esc(v)}</span>`).join("")}</div>` : ""}
         ${f.showSocial && socials.length ? `<div><b>${esc(T("Follow us"))}</b><span class="socials">${socials.map(([k, v]) => `<a href="${esc(safeLink(v))}" target="_blank" rel="noopener" aria-label="${SOCIAL_NAMES[k]}" title="${SOCIAL_NAMES[k]}">${socialIcon(k)}</a>`).join("")}</span></div>` : ""}
