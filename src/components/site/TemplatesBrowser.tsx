@@ -8,7 +8,7 @@ const DEVICES: Record<string, [number, number]> = { desktop: [1440, 900], tablet
 type Device = keyof typeof DEVICES;
 type Sort = "pop" | "new" | "az";
 
-// Verified by Shopilier: a blue badge (a rounded seal with a white tick)
+// Verified by Shopilier: a brand-green badge (a rounded seal with a white tick)
 const VerifiedBadge = () => (
   <svg className="tcard-badge" viewBox="0 0 22 22" aria-hidden="true">
     <path fill="currentColor" d="M20.4 11c0-1.3-.8-2.5-2-3 .4-1.3.1-2.7-.9-3.6-.9-.9-2.3-1.2-3.6-.9-.5-1.2-1.7-2-3-2s-2.5.8-3 2c-1.3-.4-2.7-.1-3.6.9-.9.9-1.2 2.3-.9 3.6-1.2.5-2 1.7-2 3s.8 2.5 2 3c-.4 1.3-.1 2.7.9 3.6.9.9 2.3 1.2 3.6.9.5 1.2 1.7 2 3 2s2.5-.8 3-2c1.3.4 2.7.1 3.6-.9.9-.9 1.2-2.3.9-3.6 1.2-.5 2-1.7 2-3z" />
