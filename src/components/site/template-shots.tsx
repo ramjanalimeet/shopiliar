@@ -6,44 +6,25 @@ const Burger = () => (
   <span className="s-burger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg></span>
 );
 
+// A template's real storefront in a frame: scaled down to the card, or full size in the preview popup
+const RealShot = ({ id, name, live }: { id: string; name: string; live: boolean }) => (
+  live
+    ? <iframe className="shot-live-frame" src={`/templates/preview/${id}`} title={`${name} preview`} />
+    : <div className="shot shot-real"><iframe src={`/templates/preview/${id}`} title={`${name} preview`} loading="lazy" tabIndex={-1} aria-hidden="true" /></div>
+);
+
 export type TemplateCard = { id: string; name: string; desc: string; pop: number; newest: number; search: string; shot: (live: boolean) => ReactNode };
 
 export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "luxe-store",
     name: "Fashion & Clothing",
-    desc: "An elegant store for clothing, sarees, shoes and accessories.",
+    desc: "A Bangla clothing store for T-shirts and apparel, with collections, offers and a quick checkout.",
     pop: 0,
-    newest: 4,
-    search: "fashion & clothing an elegant store for clothing, sarees, shoes and accessories. fashion clothing saree boutique dress shoes bags apparel luxe",
-    shot: (live) => (
-      <div data-layout="split" className={"shot t-luxe" + (live ? " live" : "")}>
-        <div className="s-nav"><b>LUXE</b>
-          <nav><span>Home</span><span>Shop</span><span>Collections</span><span>About</span></nav>
-          <div className="s-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 4h2l2.4 11h11l2-8H6.3" /><circle cx="9" cy="20" r="1.3" /><circle cx="17" cy="20" r="1.3" /></svg>
-          </div>{live && <Burger />}
-        </div>
-        <div className="s-copy">
-          <h4>Modern<br />Fashion<br />For Everyone</h4>
-          <p>Premium quality. Timeless style.</p>
-          <div className="s-btns"><span className="s-btn">Shop Now</span></div>
-        </div>
-        <div className="s-art">
-          <svg viewBox="0 0 200 220" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="lx-coat" x1="0" x2="1"><stop offset="0" stopColor="#e3c6a5" /><stop offset=".55" stopColor="#d4b08a" /><stop offset="1" stopColor="#b98f68" /></linearGradient><linearGradient id="lx-hair" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#6b4630" /><stop offset="1" stopColor="#3d2617" /></linearGradient></defs><ellipse cx="106" cy="58" rx="27" ry="31" fill="url(#lx-hair)" /><path d="M84 60c-2 26 4 40 22 44s26-8 24-40z" fill="url(#lx-hair)" /><path d="M96 86h20v16H96z" fill="#e9c4a6" /><path d="M60 112c6-14 26-20 46-20s40 6 48 20l14 108H46z" fill="url(#lx-coat)" /><path d="M106 96c-8 6-14 16-16 30l16 94h4l-2-94c0-12 2-22-2-30z" fill="#c69d75" opacity=".55" /><path d="M140 102c4 30 8 56 10 74" stroke="#1e1a17" strokeWidth="3.5" fill="none" /><path d="M136 170h34l4 44h-42z" fill="#1e1a17" /><path d="M140 176h26" stroke="#3a332e" strokeWidth="1.5" /></svg>
-        </div>
-        <section className="s-more">
-          <h5>New Arrivals</h5>
-          <div className="s-grid">
-            <div className="s-item"><span className="s-swatch" style={{ background: "linear-gradient(135deg,#d8b48f,#b98f68)" }} /><b>Wool Coat</b><em>৳4,500</em></div>
-            <div className="s-item"><span className="s-swatch" style={{ background: "linear-gradient(135deg,#3a2f28,#1e1a17)" }} /><b>Leather Tote</b><em>৳3,200</em></div>
-            <div className="s-item"><span className="s-swatch" style={{ background: "linear-gradient(135deg,#e9c9b8,#c98f7a)" }} /><b>Silk Scarf</b><em>৳1,200</em></div>
-          </div>
-        </section>
-        <footer className="s-foot"><b>LUXE</b><span>© 2026 LUXE. All rights reserved.</span></footer>
-      </div>
-    ),
+    newest: 0,
+    search: "fashion & clothing a bangla clothing store for t-shirts and apparel, with collections, offers and a quick checkout. fashion clothing t-shirt tshirt polo hoodie saree boutique dress apparel bangla shotiq টি-শার্ট পোশাক",
+    // The real storefront (see /templates/preview/luxe-store), so the card and the popup show the website you get
+    shot: (live) => <RealShot id="luxe-store" name="Fashion & Clothing" live={live} />,
   },
   {
     id: "saas-landing",

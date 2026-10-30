@@ -27,14 +27,16 @@ export const start = async () => {
 
   const seedStore = () => {
     const t = findTemplate(account.template);
-    const products = [
+    // A template with its own sample products (in its language) uses those in the demo store
+    const samples = SiteKit.sampleProducts(t.id);
+    const products = (samples.length ? samples.map(({ id, ...p }) => p) : [
       { name: "Accent Chair", price: 12500, stock: 8, category: "Living room", color: "#c8a98a" },
       { name: "Table Lamp", price: 3200, stock: 24, category: "Lighting", color: "#e9e4da" },
       { name: "Coffee Table", price: 9800, stock: 5, category: "Living room", color: "#8a6a4f" },
       { name: "Wall Art Print", price: 1500, stock: 40, category: "Decor", color: "#d9cfc4" },
       { name: "Minimal Chair", price: 6900, stock: 0, category: "Dining", color: "#b98a63" },
       { name: "Linen Cushion", price: 950, stock: 60, category: "Decor", color: "#ece3d3" },
-    ].slice(0, account.demo ? PLANS[account.plan].products ?? 6 : 0)
+    ]).slice(0, account.demo ? PLANS[account.plan].products ?? 6 : 0)
       .map((p, i) => ({ id: uid("p"), status: "active", created: daysAgo(30 - i), ...p }));
     const people = [
       ["Sarah Rahman", "01711-234567", "Dhaka"], ["Tanvir Hasan", "01819-456789", "Chattogram"], ["Nusrat Jahan", "01912-345678", "Sylhet"],
@@ -54,21 +56,25 @@ export const start = async () => {
         items: [{ name: p.name, qty, price: p.price }], total: p.price * qty, payment: payments[i % payments.length], status, date: daysAgo(i * 1.6),
       };
     });
-    return {
-      site: {
+    // Templates with a starter website (pages, sections, language) start from it
+    const pages = SiteKit.starterPages(t.id) || [
+      { id: uid("pg"), title: "Home", slug: "", inNav: true, locked: true },
+      { id: uid("pg"), title: "Shop", slug: "shop", inNav: true },
+      { id: uid("pg"), title: "About", slug: "about", inNav: true },
+      { id: uid("pg"), title: "Contact", slug: "contact", inNav: true },
+    ];
+    const site = SiteKit.applyStarter({
         name: account.business || "My Store", template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, font: "modern",
         headline: t.headline, sub: t.sub, cta: t.cta, showProducts: true, showAbout: true, showContact: true,
         about: "We make simple, beautiful things for everyday life — designed and delivered across Bangladesh.",
         phone: "01700-000000", email: account.email, address: "Dhaka, Bangladesh",
-      },
+      }, t.id);
+    if (site.lang === "bn") site.address = "ঢাকা, বাংলাদেশ";
+    return {
+      site,
       published: false, publishedAt: null,
       products, customers, orders,
-      pages: [
-        { id: uid("pg"), title: "Home", slug: "", inNav: true, locked: true },
-        { id: uid("pg"), title: "Shop", slug: "shop", inNav: true },
-        { id: uid("pg"), title: "About", slug: "about", inNav: true },
-        { id: uid("pg"), title: "Contact", slug: "contact", inNav: true },
-      ],
+      pages,
       settings: {
         subdomain: (account.business || "mystore").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "mystore",
         domain: "", domainStatus: "", phone: "01700-000000", address: "Dhaka, Bangladesh",
@@ -207,8 +213,9 @@ export const start = async () => {
     const pg = store.pages.find((p) => p.system === "checkout"), sec = pg && pg.sections.find((x) => x.type === "checkout");
     return sec ? sec.content.payMethods : null;
   };
-  const hasPay = (list, label) => list.findIndex((m) => String(m.label || "").trim().toLowerCase() === label.toLowerCase());
-  const syncPayments = () => { const list = checkoutPays(); if (list) Object.entries(PAYMENT_LABEL).forEach(([k, l]) => { store.settings.payments[k] = hasPay(list, l) >= 0; }); };
+  // A method counts by its English or Bangla name (a Bangla Checkout page says বিকাশ for bKash)
+  const hasPay = (list, k) => { const names = [PAYMENT_LABEL[k], SiteKit.PAYMENTS_BN[k]].map((x) => x.toLowerCase()); return list.findIndex((m) => names.includes(String(m.label || "").trim().toLowerCase())); };
+  const syncPayments = () => { const list = checkoutPays(); if (list) Object.keys(PAYMENT_LABEL).forEach((k) => { store.settings.payments[k] = hasPay(list, k) >= 0; }); };
   syncPayments();
   // The Checkout page is part of every website, so it doesn't count toward the plan's pages
   // ---------- Customers ----------
@@ -1067,6 +1074,8 @@ export const start = async () => {
                     ${seg("headingFont", "Heading font", Object.entries(SiteKit.FONTS).map(([k, x]) => [k, x.label, `font-family:${esc(x.css)}`]), s.headingFont)}
                     ${seg("bodyFont", "Body font", Object.entries(SiteKit.FONTS).filter(([k]) => k !== "elegant").map(([k, x]) => [k, x.label, `font-family:${esc(x.css)}`]), s.bodyFont)}
                     ${seg("radius", "Button corners", [["sharp", "Square"], ["soft", "Soft"], ["round", "Round"]], s.radius)}
+                    ${seg("lang", "Website language", SiteKit.LANGS, s.lang || "en")}
+                    <span class="pf-hint" style="margin-top:-6px;display:block">The words your website shows on its own: Add to cart, the cart, prices and checkout totals. Your own text stays as you wrote it.</span>
                   </div>
                   <div class="pf-preview"><span class="pf-preview-label">Live preview</span><div class="th-screen" data-w="1280"><iframe class="th-canvas" style="width:1280px" id="pf-frame" srcdoc="${esc(SiteKit.documentHTML(s, store.pages, { page: store.pages[0], products: store.products }))}" title="Website preview" tabindex="-1"></iframe></div></div>
                 </div>
@@ -1263,6 +1272,7 @@ export const start = async () => {
           <div class="field"><label for="pd-sku">SKU <span class="muted">(optional)</span></label><input class="input" id="pd-sku" name="sku" maxlength="40" value="${esc(p?.sku || "")}" placeholder="PNJ-001"></div></div>
         <div class="row"><div class="field"><label for="pd-cat">Category</label><select class="select" id="pd-cat" name="category"><option value="">No category</option>${store.categories.map((c) => `<option ${c.name === p?.category ? "selected" : ""}>${esc(c.name)}</option>`).join("")}<option value="__new">+ New category…</option></select><input class="input" name="newcat" maxlength="30" placeholder="New category name" hidden style="margin-top:8px"></div>
           <div class="field"><label>Status</label><div class="dc-opts"><label class="dc-opt"><input type="radio" name="status" value="active" ${p?.status !== "draft" ? "checked" : ""}>${icon("eye")}<span>Active</span></label><label class="dc-opt"><input type="radio" name="status" value="draft" ${p?.status === "draft" ? "checked" : ""}>${icon("eyeOff")}<span>Draft (hidden)</span></label></div></div></div>
+        <div class="field"><label for="pd-badge">Label on the website <span class="muted">(optional)</span></label><select class="select" id="pd-badge" name="badge">${[["", "No label"], ["new", "New"], ["best", "Best seller"], ["sale", "Sale"]].map(([k, l]) => `<option value="${k}" ${(p?.badge || "") === k ? "selected" : ""}>${l}</option>`).join("")}</select><span class="pf-hint">Shown on the product photo. Products with a sale price count as Sale without a label. The website's New, Best seller and Sale buttons use these.</span></div>
         <div class="field"><label>Sizes, colors and other options <span class="muted">(optional)</span></label>
           <div class="pd-opts" data-opts>${opts.map(optRow).join("")}</div>
           <datalist id="pd-opt-names"><option value="Size"><option value="Color"><option value="Material"><option value="Style"></datalist>
@@ -1318,6 +1328,7 @@ export const start = async () => {
         if (options.some((o) => !o.name || !o.values.length)) { toast("Each option needs a name and at least one value"); return false; }
         const data = {
           name: v.name, description: v.description || "", price, compare, stock: Math.max(0, parseInt(v.stock, 10) || 0), sku: v.sku || "",
+          badge: ["new", "best", "sale"].includes(v.badge) ? v.badge : "",
           category: categoryFor(v.category === "__new" ? v.newcat : v.category), status: v.status === "draft" ? "draft" : "active", images: photos.slice(0, 6), image: photos[0] || "", options,
           color: p?.color || colors[store.products.length % colors.length],
         };
@@ -2085,8 +2096,8 @@ export const start = async () => {
         Object.entries(PAYMENT_LABEL).forEach(([k, l]) => {
           const on = (store.settings.payments[k] = f.elements["pay_" + k].checked);
           if (!list) return;
-          const i = hasPay(list, l);
-          if (on && i < 0) list.push({ label: l, info: "" });
+          const i = hasPay(list, k);
+          if (on && i < 0) list.push({ label: store.site.lang === "bn" ? SiteKit.PAYMENTS_BN[k] : l, info: "" });
           if (!on && i >= 0) list.splice(i, 1);
         });
         touchSite();

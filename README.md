@@ -50,6 +50,19 @@ dashboard starts; `AdminApp`, `DemoApp` and `MasterApp` ship the matching bundle
 | `master-admin.ts` | The master dashboard (its data still lives in the browser) |
 | `*.entry.ts` | One entry per page: `start()` runs the pieces in the order they must run (`demo.ts` before the dashboard) |
 
+### Template starter websites
+A template can bring a whole website in its own language (`STARTERS` in `site.ts`): its pages in menu order, the
+sections on each, the header, footer and Checkout text. **Fashion & Clothing** (`luxe-store`) is the first: a Bangla
+T-shirt store with a big headline and photo slides, a feature strip, collection tiles, products with New / Best seller /
+Sale buttons, a promo card, "Why us" cards and a newsletter bar. New stores on that template start from it, and
+"Reset page" in the editor goes back to it. Its look lives in `public/assets/site.css` under `.theme-fashion`, and empty
+photos show the size to upload (1920 × 800, 400 × 400, 600 × 600) in the editor and previews.
+
+Store owners change all of it from the dashboard: every text, photo, slide, button and label in the website editor,
+the layout from each section's Layout menu, product labels on the product form, and the website's own words (Add to
+cart, the cart, prices) with **Website language** in Preferences. `/templates/preview/<id>` serves the real storefront
+on sample products; the Templates page shows it in the card and in the Preview popup.
+
 These modules were ported from the original dashboard scripts and are marked `@ts-nocheck`: they run as written,
 with every feature intact (orders, products, the website editor with desktop/tablet/phone previews, versions and
 backups, publishing, image uploads, plan limits, the support chat, "Reset demo"), and their types can be tightened

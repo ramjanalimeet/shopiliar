@@ -216,7 +216,7 @@ export const start = () => {
               ${tplCover(t)}
               <div class="g-body">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="g-title">${esc(t.name)}</span><span class="muted small">${t.uses} sites</span></div>
-                <div class="g-meta">${tag(t.category, "brown")}${tag(t.layout === "center" ? "Centered" : t.layout === "bleed" ? "Full-width" : "Side by side", "gray")}</div>
+                <div class="g-meta">${tag(t.category, "brown")}${tag(t.layout === "center" ? "Centered" : t.layout === "bleed" ? "Full-width" : t.layout === "story" ? "Big headline with slides" : "Side by side", "gray")}</div>
                 <div class="muted small">${esc(t.desc)}</div>
                 <div class="g-actions">
                   <button class="btn btn-sm" data-action="edit-template" data-id="${t.id}">${icon("edit")}Customize</button>
@@ -377,7 +377,7 @@ export const start = () => {
           <div class="field"><label>Name</label><input class="input" name="name" required maxlength="40" value="${esc(draft.name)}"></div>
           <div class="field"><label>Category</label><select class="select" name="category">${CATEGORIES.map((c) => `<option${c === draft.category ? " selected" : ""}>${esc(c)}</option>`).join("")}</select></div>
           <div class="field"><label>Description</label><textarea class="textarea" name="desc" maxlength="160" style="min-height:60px">${esc(draft.desc)}</textarea></div>
-          <div class="field"><label>Layout</label><select class="select" name="layout"><option value="split">Text + picture side by side</option><option value="center"${draft.layout === "center" ? " selected" : ""}>Centered</option><option value="bleed"${draft.layout === "bleed" ? " selected" : ""}>Full-width picture</option></select></div>
+          <div class="field"><label>Layout</label><select class="select" name="layout"><option value="split">Text + picture side by side</option><option value="center"${draft.layout === "center" ? " selected" : ""}>Centered</option><option value="bleed"${draft.layout === "bleed" ? " selected" : ""}>Full-width picture</option><option value="story"${draft.layout === "story" ? " selected" : ""}>Big headline with slides</option></select></div>
           <div class="row" style="grid-template-columns:1fr 1fr 1fr"><div class="field"><label>Background</label><input class="input" type="color" name="bg" value="${esc(draft.bg)}" style="padding:2px"></div>
           <div class="field"><label>Text</label><input class="input" type="color" name="text" value="${esc(draft.text)}" style="padding:2px"></div>
           <div class="field"><label>Accent</label><input class="input" type="color" name="accent" value="${esc(draft.accent)}" style="padding:2px"></div></div>

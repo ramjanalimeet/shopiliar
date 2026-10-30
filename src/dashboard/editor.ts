@@ -15,21 +15,33 @@ export const SiteEditor = (() => {
   const FORM_FIELD = [["text", "label", "Label"], ["text", "hint", "Hint (shown inside the box)"],
     ["select", "type", "Answer type", { options: [["text", "Short text"], ["tel", "Phone number"], ["email", "Email"], ["number", "Number"], ["textarea", "Long text"]] }]];
   const CONTENT = {
-    hero: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"], ["textarea", "subtitle", "Subtitle"], ["link", "btn1", "Button 1"], ["link", "btn2", "Button 2"], ["image", "image", "Image"],
+    hero: [["text", "eyebrow", "Small heading"], ["textarea", "title", "Title", { rows: 2 }], ["text", "accent", "Highlighted line (in your button color)"], ["textarea", "subtitle", "Subtitle"], ["link", "btn1", "Button 1"], ["link", "btn2", "Button 2"],
+      ["image", "image", "Image", { hint: (t) => (t.style.layout === "story" ? "1920 × 800" : "") }],
+      L("slides", "More slides", [["image", "image", "Image", { hint: () => "1920 × 800" }]], { max: 5, add: { image: "" }, when: (c, t) => t && t.style.layout === "story", note: "Photos that slide after the first one. Customers move between them with the arrows." }),
       ["toggle", "badge.show", "Show offer badge"], ["text", "badge.top", "Badge: top line", { when: "badge.show" }], ["text", "badge.big", "Badge: big text", { when: "badge.show" }], ["text", "badge.bottom", "Badge: bottom line", { when: "badge.show" }],
       L("features", "Features", [["icon", "icon", "Icon"], ["text", "title", "Title"], ["text", "text", "Text"]], { max: 4, add: { icon: "star", title: "New feature", text: "" }, name: "title" })],
     products: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"], ["textarea", "subtitle", "Subtitle"], ["number", "count", "Number of products", { min: 1, max: 24 }], ["link", "viewAll", "“View all” link"],
-      ["toggle", "showFilters", "Category buttons (All, Men, Women…)"],
-      ["note", "", 'Products come from your Products page, and categories from <a href="#/categories">Categories</a>.']],
-    featured: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"], ["textarea", "text", "Text"], ["link", "button", "Button"], ["image", "image", "Image"]],
-    categories: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"],
-      L("items", "Categories", [["text", "name", "Name"], ["image", "image", "Image"], ["url", "link", "Link"]], { max: 8, add: { name: "New category", image: "", link: "/shop" }, name: "name" })],
+      ["select", "only", "Which products", { options: [["", "All products"], ["new", "Only New"], ["best", "Only Best seller"], ["sale", "Only Sale"]] }],
+      ["toggle", "showFilters", "Buttons above the products"],
+      ["select", "filterBy", "Buttons for", { when: "showFilters", options: [["category", "Categories (Men, Women…)"], ["label", "Labels (New, Best seller, Sale)"]] }],
+      ["text", "tabs.all", "“All” button text", { when: "showFilters", placeholder: "All" }],
+      ["text", "tabs.new", "“New” button text", { when: (c) => c.showFilters && c.filterBy === "label", placeholder: "New" }],
+      ["text", "tabs.best", "“Best seller” button text", { when: (c) => c.showFilters && c.filterBy === "label", placeholder: "Best seller" }],
+      ["text", "tabs.sale", "“Sale” button text", { when: (c) => c.showFilters && c.filterBy === "label", placeholder: "Sale" }],
+      ["text", "button", "Add to cart button text", { placeholder: "Add to cart" }], ["toggle", "wishlist", "Wishlist heart on each product"],
+      ["note", "", 'Products come from your <a href="#/products">Products</a> page, and categories from <a href="#/categories">Categories</a>. Give a product a label (New, Best seller, Sale) when you edit it.']],
+    featured: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"], ["textarea", "text", "Text"], ["link", "button", "Button"], ["image", "image", "Image", { hint: () => "1920 × 600" }]],
+    categories: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"], ["textarea", "subtitle", "Subtitle", { rows: 2 }], ["link", "viewAll", "“View all” link"],
+      L("items", "Categories", [["text", "name", "Name"], ["image", "image", "Image", { hint: () => "400 × 400" }], ["url", "link", "Link"]], { max: 8, add: { name: "New category", image: "", link: "/shop" }, name: "name" })],
+    perks: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"], ["textarea", "subtitle", "Subtitle", { rows: 2 }],
+      L("items", "Reasons", [["icon", "icon", "Icon"], ["text", "title", "Title"], ["text", "text", "Text"]], { max: 8, add: { icon: "star", title: "A new reason", text: "" }, name: "title" })],
     about: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"], ["textarea", "text", "Text", { rows: 6 }], ["image", "image", "Image"], ["link", "button", "Button"]],
     testimonials: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"],
       L("items", "Reviews", [["textarea", "quote", "Review"], ["text", "name", "Name"], ["text", "role", "City or detail"], ["number", "rating", "Stars (1–5)", { min: 1, max: 5 }]], { max: 6, add: { quote: "Write the review here.", name: "Customer name", role: "", rating: 5 }, name: "name" })],
     blog: [["text", "eyebrow", "Small heading"], ["text", "title", "Title"],
       L("items", "Posts", [["text", "title", "Title"], ["textarea", "excerpt", "Short text"], ["image", "image", "Image"], ["text", "date", "Date"], ["url", "link", "Link"]], { max: 6, add: { title: "New post", excerpt: "", image: "", date: "", link: "#" }, name: "title" })],
-    newsletter: [["text", "title", "Title"], ["textarea", "text", "Text"], ["text", "placeholder", "Email box text"], ["text", "button", "Button text"]],
+    newsletter: [["text", "title", "Title"], ["textarea", "text", "Text"], ["text", "placeholder", "Email box text"], ["text", "button", "Button text"], ["toggle", "showSocial", "Show social links"],
+      ["note", "", 'Social links come from <a href="#/preferences">Preferences</a>.']],
     contact: [["text", "title", "Title"], ["textarea", "text", "Text"], ["text", "phone", "Phone", { placeholder: "Your store phone (from Preferences)" }], ["text", "email", "Email", { placeholder: "Your store email (from Preferences)" }], ["text", "address", "Address", { placeholder: "Your store address (from Preferences)" }],
       ["note", "", 'Leave these empty to use the details in <a href="#/preferences">Preferences</a>, so they stay the same everywhere.'], ["toggle", "showForm", "Show contact form"]],
     faq: [["text", "title", "Title"], L("items", "Questions", [["text", "q", "Question"], ["textarea", "a", "Answer"]], { max: 12, add: { q: "New question?", a: "The answer." }, name: "q" })],
@@ -51,9 +63,17 @@ export const SiteEditor = (() => {
       ["heading", "", "Order button"], ["text", "button", "Button text"], ["toggle", "buttonTotal", "Show total on the button"], ["textarea", "note", "Small text under the button", { rows: 2 }],
       ["note", "", "The order summary shows what's in the customer's cart."]],
     header: [["image", "logo", "Logo image (optional)"], ["toggle", "announcement.show", "Show announcement bar"], ["text", "announcement.text", "Announcement", { when: "announcement.show" }],
-      ["toggle", "search", "Search icon"], ["toggle", "account", "Account icon"], ["toggle", "cart", "Cart icon"], ["note", "", 'The menu, the banner\'s link and color, and more header buttons are in <a href="#/navigation">Navigation</a>. The website name and logo are also in <a href="#/preferences">Preferences</a>.']],
+      ["toggle", "search", "Search"], ["toggle", "searchBar", "Show a search box (instead of an icon)", { when: "search" }], ["text", "searchText", "Search box text", { when: (c) => c.search && c.searchBar, placeholder: "Search products…" }],
+      ["toggle", "account", "Account icon"], ["toggle", "cart", "Cart icon"], ["note", "", 'The menu, the banner\'s link and color, and more header buttons are in <a href="#/navigation">Navigation</a>. The website name and logo are also in <a href="#/preferences">Preferences</a>.']],
     footer: [["textarea", "text", "About text"], ["toggle", "showMenu", "Show pages"], ["toggle", "showContact", "Show contact details"], ["toggle", "showSocial", "Show social links"], ["text", "copyright", "Copyright line", { placeholder: "© 2026 Your store. All rights reserved." }],
       ["note", "", 'Social links come from <a href="#/preferences">Preferences</a>.']],
+  };
+  // Layout choices for a section, kept in its style
+  const STYLE = {
+    hero: [["select", "layout", "Layout", { options: [["split", "Image on the right"], ["center", "Centered"], ["bleed", "Full-width image"], ["story", "Big headline with slides"]] }]],
+    products: [["select", "columns", "Products per row", { options: [["3", "3"], ["4", "4"], ["5", "5"]] }]],
+    featured: [["select", "imageSide", "Image", { options: [["right", "On the right"], ["left", "On the left"]] }]],
+    about: [["select", "imageSide", "Image", { options: [["left", "On the left"], ["right", "On the right"]] }]],
   };
   const get = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
   const set = (o, path, v) => { const ks = path.split("."); const last = ks.pop(); const t = ks.reduce((a, k) => (a[k] ??= {}), o); t[last] = v; };
@@ -214,7 +234,7 @@ export const SiteEditor = (() => {
     // ---------- Panel ----------
     const field = (f, obj, scope) => {
       const [type, path, label, o = {}] = f;
-      if (o.when && !get(obj, o.when)) return "";
+      if (o.when && !(typeof o.when === "function" ? o.when(obj, target()) : get(obj, o.when))) return "";
       const val = get(obj, path);
       const id = "f" + Math.random().toString(36).slice(2, 8);
       const bind = `data-scope="${scope}" data-path="${path}"`;
@@ -224,12 +244,13 @@ export const SiteEditor = (() => {
       if (type === "textarea") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><textarea class="textarea" id="${id}" rows="${o.rows || 3}" ${bind}>${esc(val)}</textarea></div>`;
       if (type === "number") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><input class="input" type="number" id="${id}" min="${o.min ?? 0}" max="${o.max ?? 99}" ${bind} data-num value="${esc(val)}"></div>`;
       if (type === "toggle") return `<div class="ed-toggle"><span>${esc(label)}</span><label class="switch"><input type="checkbox" ${bind} data-rerender ${val ? "checked" : ""} aria-label="${esc(label)}"><i></i></label></div>`;
-      if (type === "select") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><select class="select" id="${id}" ${bind} data-rerender>${o.options.map(([v, l]) => `<option value="${esc(v)}" ${v === val ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div>`;
+      if (type === "select") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><select class="select" id="${id}" ${bind} data-rerender>${o.options.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(val ?? "") ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div>`;
       if (type === "icon") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><select class="select" id="${id}" ${bind}>${K.FEATURE_ICONS.map((n) => `<option ${n === val ? "selected" : ""}>${n}</option>`).join("")}</select></div>`;
       if (type === "link") return `<div class="ed-field"><label>${esc(label)}</label><div class="ed-link"><input class="input" ${bind.replace(path, path + ".text")} value="${esc(val?.text)}" placeholder="Button text" aria-label="${esc(label)} text"><input class="input" ${bind.replace(path, path + ".link")} value="${esc(val?.link)}" placeholder="Link, e.g. /shop" aria-label="${esc(label)} link"></div></div>`;
       if (type === "image") {
         const src = K.safeImg(val);
-        return `<div class="ed-field"><label>${esc(label)}</label><div class="ed-image">
+        const hint = o.hint ? o.hint(target()) : "";
+        return `<div class="ed-field"><label>${esc(label)}${hint ? ` <span class="muted small">· ${esc(hint)}</span>` : ""}</label><div class="ed-image">
           <span class="ed-thumb">${src ? `<img src="${esc(src)}" alt="">` : icon("image")}</span>
           <label class="btn btn-sm ed-upload">${icon("plus")}${src ? "Replace" : "Upload"}<input type="file" accept="image/*" hidden ${bind}></label>
           ${src ? `<button type="button" class="btn btn-sm btn-danger-soft" data-clear ${bind}>Remove</button>` : ""}
@@ -237,7 +258,7 @@ export const SiteEditor = (() => {
       }
       if (type === "list") {
         const items = Array.isArray(val) ? val : [];
-        return `<div class="ed-list"><div class="ed-list-head"><b>${esc(label)}</b><span class="muted small">${items.length}${o.max ? " of " + o.max : ""}</span></div>
+        return `<div class="ed-list"><div class="ed-list-head"><b>${esc(label)}</b><span class="muted small">${items.length}${o.max ? " of " + o.max : ""}</span></div>${o.note ? `<p class="ed-note">${esc(o.note)}</p>` : ""}
           ${items.map((it, i) => `<details class="ed-item" ${openItems.has(scope + path + i) ? "open" : ""} data-key="${esc(scope + path + i)}">
             <summary><span>${esc(it[o.name] || "Item " + (i + 1))}</span>
               <span class="ed-item-tools"><button type="button" data-list="up" data-scope="${scope}" data-path="${path}" data-i="${i}" aria-label="Move up" ${i ? "" : "disabled"}>${icon("up")}</button><button type="button" data-list="down" data-scope="${scope}" data-path="${path}" data-i="${i}" aria-label="Move down" ${i < items.length - 1 ? "" : "disabled"}>${icon("down")}</button><button type="button" data-list="remove" data-scope="${scope}" data-path="${path}" data-i="${i}" aria-label="Remove">${icon("trash")}</button></span></summary>
@@ -294,7 +315,7 @@ export const SiteEditor = (() => {
 
     const contentTab = (t) => {
       if (!t) return outline();
-      return `${(CONTENT[t.type] || []).map((f) => field(f, t.content, "content")).join("")}${elements(t)}`;
+      return `${(STYLE[t.type] || []).map((f) => field(f, t.style, "style")).join("")}${(CONTENT[t.type] || []).map((f) => field(f, t.content, "content")).join("")}${elements(t)}`;
     };
     const pagesPanel = () => `<div class="ed-panel-head"><b>Pages</b><button class="ed-icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
       <div class="ed-panel-body"><div class="ed-outline">${store.pages.map((p) => `<div class="ed-row ${p.id === state.pageId ? "on" : ""}" data-page="${p.id}"><span class="ed-row-ico">${icon("pages")}</span><span class="ed-row-label">${esc(p.title)}<small>/${esc(p.slug)}</small></span>${p.inNav ? "" : '<span class="tag">Not in menu</span>'}</div>`).join("")}</div>
@@ -432,7 +453,10 @@ export const SiteEditor = (() => {
       if (b.hasAttribute("data-clear")) { set(scopeObj(b.dataset.scope), b.dataset.path, ""); changed({ panel: true }); return; }
       if (b.dataset.list) {
         e.preventDefault();
-        const owner = scopeObj(b.dataset.scope), arr = get(owner, b.dataset.path), i = Number(b.dataset.i);
+        const owner = scopeObj(b.dataset.scope), i = Number(b.dataset.i);
+        // Sections made before a list existed (e.g. hero slides) get an empty one
+        if (!Array.isArray(get(owner, b.dataset.path))) set(owner, b.dataset.path, []);
+        const arr = get(owner, b.dataset.path);
         const f = (CONTENT[target().type] || []).find((x) => x[0] === "list" && x[1] === b.dataset.path);
         if (b.dataset.list === "add") { arr.push(JSON.parse(JSON.stringify(f[3].add))); openItems.add(b.dataset.scope + b.dataset.path + (arr.length - 1)); }
         else if (b.dataset.list === "remove") arr.splice(i, 1);
