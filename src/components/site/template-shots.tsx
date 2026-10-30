@@ -13,13 +13,14 @@ const RealShot = ({ id, name, live }: { id: string; name: string; live: boolean 
     : <div className="shot shot-real"><iframe src={`/templates/preview/${id}`} title={`${name} preview`} loading="lazy" tabIndex={-1} aria-hidden="true" /></div>
 );
 
+// desc is shown on the card in Bangla; search covers the English keywords and the Bangla description
 export type TemplateCard = { id: string; name: string; desc: string; pop: number; newest: number; search: string; shot: (live: boolean) => ReactNode };
 
 export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "luxe-store",
     name: "Fashion & Clothing",
-    desc: "A Bangla clothing store for T-shirts and apparel, with collections, offers and a quick checkout.",
+    desc: "টি-শার্ট ও পোশাকের জন্য বাংলা অনলাইন দোকান, কালেকশন, অফার আর দ্রুত চেকআউটসহ।",
     pop: 0,
     newest: 0,
     search: "fashion & clothing a bangla clothing store for t-shirts and apparel, with collections, offers and a quick checkout. fashion clothing t-shirt tshirt polo hoodie saree boutique dress apparel bangla shotiq টি-শার্ট পোশাক",
@@ -29,7 +30,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "saas-landing",
     name: "Electronics & Gadgets",
-    desc: "A clean, modern store for phones, gadgets and accessories, with warranty details.",
+    desc: "ফোন, গ্যাজেট ও এক্সেসরিজের জন্য ঝকঝকে আধুনিক দোকান, ওয়ারেন্টির তথ্যসহ।",
     pop: 1,
     newest: 2,
     search: "electronics & gadgets a clean, modern store for phones, gadgets and accessories, with warranty details. electronics gadgets phone mobile earbuds smart watch power bank tech accessories",
@@ -60,7 +61,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "bistro-restaurant",
     name: "Grocery & Food",
-    desc: "A bold store for groceries, fresh food and daily essentials with same-day delivery.",
+    desc: "মুদি, তাজা খাবার আর নিত্যপ্রয়োজনীয় পণ্যের দোকান, একই দিনে ডেলিভারিসহ।",
     pop: 3,
     newest: 5,
     search: "grocery & food a bold store for groceries, fresh food and daily essentials with same-day delivery. grocery food fresh fish vegetables rice oil bakery sweets restaurant cafe bazar",
@@ -92,7 +93,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "nova-portfolio",
     name: "Jewelry & Accessories",
-    desc: "A minimal, premium store for jewelry, watches and accessories.",
+    desc: "গয়না, ঘড়ি ও এক্সেসরিজের জন্য মিনিমাল, প্রিমিয়াম দোকান।",
     pop: 5,
     newest: 3,
     search: "jewelry & accessories a minimal, premium store for jewelry, watches and accessories. jewelry jewellery gold silver pearl necklace earrings bracelet watch accessories minimal",
@@ -124,7 +125,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "growify-agency",
     name: "Home & Furniture",
-    desc: "A calm, spacious store for furniture, lighting and home decor.",
+    desc: "ফার্নিচার, লাইটিং আর ঘর সাজানোর পণ্যের জন্য শান্ত, খোলামেলা দোকান।",
     pop: 4,
     newest: 6,
     search: "home & furniture a calm, spacious store for furniture, lighting and home decor. furniture home decor sofa chair table lamp lighting interior",
@@ -156,7 +157,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "writely-blog",
     name: "Single Product",
-    desc: "A story-led one-page shop for a single hero product, with features and reviews.",
+    desc: "একটি প্রোডাক্টের গল্প বলা এক পেজের দোকান, ফিচার আর রিভিউসহ।",
     pop: 6,
     newest: 1,
     search: "single product a story-led one-page shop for a single hero product, with features and reviews. single product one product landing page backpack travel outdoor story trailo",
@@ -192,7 +193,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "fixly-services",
     name: "Single Product",
-    desc: "A one-page shop that sells one product, with what's inside, a warranty and FAQ.",
+    desc: "একটি প্রোডাক্ট বিক্রির এক পেজের দোকান, ভেতরে কী আছে, ওয়ারেন্টি আর FAQ-সহ।",
     pop: 7,
     newest: 7,
     search: "single product a one-page shop that sells one product, with what's inside, a warranty and faq. single product one product landing page tool kit tools hardware fixkit",
@@ -224,7 +225,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "launchly-landing",
     name: "Single Product",
-    desc: "A bold launch page for one product, with pre-orders and early-bird pricing.",
+    desc: "নতুন প্রোডাক্ট লঞ্চের জন্য সাহসী পেজ, প্রি-অর্ডার আর আর্লি-বার্ড দামসহ।",
     pop: 8,
     newest: 8,
     search: "single product a bold launch page for one product, with pre-orders and early-bird pricing. single product one product launch pre-order waitlist earbuds gadget nova buds",
@@ -256,7 +257,7 @@ export const TEMPLATE_CARDS: TemplateCard[] = [
   {
     id: "mia-personal",
     name: "Beauty & Cosmetics",
-    desc: "A warm, friendly store for skincare, cosmetics and beauty products.",
+    desc: "স্কিনকেয়ার, কসমেটিকস ও বিউটি পণ্যের জন্য উষ্ণ, বন্ধুত্বপূর্ণ দোকান।",
     pop: 2,
     newest: 9,
     search: "beauty & cosmetics a warm, friendly store for skincare, cosmetics and beauty products. beauty cosmetics skincare makeup serum cream perfume glow",
