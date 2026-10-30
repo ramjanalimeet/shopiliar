@@ -4,7 +4,10 @@ export default function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="container footer-top">
-        <Link className="brand footer-brand" href="/"><img className="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="" />Shopilier</Link>
+        <div className="footer-brand-col">
+          <Link className="brand footer-brand" href="/"><img className="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="" />Shopilier</Link>
+          <p className="footer-tag bn">আপনার অনলাইন দোকান, কয়েক মিনিটেই।</p>
+        </div>
         <nav className="footer-nav" aria-label="Footer">
           <Link href="/">Home</Link><Link href="/templates">Templates</Link><Link href="/pricing">Pricing</Link><Link href="/demo">Demo</Link>
           <Link href="/resources">Resources</Link><Link href="/contact">Contact Us</Link><Link href="/privacy">Privacy Policy</Link>
@@ -21,7 +24,10 @@ export default function SiteFooter() {
           </a>
         </div>
       </div>
-      <div className="container footer-bottom"><span>© 2026 Shopilier. All rights reserved.</span></div>
+      <div className="container footer-bottom">
+        <span>© 2026 Shopilier. All rights reserved.</span>
+        <span className="footer-made"><i aria-hidden="true" />Made in Bangladesh</span>
+      </div>
     </footer>
   );
 }

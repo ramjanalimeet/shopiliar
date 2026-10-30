@@ -146,8 +146,8 @@ export default function HomeContent() {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
             </div>
-            <p>“I set up my clothing store on a Friday night and had my first bKash order by Sunday. The dashboard is simple enough that my younger brother handles the orders now.”</p>
-            <div className="reviewer"><span className="r-avatar" style={{ background: "#1f2937" }}>SA</span><span><b>Sabbir Ahmed</b><small>Dhaka Threads · Dhaka</small></span></div>
+            <p className="bn">“শুক্রবার রাতে আমার কাপড়ের দোকানটা সাজিয়েছিলাম, রবিবারের মধ্যেই প্রথম বিকাশ অর্ডার পেয়ে গেছি। ড্যাশবোর্ডটা এত সহজ যে এখন আমার ছোট ভাই-ই অর্ডারগুলো সামলায়।”</p>
+            <div className="reviewer"><span className="r-avatar" style={{ background: "#1f2937" }}>SA</span><span className="bn"><b>সাব্বির আহমেদ</b><small>Dhaka Threads · ঢাকা</small></span></div>
           </article>
           <article className="review">
             <div className="stars" aria-label="5 out of 5 stars">
@@ -157,8 +157,8 @@ export default function HomeContent() {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
             </div>
-            <p>“Before Shopilier I took every order in my Facebook inbox. Now customers order from my website and I just update the status. The Starter plan was enough to start.”</p>
-            <div className="reviewer"><span className="r-avatar" style={{ background: "#db2777" }}>FI</span><span><b>Farhana Islam</b><small>Glow by Farhana · Chattogram</small></span></div>
+            <p className="bn">“Shopilier-এর আগে সব অর্ডার নিতাম ফেসবুক ইনবক্সে। এখন কাস্টমাররা আমার ওয়েবসাইট থেকেই অর্ডার করে, আমি শুধু স্ট্যাটাস আপডেট করি। শুরু করার জন্য স্টার্টার প্ল্যানই যথেষ্ট ছিল।”</p>
+            <div className="reviewer"><span className="r-avatar" style={{ background: "#db2777" }}>FI</span><span className="bn"><b>ফারহানা ইসলাম</b><small>Glow by Farhana · চট্টগ্রাম</small></span></div>
           </article>
           <article className="review">
             <div className="stars" aria-label="5 out of 5 stars">
@@ -168,8 +168,8 @@ export default function HomeContent() {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
             </div>
-            <p>“Products, discounts, Meta pixel — everything I needed was already there. No developer, no monthly headache. The Business plan pays for itself every month.”</p>
-            <div className="reviewer"><span className="r-avatar" style={{ background: "#2563eb" }}>TR</span><span><b>Tanvir Rahman</b><small>GadgetBari · Dhaka</small></span></div>
+            <p className="bn">“প্রোডাক্ট, ডিসকাউন্ট, মেটা পিক্সেল — যা যা দরকার ছিল সবই আগে থেকেই ছিল। কোনো ডেভেলপার লাগেনি, প্রতি মাসের ঝামেলাও নেই। বিজনেস প্ল্যানের খরচটা প্রতি মাসেই উঠে আসে।”</p>
+            <div className="reviewer"><span className="r-avatar" style={{ background: "#2563eb" }}>TR</span><span className="bn"><b>তানভীর রহমান</b><small>GadgetBari · ঢাকা</small></span></div>
           </article>
           <article className="review">
             <div className="stars" aria-label="5 out of 5 stars">
@@ -179,8 +179,8 @@ export default function HomeContent() {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
             </div>
-            <p>“The templates look like something an agency would charge ৳50,000 for. I changed the colours and photos in one afternoon and went live the same day.”</p>
-            <div className="reviewer"><span className="r-avatar" style={{ background: "#b45309" }}>NJ</span><span><b>Nusrat Jahan</b><small>Mithai Ghor · Sylhet</small></span></div>
+            <p className="bn">“টেমপ্লেটগুলো দেখে মনে হয় কোনো এজেন্সি এর জন্য ৫০,০০০ টাকা নিত। এক দুপুরেই রং আর ছবি বদলে সেদিনই সাইট লাইভ করে দিয়েছি।”</p>
+            <div className="reviewer"><span className="r-avatar" style={{ background: "#b45309" }}>NJ</span><span className="bn"><b>নুসরাত জাহান</b><small>Mithai Ghor · সিলেট</small></span></div>
           </article>
           <article className="review">
             <div className="stars" aria-label="5 out of 5 stars">
@@ -190,8 +190,8 @@ export default function HomeContent() {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
             </div>
-            <p>“Cash on delivery and Nagad worked out of the box. My customers in the villages can order without a card, and I get the order on my phone.”</p>
-            <div className="reviewer"><span className="r-avatar" style={{ background: "#16a34a" }}>RH</span><span><b>Rakib Hossain</b><small>Khulna Organics · Khulna</small></span></div>
+            <p className="bn">“ক্যাশ অন ডেলিভারি আর নগদ শুরু থেকেই কাজ করেছে। গ্রামের কাস্টমাররা কার্ড ছাড়াই অর্ডার করতে পারে, আর অর্ডারটা আমি ফোনেই পেয়ে যাই।”</p>
+            <div className="reviewer"><span className="r-avatar" style={{ background: "#16a34a" }}>RH</span><span className="bn"><b>রাকিব হোসেন</b><small>Khulna Organics · খুলনা</small></span></div>
           </article>
           <article className="review">
             <div className="stars" aria-label="5 out of 5 stars">
@@ -201,8 +201,8 @@ export default function HomeContent() {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.5 2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" /></svg>
             </div>
-            <p>“Support replied within an hour when I got stuck connecting my domain. It feels like having a tech team on call, for less than my tea budget.”</p>
-            <div className="reviewer"><span className="r-avatar" style={{ background: "#7c3aed" }}>SA</span><span><b>Sumaiya Akter</b><small>Rupkotha Jewellers · Rajshahi</small></span></div>
+            <p className="bn">“ডোমেইন কানেক্ট করতে গিয়ে আটকে গিয়েছিলাম, সাপোর্ট এক ঘণ্টার মধ্যেই উত্তর দিয়েছে। মনে হয় যেন একটা টেক টিম সবসময় হাতের কাছে আছে — আমার চায়ের খরচের চেয়েও কমে।”</p>
+            <div className="reviewer"><span className="r-avatar" style={{ background: "#7c3aed" }}>SA</span><span className="bn"><b>সুমাইয়া আক্তার</b><small>Rupkotha Jewellers · রাজশাহী</small></span></div>
           </article>
         </div>
       </section>
