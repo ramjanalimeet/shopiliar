@@ -253,7 +253,7 @@ button { font: inherit; cursor: pointer; }
    Latin words (Shopilier, English phrases) keep Inter. Bangla needs room above and below. */
 .bn { font-family: "Inter", "Noto Sans Bengali", system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: 0 !important; }
 .hero p.lead.bn { line-height: 1.75; max-width: 560px; }
-.btn.bn { font-weight: 700; }
+.btn.bn { font-weight: 600; }
 
 /* trusted: a slow-moving strip of (sample) Bangladeshi brands that use Shopilier */
 .trusted { text-align: center; padding: 42px 0 20px; overflow: hidden; }

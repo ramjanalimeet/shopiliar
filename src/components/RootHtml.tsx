@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 // Google Fonts, as normal stylesheets so each page paints once, in the right fonts (no swap after the first paint)
-export const SITE_FONTS = ["https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500&family=Noto+Sans+Bengali:wght@400;500;700&display=swap"];
+export const SITE_FONTS = ["https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap"];
 // The dashboards only need the ৳ sign from the Bengali font, so it comes as a tiny subset in its own request
 export const DASH_FONTS = [
   "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
