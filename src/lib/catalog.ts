@@ -15,13 +15,13 @@ export const planById = (id: string | null | undefined) => PLANS.find((p) => p.i
 export const taka = (n: number) => "৳" + Number(n).toLocaleString("en-US");
 
 export type Template = {
-  id: string; name: string; category: string; brand: string; desc: string; layout: "split" | "center" | "bleed";
+  id: string; name: string; category: string; brand: string; desc: string; layout: "split" | "center" | "bleed" | "story";
   bg: string; text: string; accent: string; headline: string; sub: string; cta: string; status: "published" | "draft";
 };
 
 // The nine store templates, in the order the Templates page shows them. "brand" is the sample shop in the preview.
 export const TEMPLATES: Template[] = [
-  { id: "luxe-store", name: "Fashion & Clothing", category: "Fashion & Clothing", brand: "LUXE", desc: "An elegant store for clothing, sarees, shoes and accessories.", layout: "split", bg: "#f7f4f0", text: "#111111", accent: "#111111", headline: "Modern Fashion For Everyone", sub: "Premium quality. Timeless style.", cta: "Shop Now", status: "published" },
+  { id: "luxe-store", name: "Fashion & Clothing", category: "Fashion & Clothing", brand: "Shotiq", desc: "A Bangla clothing store for T-shirts and apparel, with collections, offers and a quick checkout.", layout: "story", bg: "#ffffff", text: "#141414", accent: "#0b5b35", headline: "আপনার স্টাইলের সাথে আপনার গল্প", sub: "প্রিমিয়াম কোয়ালিটির টি-শার্ট, যা আপনার ব্যক্তিত্বকে তুলে ধরে আরও এক ধাপ এগিয়ে। আরাম, স্টাইল আর মানের পারফেক্ট কম্বিনেশন।", cta: "এখনই কেনাকাটা করুন", status: "published" },
   { id: "saas-landing", name: "Electronics & Gadgets", category: "Electronics & Gadgets", brand: "GadgetBari", desc: "A clean, modern store for phones, gadgets and accessories, with warranty details.", layout: "center", bg: "#efedfd", text: "#121735", accent: "#4b5cf0", headline: "Gadgets For Everyday Life", sub: "Phones, earbuds and smart home devices — with warranty and fast delivery.", cta: "Shop Now", status: "published" },
   { id: "mia-personal", name: "Beauty & Cosmetics", category: "Beauty & Cosmetics", brand: "Glow", desc: "A warm, friendly store for skincare, cosmetics and beauty products.", layout: "center", bg: "#fdf6ef", text: "#3b2418", accent: "#e0794f", headline: "Skincare That Loves You Back", sub: "Natural beauty, made for Bangladeshi skin.", cta: "Shop Skincare", status: "published" },
   { id: "bistro-restaurant", name: "Grocery & Food", category: "Grocery & Food", brand: "Fresh Bazar", desc: "A bold store for groceries, fresh food and daily essentials with same-day delivery.", layout: "bleed", bg: "#16110d", text: "#ffffff", accent: "#e8743b", headline: "Fresh Food At Your Door", sub: "Vegetables, fish and pantry staples, delivered the same day.", cta: "Shop Now", status: "published" },
