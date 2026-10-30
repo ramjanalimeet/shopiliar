@@ -13,8 +13,9 @@ export const SiteKit = (() => {
     u = String(u || "").trim();
     return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(u) ? u : "#";
   };
-  // Image addresses a store can show: uploads (/media/…), https links, and inline images (the demo keeps uploads inline)
-  const safeImg = (u) => /^(\/media\/[\w-]+|https:\/\/[^\s"'<>]+|data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+)$/.test(String(u || "")) ? u : "";
+  // Image addresses a store can show: uploads (/media/…), a template's own photos (/assets/templates/…),
+  // https links, and inline images (the demo keeps uploads inline)
+  const safeImg = (u) => /^(\/media\/[\w-]+|\/assets\/templates\/[\w-]+\/[\w-]+\.(?:webp|jpe?g|png)|https:\/\/[^\s"'<>]+|data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+)$/.test(String(u || "")) ? u : "";
 
   const FONTS = {
     // Single quotes: these go inside a style="" attribute
@@ -284,6 +285,8 @@ export const SiteKit = (() => {
   // ---------- Starter websites ----------
   // A template can come with a whole website in its language: the pages (in menu order), the sections
   // on each, and the header and footer. New stores on that template start from it, and "Reset page" goes back to it.
+  // Free stock photos (Unsplash and Pexels licences: free to use, no credit needed) that ship with the Fashion starter
+  const FASHION_IMG = (n) => "/assets/templates/fashion/" + n + ".webp";
   const withContent = (sec, content, style) => { Object.assign(sec.content, content); if (style) Object.assign(sec.style, style); return sec; };
   const FASHION_TITLE = "আপনার স্টাইলের সাথে আপনার গল্প", FASHION_SUB = "প্রিমিয়াম কোয়ালিটির টি-শার্ট, যা আপনার ব্যক্তিত্বকে তুলে ধরে আরও এক ধাপ এগিয়ে। আরাম, স্টাইল আর মানের পারফেক্ট কম্বিনেশন।";
   const fashionShop = (ctx, content) => withContent(make("products", ctx), {
@@ -317,7 +320,7 @@ export const SiteKit = (() => {
             withContent(make("hero", ctx), {
               eyebrow: "", title: own ? site.headline : "আপনার\nস্টাইলের সাথে", accent: own ? "" : "আপনার গল্প",
               subtitle: site.sub && site.sub !== FASHION_SUB && own ? site.sub : FASHION_SUB,
-              btn1: { text: "এখনই কেনাকাটা করুন", link: "/shop" }, btn2: { text: "সব কালেকশন দেখুন", link: "/shop" }, image: "", slides: [{ image: "" }, { image: "" }],
+              btn1: { text: "এখনই কেনাকাটা করুন", link: "/shop" }, btn2: { text: "সব কালেকশন দেখুন", link: "/shop" }, image: FASHION_IMG("hero-1"), slides: [{ image: FASHION_IMG("hero-2") }, { image: FASHION_IMG("hero-3") }],
               features: [
                 { icon: "truck", title: "সারা বাংলাদেশে", text: "দ্রুত ডেলিভারি" },
                 { icon: "shield", title: "১০০% অরিজিনাল", text: "প্রিমিয়াম কোয়ালিটি" },
@@ -327,10 +330,10 @@ export const SiteKit = (() => {
             }, { layout: "story" }),
             withContent(make("categories", ctx), {
               eyebrow: "", title: "আমাদের কালেকশন", subtitle: "আপনার স্টাইলের জন্য পারফেক্ট টি-শার্ট খুঁজে নিন", viewAll: { text: "সব কালেকশন দেখুন", link: "/shop" },
-              items: ["প্রিন্টেড টি-শার্ট", "সোলিড টি-শার্ট", "পোলো টি-শার্ট", "ওভারসাইজ টি-শার্ট", "হুডি ও সোয়েটশার্ট"].map((name) => ({ name, image: "", link: "/shop" })),
+              items: [["প্রিন্টেড টি-শার্ট", "printed"], ["সোলিড টি-শার্ট", "solid"], ["পোলো টি-শার্ট", "polo"], ["ওভারসাইজ টি-শার্ট", "oversized"], ["হুডি ও সোয়েটশার্ট", "hoodie"]].map(([name, img]) => ({ name, image: FASHION_IMG("cat-" + img), link: "/shop" })),
             }),
             fashionShop(ctx, { title: "জনপ্রিয় কালেকশন", subtitle: "আমাদের বেস্ট সেলিং টি-শার্টগুলো দেখুন", count: 8, filterBy: "label", tabs: { all: "সবগুলো", new: "নতুন এসেছে", best: "বেস্ট সেলার", sale: "অফার" } }),
-            withContent(make("featured", ctx), { eyebrow: "", title: "নতুন কালেকশন", text: "নতুন ডিজাইন, নতুন রঙ, আপনার জন্য", button: { text: "এখনই দেখুন", link: "/new" }, image: "" }, { imageSide: "right", padding: "s" }),
+            withContent(make("featured", ctx), { eyebrow: "", title: "নতুন কালেকশন", text: "নতুন ডিজাইন, নতুন রঙ, আপনার জন্য", button: { text: "এখনই দেখুন", link: "/new" }, image: FASHION_IMG("promo") }, { imageSide: "right", padding: "s" }),
             fashionPerks(ctx),
             withContent(make("newsletter", ctx), { title: "নতুন কালেকশন ও এক্সক্লুসিভ অফারের আপডেট পেতে আমাদের সাথে থাকুন", text: "", placeholder: "আপনার ইমেইল লিখুন...", button: "সাবস্ক্রাইব করুন", showSocial: true }, { align: "left", padding: "s" }),
           ];
@@ -338,7 +341,7 @@ export const SiteKit = (() => {
         shop: (ctx) => [fashionShop(ctx, { title: "আমাদের কালেকশন", subtitle: "আপনার স্টাইলের জন্য পারফেক্ট টি-শার্ট খুঁজে নিন" })],
         new: (ctx) => [fashionShop(ctx, { title: "নতুন এসেছে", subtitle: "একদম নতুন ডিজাইনগুলো সবার আগে দেখুন", only: "new", showFilters: false })],
         offers: (ctx) => [fashionShop(ctx, { title: "অফার", subtitle: "সীমিত সময়ের জন্য বিশেষ দামে আপনার পছন্দের টি-শার্ট", only: "sale", showFilters: false })],
-        about: (ctx) => [make("about", ctx), fashionPerks(ctx), make("testimonials", ctx), make("contact", ctx), make("faq", ctx)],
+        about: (ctx) => [withContent(make("about", ctx), { image: FASHION_IMG("hero-3") }), fashionPerks(ctx), make("testimonials", ctx), make("contact", ctx), make("faq", ctx)],
       },
     },
   };
@@ -353,12 +356,12 @@ export const SiteKit = (() => {
   // Sample products for previews and the demo store, in the template's language
   const SAMPLE_PRODUCTS = {
     "luxe-store": [
-      ["প্রিমিয়াম কটন টি-শার্ট", 440, 1200, "best", "প্রিন্টেড টি-শার্ট"], ["আরবান গ্রাফিক টি-শার্ট", 440, 1200, "new", "প্রিন্টেড টি-শার্ট"],
-      ["বাংলাদেশ টি-শার্ট", 440, 1200, "sale", "প্রিন্টেড টি-শার্ট"], ["মিনিমাল প্রিন্ট টি-শার্ট", 440, 1200, "new", "সোলিড টি-শার্ট"],
-      ["ক্লাসিক পোলো টি-শার্ট", 690, 0, "best", "পোলো টি-শার্ট"], ["ওভারসাইজ ড্রপ শোল্ডার", 590, 850, "sale", "ওভারসাইজ টি-শার্ট"],
-      ["সোলিড কটন টি-শার্ট", 390, 0, "", "সোলিড টি-শার্ট"], ["উইন্টার হুডি", 1290, 1690, "new", "হুডি ও সোয়েটশার্ট"],
-    ].map(([name, price, compare, badge, category], i) => ({
-      name, price, compare, badge, category, stock: [24, 18, 30, 12, 15, 9, 40, 6][i], color: "#e9ebee",
+      ["প্রিমিয়াম কটন টি-শার্ট", 440, 1200, "best", "সোলিড টি-শার্ট", "premium-cotton"], ["আরবান গ্রাফিক টি-শার্ট", 440, 1200, "new", "প্রিন্টেড টি-শার্ট", "urban-graphic"],
+      ["বাংলাদেশ টি-শার্ট", 440, 1200, "sale", "সোলিড টি-শার্ট", "bangladesh"], ["মিনিমাল প্রিন্ট টি-শার্ট", 440, 1200, "new", "প্রিন্টেড টি-শার্ট", "minimal-print"],
+      ["ক্লাসিক পোলো টি-শার্ট", 690, 0, "best", "পোলো টি-শার্ট", "classic-polo"], ["ওভারসাইজ ড্রপ শোল্ডার", 590, 850, "sale", "ওভারসাইজ টি-শার্ট", "oversized"],
+      ["সোলিড কটন টি-শার্ট", 390, 0, "", "সোলিড টি-শার্ট", "solid-cotton"], ["উইন্টার হুডি", 1290, 1690, "new", "হুডি ও সোয়েটশার্ট", "winter-hoodie"],
+    ].map(([name, price, compare, badge, category, img], i) => ({
+      name, price, compare, badge, category, stock: [24, 18, 30, 12, 15, 9, 40, 6][i], color: "#e9ebee", image: FASHION_IMG("p-" + img), images: [FASHION_IMG("p-" + img)],
       description: "১০০% কটন, আরামদায়ক ফিট। মেশিনে ধোয়া যায়, রং ওঠে না।", options: [{ name: "সাইজ", values: ["S", "M", "L", "XL", "XXL"] }],
     })),
   };

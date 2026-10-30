@@ -63,6 +63,11 @@ the layout from each section's Layout menu, product labels on the product form, 
 cart, the cart, prices) with **Website language** in Preferences. `/templates/preview/<id>` serves the real storefront
 on sample products; the Templates page shows it in the card and in the Preview popup.
 
+The starter's photos are free stock photos from Unsplash and Pexels (both licences allow commercial use without
+credit), cropped and saved as WebP in `public/assets/templates/fashion/` (about 520 KB for all 17). New stores start
+with them on the hero slides, collection tiles, promo card and About page, and the demo store's sample products use
+them too; owners replace any of them from the editor. `safeImg` accepts `/assets/templates/…` addresses for this.
+
 These modules were ported from the original dashboard scripts and are marked `@ts-nocheck`: they run as written,
 with every feature intact (orders, products, the website editor with desktop/tablet/phone previews, versions and
 backups, publishing, image uploads, plan limits, the support chat, "Reset demo"), and their types can be tightened
