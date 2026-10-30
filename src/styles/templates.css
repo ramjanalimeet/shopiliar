@@ -323,3 +323,11 @@ body.no-scroll { overflow: hidden; }
    The card shows the template's real website at desktop width (four times the card), scaled down to fit. */
 .shot-real iframe { position: absolute; top: 0; left: 0; width: 400%; height: 400%; border: 0; transform: scale(.25); transform-origin: 0 0; pointer-events: none; background: #fff; }
 .shot-live-frame { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
+
+/* Card name with the verified tick, the languages line, and the Shopilier-green "Use this template" button */
+.tcard-foot h3 { display: flex; align-items: center; gap: 6px; }
+.tcard-verified { width: 19px; height: 19px; flex: none; color: var(--brand); }
+.tcard-langs { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-deep); font-family: "Inter", "Noto Sans Bengali", system-ui, sans-serif; font-size: 12px; font-weight: 600; line-height: 1.6; }
+.tcard-foot p.bn { line-height: 1.65; }
+.btn.btn-use { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn.btn-use:hover { background: var(--brand-text); border-color: var(--brand-text); filter: none; }

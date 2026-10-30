@@ -1,7 +1,6 @@
 "use client";
 // Templates: search, sort, and a live preview at desktop, tablet or phone size
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { templateById } from "@/lib/catalog";
 import { TEMPLATE_CARDS } from "./template-shots";
 
 // Real screen sizes (CSS pixels) for each preview mode
@@ -9,8 +8,13 @@ const DEVICES: Record<string, [number, number]> = { desktop: [1440, 900], tablet
 type Device = keyof typeof DEVICES;
 type Sort = "pop" | "new" | "az";
 
-// The "Use this template" button takes the template's own accent colour
-const accentStyle = (id: string) => { const t = templateById(id); return t ? { background: t.accent, borderColor: t.accent } : undefined; };
+// Verified by Shopilier: a green tick after each template's name
+const Verified = () => (
+  <svg className="tcard-verified" viewBox="0 0 24 24" role="img" aria-label="Verified by Shopilier"><title>Verified by Shopilier</title>
+    <path fill="currentColor" d="M12 1.8l2.4 1.8 3-.2 1 2.8 2.5 1.7-.9 2.9.9 2.9-2.5 1.7-1 2.8-3-.2L12 22.2l-2.4-1.8-3 .2-1-2.8-2.5-1.7.9-2.9-.9-2.9L5.6 6.6l1-2.8 3 .2z" />
+    <path d="M8 12.3l2.7 2.7L16.2 9.5" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 const PreviewIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>;
 
@@ -93,9 +97,13 @@ export default function TemplatesBrowser({ children }: { children: ReactNode }) 
             <article key={card.id} className="tcard" data-name={card.name}>
               {card.shot(false)}
               <div className="tcard-foot">
-                <div><h3>{card.name}</h3><p>{card.desc}</p></div>
+                <div>
+                  <h3>{card.name}<Verified /></h3>
+                  <span className="tcard-langs" title="Every template works in Bangla and English">বাংলা · English</span>
+                  <p className="bn">{card.desc}</p>
+                </div>
                 <div className="tcard-actions">
-                  <a className="btn btn-dark" href={`/signup?template=${card.id}`} style={accentStyle(card.id)}>Use this template →</a>
+                  <a className="btn btn-dark btn-use" href={`/signup?template=${card.id}`}>Use this template →</a>
                   <button className="btn btn-preview" type="button" onClick={(e) => openPreview(card.id, e.currentTarget)}><PreviewIcon />Preview</button>
                 </div>
               </div>
@@ -123,7 +131,7 @@ export default function TemplatesBrowser({ children }: { children: ReactNode }) 
               </button>
             </div>
             <span className="device-size" id="tpl-device-size">{label} · {w} × {h}{scale < 1 ? ` · ${Math.round(scale * 100)}%` : ""}</span>
-            <a className="btn btn-dark" id="tpl-modal-use" href={current ? `/signup?template=${current.id}` : "/signup"}>Use this template</a>
+            <a className="btn btn-dark btn-use" id="tpl-modal-use" href={current ? `/signup?template=${current.id}` : "/signup"}>Use this template</a>
             <button ref={closeBtn} className="modal-close" type="button" aria-label="Close preview" onClick={() => setPreview(null)}>×</button>
           </div>
           <div ref={stage} className="device-stage">
