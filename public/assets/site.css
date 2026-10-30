@@ -140,7 +140,7 @@ h1 .hl { color: var(--accent); }
 @keyframes hero-in { from { opacity: .35; } to { opacity: 1; } }
 .hero-story .hero-img { aspect-ratio: 1.9; border-radius: 16px; }
 .hero-nav { position: absolute; right: 18px; bottom: 18px; display: flex; align-items: center; gap: 10px; }
-.hero-count { margin-right: 6px; font-family: "Inter", system-ui, sans-serif; font-size: 13px; font-weight: 500; opacity: .75; }
+.hero-count { margin-right: 4px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.92); color: #111; font-family: "Inter", system-ui, sans-serif; font-size: 13px; font-weight: 500; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
 .hero-count b { font-size: 17px; font-weight: 700; }
 .hero-nav button { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: #fff; color: #111; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
 .hero-nav button:last-child { background: var(--accent); color: var(--on-accent); }
