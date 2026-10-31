@@ -96,6 +96,11 @@ Accounts, sessions and each user's store live in D1 (tables in `schema.sql`). Ro
 - `POST /api/password` — change (or set) the password; signs out every other device
 - `GET /api/messages`, `POST /api/messages`, `GET|POST /api/messages/<id>` — support conversations
 - `POST /api/ai/site` — Create with AI (Workers AI, the `AI` binding, with simple rules as a fallback)
+- `GET /api/couriers`, `PUT|DELETE /api/couriers/<steadfast|pathao|redx>` (connect with the store's own API keys, checked
+  with the courier first and kept only on the server in `courier_accounts`), `POST /api/couriers/<id>/parcel` (book a parcel
+  for an order), `GET /api/couriers/<id>/parcel/<consignment>` (its status) and `GET /api/couriers/<id>/options` (Pathao
+  cities and zones, RedX areas) — Shipping & Delivery in the store dashboard. `COURIER_BASE_<ID>` can point a courier at
+  another address for testing.
 - `POST /api/upload`, `GET /media/<id>` — images uploaded in the website editor (JPG/PNG/WebP/GIF up to 1.5 MB,
   300 per account, stored in the D1 `media` table, which is created on first upload)
 - `GET /api/auth/google`, `GET /api/auth/google/callback` — "Continue with Google". Create an OAuth client

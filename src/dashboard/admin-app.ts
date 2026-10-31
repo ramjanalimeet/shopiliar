@@ -354,6 +354,62 @@ export const start = async () => {
   const sales = (orders) => orders.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
   const siteUrl = () => store.settings.domain && store.settings.domainStatus === "connected" ? store.settings.domain : store.settings.subdomain + ".shopilier.com";
   const orderNo = (o) => "#" + o.number;
+
+  // ---------- Shipping & Delivery ----------
+  // Couriers with a merchant API (booked from the dashboard) and couriers whose tracking number is added by hand
+  const COURIERS = {
+    steadfast: { name: "Steadfast", color: "#00a86b", api: true, where: "Steadfast merchant panel → API (portal.packzy.com)" },
+    pathao: { name: "Pathao Courier", color: "#e3262b", api: true, where: "Pathao merchant panel → Developers API (merchant.pathao.com)" },
+    redx: { name: "RedX", color: "#d7262b", api: true, where: "RedX merchant panel → Developer API (redx.com.bd)" },
+    paperfly: { name: "Paperfly", color: "#1b75bc" }, ecourier: { name: "eCourier", color: "#f7941d" },
+    sundarban: { name: "Sundarban Courier", color: "#00843d" }, sapa: { name: "SA Paribahan", color: "#c4161c" },
+  };
+  const COURIER_FIELDS = {
+    steadfast: [["apiKey", "API key"], ["secretKey", "Secret key"]],
+    pathao: [["clientId", "Client ID"], ["clientSecret", "Client secret"], ["username", "Merchant email"], ["password", "Merchant password"]],
+    redx: [["token", "API access token"]],
+  };
+  const bn = () => store.site.lang === "bn";
+  const shipping = () => {
+    if (!store.shipping) {
+      const co = (store.pages.find((p) => p.system === "checkout")?.sections || []).find((x) => x.type === "checkout");
+      const fromCheckout = co && Array.isArray(co.content.delivery) && co.content.delivery.length ? co.content.delivery.map((d) => ({ name: d.label, fee: Number(d.fee) || 0, days: "" })) : null;
+      store.shipping = {
+        zones: fromCheckout || (bn() ? [{ name: "ঢাকার ভেতরে", fee: 60, days: "১–২ দিন" }, { name: "ঢাকার আশেপাশে", fee: 100, days: "২–৩ দিন" }, { name: "ঢাকার বাইরে", fee: 120, days: "২–৪ দিন" }]
+          : [{ name: "Inside Dhaka", fee: 60, days: "1–2 days" }, { name: "Dhaka suburbs", fee: 100, days: "2–3 days" }, { name: "Outside Dhaka", fee: 120, days: "2–4 days" }]),
+        defaultCourier: "", weight: 0.5,
+      };
+    }
+    return store.shipping;
+  };
+  // Connected couriers, from the server (the keys never come back)
+  let couriers = null, couriersLoading = false;
+  const loadCouriers = async (force) => {
+    if ((couriers && !force) || couriersLoading) return couriers;
+    couriersLoading = true;
+    try { const r = await fetch("/api/couriers"); const d = await r.json(); if (!r.ok) throw new Error(d.error); couriers = d.couriers || {}; }
+    catch (e) { couriers = couriers || {}; toast("Couldn't load your couriers. Check your connection."); }
+    couriersLoading = false;
+    return couriers;
+  };
+  const courierApi = async (method, path, body) => {
+    const res = await fetch("/api/couriers" + path, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "The courier didn't answer. Please try again.");
+    return data;
+  };
+  const courierBadge = (id) => { const c = COURIERS[id] || { name: id, color: "#667085" }; return `<span class="cr-logo" style="background:${c.color}">${esc(c.name.slice(0, 1))}</span>`; };
+  const shipTag = (o) => o.shipment ? `<span class="tag dot ${/deliver/i.test(o.shipment.status) ? "green" : /cancel|return/i.test(o.shipment.status) ? "red" : "blue"}">${esc(o.shipment.status || "Sent")}</span>` : "";
+  const zoneRow = (z, i) => `<div class="zn-row"><input class="input" name="zname" maxlength="40" value="${esc(z.name)}" placeholder="e.g. Inside Dhaka" aria-label="Area ${i + 1}">
+    <input class="input" name="zfee" type="number" min="0" step="1" value="${esc(z.fee)}" aria-label="Charge for area ${i + 1}"><input class="input" name="zdays" maxlength="20" value="${esc(z.days || "")}" placeholder="1–2 days" aria-label="Delivery time for area ${i + 1}">
+    <button type="button" class="icon-btn danger" data-zone-rm aria-label="Remove area" title="Remove">${icon("trash")}</button></div>`;
+  // The customer's address from the order (website checkout answers) or their saved details
+  const orderAddress = (o) => {
+    const a = (o.answers || []).find((x) => x.type === "textarea");
+    if (a) return a.value;
+    const c = store.customers.find((x) => x.name === o.customer || (x.phone && x.phone === o.phone));
+    return c ? [c.address, c.city].filter(Boolean).join(", ") : "";
+  };
   const head = (title, desc, actions = "") => `<div class="page"><div class="page-head">${title ? `<div><h1>${title}</h1>${desc ? `<p>${desc}</p>` : ""}</div>` : ""}<div class="page-actions">${actions}</div></div>`;
   const statusTag = (s) => `<span class="tag dot ${ORDER_STATUS[s]}">${esc(s)}</span>`;
   const searchBox = (action, value, label) => `<label class="box-search">${icon("search")}<input data-action="${action}" value="${esc(value)}" placeholder="${label}" aria-label="${label}"></label>`;
@@ -489,7 +545,7 @@ export const start = async () => {
       ${compact ? "" : `<td>${tag(o.payment, PAY_COLOR[o.payment] || "gray")}</td>`}
       <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(o.total)}</td>
       <td>${compact ? statusTag(o.status) : `<select class="select" style="height:32px;width:auto;font-size:13px" data-action="order-status" data-id="${o.id}" aria-label="Order status">${Object.keys(ORDER_STATUS).map((s) => `<option${s === o.status ? " selected" : ""}>${s}</option>`).join("")}</select>`}</td>
-      ${compact ? "" : `<td class="t-actions"><button class="icon-btn" data-action="view-order" data-id="${o.id}" aria-label="View order">${icon("eye")}</button><button class="icon-btn danger" data-action="delete-order" data-id="${o.id}" aria-label="Delete order">${icon("trash")}</button></td>`}
+      ${compact ? "" : `<td class="t-actions">${o.shipment ? "" : `<button class="icon-btn" data-action="ship-order" data-id="${o.id}" aria-label="Send to courier" title="Send to courier">${icon("truck")}</button>`}<button class="icon-btn" data-action="view-order" data-id="${o.id}" aria-label="View order">${icon("eye")}</button><button class="icon-btn danger" data-action="delete-order" data-id="${o.id}" aria-label="Delete order">${icon("trash")}</button></td>`}
     </tr>`).join("") : `<tr><td colspan="7" class="table-empty">No orders yet. They'll appear here as soon as customers buy.</td></tr>`;
   const orderTable = (orders, compact = false) => `<div class="table-wrap"><table class="table">
       <thead><tr><th>Order</th><th>Customer</th><th>Date</th>${compact ? "" : "<th>Payment</th>"}<th class="t-right">Total</th><th>Status</th>${compact ? "" : '<th class="t-actions"></th>'}</tr></thead>
@@ -757,6 +813,74 @@ export const start = async () => {
               <button class="btn btn-primary" data-action="add-category">${icon("plus")}Add category</button>
             </div>`}
         </div>`;
+      },
+    },
+
+    shipping: {
+      title: "Shipping & Delivery",
+      render: () => {
+        const sh = shipping(), shipped = store.orders.filter((o) => o.shipment).sort((a, b) => new Date(b.shipment.sentAt) - new Date(a.shipment.sentAt));
+        const card = (id) => {
+          const c = COURIERS[id], acc = couriers && couriers[id];
+          return `<div class="cr-card${acc ? " on" : ""}">
+            <div class="cr-top">${courierBadge(id)}<div class="cr-name"><b>${esc(c.name)}</b><small>${c.api ? "Book parcels from your orders" : "Add the tracking number by hand"}</small></div>
+              ${sh.defaultCourier === id ? '<span class="tag green">Default</span>' : ""}</div>
+            ${c.api ? (couriers == null ? '<p class="muted small">Checking…</p>' : acc ? `<p class="cr-status"><span class="tag dot green">Connected</span> <span class="muted small">${esc(acc.info || "")}</span></p>` : '<p class="cr-status"><span class="tag dot gray">Not connected</span></p>') : '<p class="cr-status"><span class="tag gray">Manual</span></p>'}
+            <div class="cr-actions">${c.api ? (acc ? `<button class="btn btn-sm" data-action="courier-disconnect" data-id="${id}">Disconnect</button>` : `<button class="btn btn-sm btn-primary" data-action="courier-connect" data-id="${id}">${icon("plus")}Connect</button>`) : ""}
+              ${sh.defaultCourier === id ? "" : `<button class="btn btn-sm" data-action="courier-default" data-id="${id}"${c.api && !acc ? " disabled" : ""}>Make default</button>`}</div>
+          </div>`;
+        };
+        return `${head("Shipping &amp; Delivery", "Delivery charges, courier partners and every parcel you've sent.")}
+          <div class="card"><div class="card-head"><span class="card-title">Courier partners<small>Connect a courier once, then send any order to it in one click</small></span></div>
+            <div class="card-body"><div class="cr-grid">${Object.keys(COURIERS).map(card).join("")}</div>
+            <p class="muted small" style="margin-top:12px">Steadfast, Pathao and RedX book parcels through their merchant API with your own account, so their charges and payouts work as usual. Your API keys are kept on Shopilier's server and never shown again.</p></div></div>
+          <div class="grid-2" style="margin-top:18px;align-items:start">
+            <div class="card"><div class="card-head"><span class="card-title">Delivery charges<small>Shown on your checkout as the delivery options</small></span></div>
+              <div class="card-body"><form id="zones-form">
+                <div class="zn-head"><span>Area</span><span>Charge (৳)</span><span>Time</span><span></span></div>
+                <div data-zones>${sh.zones.map((z, i) => zoneRow(z, i)).join("")}</div>
+                <div style="display:flex;gap:8px;justify-content:space-between;margin-top:12px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-zone-add>${icon("plus")}Add area</button><button type="submit" class="btn btn-primary btn-sm">Save charges</button></div>
+              </form></div></div>
+            <div class="card"><div class="card-head"><span class="card-title">Parcel defaults</span></div>
+              <div class="card-body"><form id="ship-defaults">
+                <div class="field"><label for="sd-courier">Default courier</label><select class="select" id="sd-courier" name="courier"><option value="">Ask each time</option>${Object.entries(COURIERS).map(([id, c]) => `<option value="${id}"${sh.defaultCourier === id ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
+                <div class="field"><label for="sd-weight">Usual parcel weight (kg)</label><input class="input" id="sd-weight" name="weight" type="number" min="0.1" max="30" step="0.1" value="${esc(sh.weight)}"></div>
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+              </form></div></div>
+          </div>
+          <div class="card" style="margin-top:18px"><div class="card-head"><span class="card-title">Shipments<small>${shipped.length} parcel${shipped.length === 1 ? "" : "s"} sent</small></span></div>
+            ${shipped.length ? `<div class="table-wrap"><table class="table" style="min-width:760px"><thead><tr><th>Order</th><th>Customer</th><th>Courier</th><th>Tracking</th><th>Status</th><th>Sent</th><th class="t-actions"></th></tr></thead><tbody>
+              ${shipped.map((o) => `<tr><td><button class="t-title" data-action="view-order" data-id="${o.id}">${orderNo(o)}</button></td><td>${esc(o.customer)}<span class="sub">${esc(o.phone || "")}</span></td>
+                <td><span class="cr-inline">${courierBadge(o.shipment.courier)}${esc((COURIERS[o.shipment.courier] || {}).name || o.shipment.courier)}</span></td>
+                <td>${o.shipment.trackUrl ? `<a class="link" href="${esc(o.shipment.trackUrl)}" target="_blank" rel="noopener">${esc(o.shipment.trackingCode)}</a>` : esc(o.shipment.trackingCode)}</td>
+                <td>${shipTag(o)}</td><td class="muted">${day(o.shipment.sentAt)}</td>
+                <td class="t-actions">${(COURIERS[o.shipment.courier] || {}).api ? `<button class="btn btn-sm" data-action="ship-refresh" data-id="${o.id}">${icon("history")}Update</button>` : ""}</td></tr>`).join("")}
+            </tbody></table></div>` : `<div class="card-body"><p class="muted">No parcels yet. Open an order and choose <b>Send to courier</b>.</p></div>`}</div>
+        </div>`;
+      },
+      mount: (view) => {
+        if (couriers == null) loadCouriers().then(() => { if (location.hash.startsWith("#/shipping")) go(); });
+        const zf = view.querySelector("#zones-form");
+        zf.addEventListener("click", (e) => {
+          if (e.target.closest("[data-zone-add]")) { const box = zf.querySelector("[data-zones]"); box.insertAdjacentHTML("beforeend", zoneRow({ name: "", fee: 100, days: "" }, box.children.length)); box.lastElementChild.querySelector("input").focus(); }
+          const rm = e.target.closest("[data-zone-rm]"); if (rm) rm.closest(".zn-row").remove();
+        });
+        zf.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const zones = [...zf.querySelectorAll(".zn-row")].map((r) => ({ name: r.querySelector("[name=zname]").value.trim().slice(0, 40), fee: Math.max(0, Math.round(Number(r.querySelector("[name=zfee]").value) || 0)), days: r.querySelector("[name=zdays]").value.trim().slice(0, 20) })).filter((z) => z.name);
+          if (!zones.length) { toast("Add at least one delivery area"); return; }
+          shipping().zones = zones;
+          // The checkout's delivery options follow these charges
+          const co = (store.pages.find((p) => p.system === "checkout")?.sections || []).find((x) => x.type === "checkout");
+          if (co) co.content.delivery = zones.map((z) => ({ label: z.days ? `${z.name} (${z.days})` : z.name, fee: z.fee }));
+          touchSite(); persist(); go(); toast("Delivery charges saved — your checkout shows them now");
+        });
+        view.querySelector("#ship-defaults").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const d = new FormData(e.target);
+          Object.assign(shipping(), { defaultCourier: COURIERS[d.get("courier")] ? d.get("courier") : "", weight: Math.min(30, Math.max(0.1, Number(d.get("weight")) || 0.5)) });
+          persist(); go(); toast("Parcel defaults saved");
+        });
       },
     },
 
@@ -1637,8 +1761,111 @@ export const start = async () => {
           ${o.discount ? `<div class="order-line muted"><span>${o.discount.free ? "Free delivery" : "Discount"} (${esc(o.discount.code)})</span><span>−${taka(o.discount.amount)}</span></div>` : ""}
           ${o.discountNote ? `<p class="muted small" style="margin:6px 0">${esc(o.discountNote)}</p>` : ""}
           ${o.delivery ? `<div class="order-line muted"><span>Delivery · ${esc(o.delivery)}</span><span>${taka(o.deliveryFee || 0)}</span></div>` : ""}
-          <div class="divider"></div><div class="order-line" style="font-weight:600"><span>Total · ${esc(o.payment)}</span><span>${taka(o.total)}</span></div>`,
+          <div class="divider"></div><div class="order-line" style="font-weight:600"><span>Total · ${esc(o.payment)}</span><span>${taka(o.total)}</span></div>
+          <div class="ship-box">${o.shipment ? `<div class="ship-line"><span class="cr-inline">${courierBadge(o.shipment.courier)}<b>${esc((COURIERS[o.shipment.courier] || {}).name || o.shipment.courier)}</b></span>${shipTag(o)}</div>
+              <p class="muted small">Tracking ${o.shipment.trackUrl ? `<a class="link" href="${esc(o.shipment.trackUrl)}" target="_blank" rel="noopener">${esc(o.shipment.trackingCode)}</a>` : `<b>${esc(o.shipment.trackingCode)}</b>`} · sent ${day(o.shipment.sentAt)}</p>
+              ${(COURIERS[o.shipment.courier] || {}).api ? `<button type="button" class="btn btn-sm" data-action="ship-refresh" data-id="${o.id}">${icon("history")}Update status</button>` : ""}`
+            : `<div class="ship-line"><span><b>Delivery</b><br><span class="muted small">Not sent to a courier yet</span></span><button type="button" class="btn btn-primary btn-sm" data-action="ship-order" data-id="${o.id}">${icon("truck")}Send to courier</button></div>`}</div>`,
       });
+    },
+    "courier-connect": (el) => {
+      const id = el.dataset.id, c = COURIERS[id];
+      dialog({
+        title: "Connect " + c.name, submit: "Connect",
+        body: `<p class="muted small" style="margin-bottom:12px">Find these in the <b>${esc(c.where)}</b>. Shopilier checks them with ${esc(c.name)} before saving.</p>
+          ${COURIER_FIELDS[id].map(([k, l]) => `<div class="field"><label for="cr-${k}">${esc(l)}</label><input class="input" id="cr-${k}" name="${k}" ${/password|secret|token|key/i.test(k) ? 'type="password"' : ""} autocomplete="off" required></div>`).join("")}`,
+        onSubmit: (v, close, form) => {
+          const btn = form.querySelector("[type=submit]"); btn.disabled = true; btn.textContent = "Checking…";
+          courierApi("PUT", "/" + id, v).then((acc) => {
+            couriers = { ...(couriers || {}), [id]: acc };
+            if (!shipping().defaultCourier) { shipping().defaultCourier = id; persist(); }
+            close(); go(); toast(c.name + " connected");
+          }).catch((err) => { btn.disabled = false; btn.textContent = "Connect"; toast(err.message); });
+          return false;
+        },
+      });
+    },
+    "courier-disconnect": async (el) => {
+      const id = el.dataset.id, c = COURIERS[id];
+      if (!(await confirm(`Disconnect ${c.name}?`, "Your saved API keys are deleted. Parcels you've already sent keep their tracking numbers.", "Disconnect"))) return;
+      try { await courierApi("DELETE", "/" + id); delete couriers[id]; if (shipping().defaultCourier === id) { shipping().defaultCourier = ""; persist(); } go(); toast(c.name + " disconnected"); } catch (err) { toast(err.message); }
+    },
+    "courier-default": (el) => { shipping().defaultCourier = el.dataset.id; persist(); go(); toast(COURIERS[el.dataset.id].name + " is now your default courier"); },
+    "ship-order": async (el) => {
+      const o = store.orders.find((x) => x.id === el.dataset.id);
+      if (!o) return;
+      document.querySelectorAll(".overlay").forEach((x) => x.remove());
+      await loadCouriers();
+      const sh = shipping(), connected = Object.keys(COURIERS).filter((k) => COURIERS[k].api && couriers[k]);
+      const first = COURIERS[sh.defaultCourier] && (!COURIERS[sh.defaultCourier].api || couriers[sh.defaultCourier]) ? sh.defaultCourier : connected[0] || "paperfly";
+      const cod = /cash/i.test(o.payment || "") ? o.total : 0;
+      dialog({
+        title: "Send " + orderNo(o) + " to a courier", submit: "Send parcel",
+        body: `<div class="field"><label for="sp-courier">Courier</label><select class="select" id="sp-courier" name="courier">
+            ${connected.length ? `<optgroup label="Book with the courier's API">${connected.map((k) => `<option value="${k}"${k === first ? " selected" : ""}>${esc(COURIERS[k].name)}</option>`).join("")}</optgroup>` : ""}
+            <optgroup label="Add the tracking number yourself">${Object.keys(COURIERS).filter((k) => !COURIERS[k].api || !couriers[k]).map((k) => `<option value="${k}"${k === first ? " selected" : ""}>${esc(COURIERS[k].name)}</option>`).join("")}</optgroup></select>
+            ${connected.length ? "" : '<span class="pf-hint">Connect Steadfast, Pathao or RedX in <a href="#/shipping">Shipping &amp; Delivery</a> to book parcels from here.</span>'}</div>
+          <div class="row"><div class="field"><label for="sp-name">Customer</label><input class="input" id="sp-name" name="name" required maxlength="100" value="${esc(o.customer)}"></div>
+            <div class="field"><label for="sp-phone">Mobile</label><input class="input" id="sp-phone" name="phone" required maxlength="20" value="${esc(o.phone || "")}" placeholder="01XXXXXXXXX"></div></div>
+          <div class="field"><label for="sp-address">Full address</label><textarea class="textarea" id="sp-address" name="address" rows="2" required maxlength="250">${esc(orderAddress(o))}</textarea></div>
+          <div data-sp-area></div>
+          <div class="row"><div class="field"><label for="sp-cod">Cash to collect (৳)</label><input class="input" id="sp-cod" name="cod" type="number" min="0" step="1" value="${cod}"><span class="pf-hint">0 if the customer already paid.</span></div>
+            <div class="field"><label for="sp-weight">Weight (kg)</label><input class="input" id="sp-weight" name="weight" type="number" min="0.1" max="30" step="0.1" value="${esc(sh.weight)}"></div></div>
+          <div class="field" data-sp-manual><label for="sp-track">Tracking number</label><input class="input" id="sp-track" name="tracking" maxlength="60" placeholder="From the courier's receipt or panel"></div>
+          <div class="field"><label for="sp-note">Note for the rider <span class="muted">(optional)</span></label><input class="input" id="sp-note" name="note" maxlength="200" placeholder="e.g. Call before delivery"></div>`,
+        onOpen: (form) => {
+          const area = form.querySelector("[data-sp-area]"), manual = form.querySelector("[data-sp-manual]");
+          const list = async (id, kind, parent = "") => (await courierApi("GET", `/${id}/options?kind=${kind}${parent ? "&parent=" + parent : ""}`)).options;
+          const opts = (l, ph) => `<option value="">${ph}</option>` + l.map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join("");
+          const sync = async () => {
+            const id = form.elements.courier.value, api = COURIERS[id].api && couriers[id];
+            manual.hidden = !!api; form.elements.tracking.required = !api;
+            area.innerHTML = "";
+            try {
+              if (api && id === "pathao") {
+                area.innerHTML = `<div class="row"><div class="field"><label for="sp-city">City</label><select class="select" id="sp-city" name="city" required><option value="">Loading…</option></select></div><div class="field"><label for="sp-zone">Zone</label><select class="select" id="sp-zone" name="zone" required><option value="">Choose the city first</option></select></div></div>`;
+                form.elements.city.innerHTML = opts(await list("pathao", "cities"), "Choose a city");
+                form.elements.city.addEventListener("change", async () => { form.elements.zone.innerHTML = '<option value="">Loading…</option>'; form.elements.zone.innerHTML = opts(form.elements.city.value ? await list("pathao", "zones", form.elements.city.value) : [], "Choose a zone"); });
+              } else if (api && id === "redx") {
+                area.innerHTML = `<div class="field"><label for="sp-area">Delivery area</label><select class="select" id="sp-area" name="area" required><option value="">Loading…</option></select></div>`;
+                form.elements.area.innerHTML = opts(await list("redx", "areas"), "Choose the area");
+              }
+            } catch (err) { toast(err.message); }
+          };
+          form.elements.courier.addEventListener("change", sync); sync();
+        },
+        onSubmit: (v, close, form) => {
+          const id = v.courier, c = COURIERS[id], done = (shipment) => {
+            o.shipment = shipment;
+            if (o.status === "Pending" || o.status === "Paid") o.status = "Shipped";
+            persist(); close(); go(); toast(`${orderNo(o)} sent with ${c.name}`);
+          };
+          if (!(c.api && couriers[id])) {
+            if (!v.tracking) { toast("Enter the tracking number"); return false; }
+            done({ courier: id, consignmentId: v.tracking, trackingCode: v.tracking, status: "Sent", trackUrl: "", sentAt: new Date().toISOString(), manual: true });
+            return false;
+          }
+          const areaSel = form.elements.area;
+          const btn = form.querySelector("[type=submit]"); btn.disabled = true; btn.textContent = "Booking…";
+          courierApi("POST", `/${id}/parcel`, {
+            invoice: "SHP-" + o.number, name: v.name, phone: v.phone, address: v.address, cod: v.cod, weight: v.weight, note: v.note,
+            items: o.items.reduce((a, it) => a + it.qty, 0), description: o.items.map((it) => `${it.name} × ${it.qty}`).join(", ").slice(0, 200),
+            city: v.city, zone: v.zone, area: v.area, areaName: areaSel ? areaSel.options[areaSel.selectedIndex]?.text : "",
+          }).then(done).catch((err) => { btn.disabled = false; btn.textContent = "Send parcel"; toast(err.message); });
+          return false;
+        },
+      });
+    },
+    "ship-refresh": async (el) => {
+      const o = store.orders.find((x) => x.id === el.dataset.id);
+      if (!o || !o.shipment) return;
+      el.disabled = true;
+      try {
+        const d = await courierApi("GET", `/${o.shipment.courier}/parcel/${encodeURIComponent(o.shipment.consignmentId)}`);
+        o.shipment.status = d.status; o.shipment.checkedAt = d.checkedAt;
+        if (/delivered/i.test(d.status) && o.status !== "Cancelled") o.status = "Delivered";
+        persist(); go(); toast(`${orderNo(o)}: ${d.status}`);
+      } catch (err) { el.disabled = false; toast(err.message); }
     },
     "delete-order": async (el) => {
       const o = store.orders.find((x) => x.id === el.dataset.id);
@@ -1886,10 +2113,10 @@ export const start = async () => {
         body: `<div class="field"><label>Plan</label><select class="select" name="plan">${planOptions}</select></div>
           <div class="field"><label>Billing</label><select class="select" name="billing"><option value="monthly">Monthly</option><option value="yearly"${account.billing === "yearly" ? " selected" : ""}>Yearly (free custom domain on Business &amp; Pro)</option></select></div>`,
         submit: "Update plan",
-        onSubmit: (v) => { account.plan = v.plan; account.billing = v.billing; persist(); go(); toast(`Plan updated to ${PLANS[v.plan].name}`); },
+        onSubmit: (v) => { const from = account.plan, fromBilling = account.billing; account.plan = v.plan; account.billing = v.billing; if (from !== v.plan || fromBilling !== v.billing) recordPlan(from); persist(); go(); toast(`Plan updated to ${PLANS[v.plan].name}`); },
       });
     },
-    "set-plan": (el) => { account.plan = el.dataset.plan; persist(); go(); toast("Plan updated to " + PLANS[account.plan].name); },
+    "set-plan": (el) => { const from = account.plan; account.plan = el.dataset.plan; recordPlan(from); persist(); go(); toast("Plan updated to " + PLANS[account.plan].name); },
     "reset-all": async () => {
       if (!(await confirm("Reset store?", "All products, orders, customers, pages and website changes will be deleted.", "Reset store"))) return;
       const fresh = seedStore();
@@ -1897,6 +2124,21 @@ export const start = async () => {
       Object.assign(store, fresh);
       await saveNow(); location.reload();
     },
+  };
+
+  // ---------- Billing history ----------
+  // Every plan start and change, newest first. Nothing is charged until online payment is connected.
+  const planAmount = () => { const pl = PLANS[account.plan] || PLANS.starter; return account.billing === "yearly" ? pl.price * 12 : pl.price; };
+  const billingHistory = () => {
+    store.billing ||= [];
+    if (!store.billing.length) store.billing.push({ id: uid("tx"), invoice: "INV-0001", date: account.createdAt || new Date().toISOString(), plan: account.plan, billing: account.billing, amount: planAmount(), status: "Not charged", text: "Plan started" });
+    return [...store.billing].sort((a, b) => new Date(b.date) - new Date(a.date));
+  };
+  const recordPlan = (from) => {
+    billingHistory();
+    const n = store.billing.length + 1;
+    store.billing.push({ id: uid("tx"), invoice: "INV-" + String(n).padStart(4, "0"), date: new Date().toISOString(), plan: account.plan, billing: account.billing, amount: planAmount(), status: "Not charged",
+      text: from && from !== account.plan ? `Changed from ${(PLANS[from] || { name: from }).name} to ${PLANS[account.plan].name}` : `Billing changed to ${account.billing === "yearly" ? "yearly" : "monthly"}` });
   };
 
   // ---------- Settings popup ----------
@@ -1969,20 +2211,34 @@ export const start = async () => {
       </form>`,
     billing: () => {
       const p = plan(), yearly = account.billing === "yearly";
-      return `<h2>Plan &amp; billing</h2><p class="muted">Your plan and how much of it you're using.</p>
-        <div class="s-card">
-          <div class="s-plan"><div><span class="tag green">${esc(p.name)} plan</span>
-            <div class="stat-value" style="margin-top:8px">${!p.price ? '৳0<span class="muted" style="font-size:14px;font-weight:500"> forever</span>' : yearly ? taka(p.price * 12) + '<span class="muted" style="font-size:14px;font-weight:500"> /year</span>' : taka(p.price) + '<span class="muted" style="font-size:14px;font-weight:500"> /month</span>'}</div>
-            <p class="muted small">${!p.price ? "No custom domain or support chat — upgrade when you're ready" : yearly ? "Billed yearly" : "Billed monthly"}${hasFreeDomain() ? " · includes a free custom domain" : ""}</p></div>
-            <button class="btn btn-primary" type="button" data-action="change-plan">${p.price ? "Change plan" : "Upgrade"}</button></div>
-          ${[["Pages", pageCount(), p.pages], ["Products", store.products.length, p.products]].map(([n, used, lim]) => `
-            <div class="meter" style="margin-top:14px"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
-            <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`).join("")}
+      const meter = ([n, used, lim]) => `<div class="bl-meter"><div class="meter-top"><span>${n}</span><span class="muted">${used} of ${limitText(lim)}</span></div>
+        <div class="progress"><i style="width:${lim == null ? 4 : Math.min(100, (used / lim) * 100)}%;${lim != null && used >= lim ? "background:var(--danger)" : ""}"></i></div></div>`;
+      const feats = (pl) => [["Pages", pl.pages], ["Products", pl.products], ["Staff accounts", pl.staff]].map(([n, v]) => `<li>${icon("check")}<span><b>${limitText(v)}</b> ${n.toLowerCase()}</span></li>`).join("");
+      const tx = billingHistory();
+      return `<h2>Plan &amp; billing</h2><p class="muted">Your plan, how much of it you're using, and every billing change.</p>
+        <div class="bl-current">
+          <div class="bl-current-top">
+            <div><span class="tag green">${esc(p.name)} plan</span>
+              <div class="bl-price">${yearly ? taka(p.price * 12) : taka(p.price)}<span>/${yearly ? "year" : "month"}</span></div>
+              <p class="muted small">${yearly ? "Billed yearly" : "Billed monthly"}${hasFreeDomain() ? " · includes a free custom domain" : ""}</p></div>
+            <button class="btn btn-primary" type="button" data-action="change-plan">Change plan</button>
+          </div>
+          <div class="bl-meters">${[["Pages", pageCount(), p.pages], ["Products", store.products.length, p.products], ["Staff", (store.staff || []).length, p.staff]].map(meter).join("")}</div>
         </div>
-        <div class="table-wrap s-card" style="padding:0"><table class="table" style="min-width:640px"><thead><tr><th>Plan</th><th class="t-right">Monthly</th><th>Pages</th><th>Products</th><th>Staff</th><th>Domain</th><th>Support</th><th class="t-actions"></th></tr></thead>
-          <tbody>${Object.entries(PLANS).map(([id, pl]) => `<tr><td><span class="t-title">${esc(pl.name)} ${id === account.plan ? '<span class="tag blue">Current</span>' : ""}</span></td><td class="t-right">${pl.price ? taka(pl.price) : "Free"}</td><td>${limitText(pl.pages)}</td><td>${limitText(pl.products)}</td><td>${pl.staff === 0 ? "—" : limitText(pl.staff)}</td><td>${pl.domain ? (pl.freeDomain ? "Yes, free yearly" : "Yes") : "—"}</td><td>${pl.support ? "Chat" : "—"}</td>
-            <td class="t-actions">${id === account.plan ? "" : `<button class="btn btn-sm" type="button" data-action="set-plan" data-plan="${id}">Switch</button>`}</td></tr>`).join("")}</tbody></table></div>
-        <p class="muted small">Online payment for plans isn't connected yet, so switching plans changes your limits straight away.</p>`;
+        <div class="bl-plans">${Object.entries(PLANS).map(([id, pl]) => `<div class="bl-plan${id === account.plan ? " on" : ""}">
+            <div class="bl-plan-head"><b>${esc(pl.name)}</b>${id === account.plan ? '<span class="tag green">Current</span>' : ""}</div>
+            <p class="muted small">${esc(pl.blurb || "")}</p>
+            <div class="bl-plan-price">${taka(pl.price)}<span>/month</span></div>
+            <ul class="bl-feats">${feats(pl)}</ul>
+            ${id === account.plan ? '<button class="btn" type="button" disabled>Your plan</button>' : `<button class="btn ${pl.price > p.price ? "btn-primary" : ""}" type="button" data-action="set-plan" data-plan="${id}">${pl.price > p.price ? "Upgrade" : "Switch"} to ${esc(pl.name)}</button>`}
+          </div>`).join("")}</div>
+        <div class="bl-tx">
+          <div class="bl-tx-head"><b>Transactions</b><span class="muted small">${tx.length} ${tx.length === 1 ? "entry" : "entries"}</span></div>
+          ${tx.length ? `<div class="table-wrap"><table class="table bl-table"><thead><tr><th>Date</th><th>Invoice</th><th>Description</th><th class="t-right">Amount</th><th>Status</th></tr></thead>
+            <tbody>${tx.map((t) => `<tr><td class="muted">${day(t.date)}</td><td class="t-title">${esc(t.invoice)}</td><td>${esc(t.text)}<span class="sub">${esc(PLANS[t.plan] ? PLANS[t.plan].name : t.plan)} · ${t.billing === "yearly" ? "Yearly" : "Monthly"}</span></td><td class="t-right" style="font-weight:600;color:var(--ink)">${taka(t.amount)}</td><td>${t.status === "Paid" ? '<span class="tag dot green">Paid</span>' : t.status === "Due" ? '<span class="tag dot yellow">Due</span>' : '<span class="tag dot gray">Not charged</span>'}</td></tr>`).join("")}</tbody></table></div>`
+            : '<p class="muted" style="padding:18px">No transactions yet.</p>'}
+          <p class="muted small bl-tx-note">Online payment for plans isn't connected yet, so changes take effect straight away and nothing is charged. Payments will show here as Paid once it is.</p>
+        </div>`;
     },
     domain: () => {
       const st = store.settings, freeDomain = hasFreeDomain();
@@ -2162,6 +2418,14 @@ export const start = async () => {
   };
   window.addEventListener("hashchange", settingsFromHash);
 
+  // Send to courier / Update status from inside the order popup
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest('.overlay [data-action="ship-order"], .overlay [data-action="ship-refresh"]');
+    if (!el) return;
+    e.preventDefault();
+    if (el.dataset.action === "ship-refresh") el.closest(".overlay").remove();
+    actions[el.dataset.action](el);
+  });
   const view = document.getElementById("view");
   view.addEventListener("click", (e) => {
     const el = e.target.closest("[data-action]");

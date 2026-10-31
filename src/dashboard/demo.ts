@@ -130,6 +130,26 @@ export const start = () => {
       if (!blob.size) return fail("The image is empty.");
       try { return json({ url: await toDataUrl(blob) }); } catch (err) { return fail(err.message); }
     }],
+    // Couriers: the demo pretends to be Steadfast, Pathao and RedX (nothing is sent anywhere)
+    ["GET", /^\/api\/couriers$/, () => json({ couriers: db.couriers || {} })],
+    ["PUT", /^\/api\/couriers\/(steadfast|pathao|redx)$/, (req, m) => {
+      db.couriers ||= {};
+      db.couriers[m[1]] = { connected: true, info: m[1] === "steadfast" ? "Balance ৳2,450 (demo)" : m[1] === "pathao" ? "Store: Dhaka Threads (demo)" : "48 delivery areas (demo)", hint: "demo••••" };
+      save(); return json(db.couriers[m[1]]);
+    }],
+    ["DELETE", /^\/api\/couriers\/(steadfast|pathao|redx)$/, (req, m) => { if (db.couriers) delete db.couriers[m[1]]; save(); return json({ ok: true }); }],
+    ["GET", /^\/api\/couriers\/(pathao|redx)\/options$/, (req, m) => {
+      const kind = new URL(req.url).searchParams.get("kind");
+      const list = kind === "cities" ? [[1, "Dhaka"], [2, "Chattogram"], [3, "Sylhet"]] : kind === "zones" ? [[11, "Dhanmondi"], [12, "Mirpur"], [13, "Uttara"], [14, "Gulshan"]] : [[101, "Dhanmondi"], [102, "Mirpur 10"], [103, "Uttara Sector 7"], [104, "Agrabad"]];
+      return json({ options: list.map(([id, name]) => ({ id, name })) });
+    }],
+    ["POST", /^\/api\/couriers\/(steadfast|pathao|redx)\/parcel$/, (req, m, body) => {
+      if (!(db.couriers || {})[m[1]]) return fail("Connect this courier first, in Shipping & Delivery.");
+      if (!/^01[3-9]\d{8}$/.test(String(body?.phone || "").replace(/\D/g, ""))) return fail("Enter the customer's 11-digit mobile number (01XXXXXXXXX).");
+      const code = (m[1] === "redx" ? "20A" : m[1] === "pathao" ? "DT" : "SF") + Math.random().toString(36).slice(2, 9).toUpperCase();
+      return json({ consignmentId: code, trackingCode: code, status: "Pending (demo)", courier: m[1], trackUrl: "", sentAt: now() });
+    }],
+    ["GET", /^\/api\/couriers\/(steadfast|pathao|redx)\/parcel\/([\w-]+)$/, () => json({ status: ["Picked up (demo)", "In transit (demo)", "Delivered (demo)"][Math.floor(Math.random() * 3)], checkedAt: now() })],
     ["GET", /^\/api\/messages$/, () => json({ conversations: [...db.conversations].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)).map(pub) })],
     ["POST", /^\/api\/messages$/, (req, m, body) => {
       const subject = clean(body?.subject, 120), text = clean(body?.body, 2000);

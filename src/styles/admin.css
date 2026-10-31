@@ -960,3 +960,45 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
 /* Store dashboard: a notice from Shopilier (maintenance) */
 .platform-notice { display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: #fff7e6; border-bottom: 1px solid #f5d9a8; color: #7a4d00; font-size: 14px; }
 .platform-notice .i { width: 18px; height: 18px; flex: none; }
+
+/* Settings → Plan & billing: the current plan, the three plans side by side, and the transactions */
+.bl-current { padding: 18px 20px; margin-bottom: 18px; border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(135deg, #f3faf6, #fff 60%); }
+.bl-current-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.bl-price { margin-top: 8px; font-size: 30px; font-weight: 700; color: var(--ink); letter-spacing: -.02em; }
+.bl-price span, .bl-plan-price span { font-size: 14px; font-weight: 500; color: var(--muted); }
+.bl-meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+.bl-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+.bl-plan { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #fff; }
+.bl-plan.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.bl-plan-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bl-plan-head b { font-size: 16px; color: var(--ink); }
+.bl-plan-price { font-size: 22px; font-weight: 700; color: var(--ink); }
+.bl-feats { list-style: none; display: grid; gap: 6px; margin: 2px 0 6px; font-size: 13.5px; }
+.bl-feats li { display: flex; align-items: center; gap: 8px; }
+.bl-feats .i { width: 15px; height: 15px; color: var(--accent); flex: none; }
+.bl-plan .btn { margin-top: auto; width: 100%; justify-content: center; }
+.bl-tx { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.bl-tx-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.bl-table { min-width: 560px; }
+.bl-tx-note { padding: 12px 18px; border-top: 1px solid var(--border); background: #fafbfb; }
+@media (max-width: 760px) { .bl-plans, .bl-meters { grid-template-columns: 1fr; } }
+
+/* Shipping & Delivery: courier cards, delivery charges and the delivery box in an order */
+.cr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.cr-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: #fff; }
+.cr-card.on { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: #f6fbf8; }
+.cr-top { display: flex; align-items: center; gap: 10px; }
+.cr-logo { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; color: #fff; font-weight: 800; font-size: 16px; }
+.cr-name { flex: 1; min-width: 0; display: grid; }
+.cr-name b { font-size: 14.5px; color: var(--ink); }
+.cr-name small { font-size: 12px; color: var(--muted); }
+.cr-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+.cr-inline { display: inline-flex; align-items: center; gap: 8px; }
+.cr-inline .cr-logo { width: 24px; height: 24px; border-radius: 7px; font-size: 12px; }
+.zn-head, .zn-row { display: grid; grid-template-columns: 1.6fr .8fr 1fr 34px; gap: 8px; align-items: center; }
+.zn-head { margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.zn-row { margin-bottom: 8px; }
+.ship-box { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: #fafbfb; display: grid; gap: 8px; }
+.ship-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ship-box .btn { justify-self: start; }
+[data-sp-manual][hidden] { display: none; }
