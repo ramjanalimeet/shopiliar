@@ -5,7 +5,7 @@ export default function MasterShell() {
   return (
     <div className="app">
       <aside className="side" id="dashboard-nav" aria-label="Master admin navigation">
-        <a className="brand" href="/"><img className="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="" />Shopilier<small>Admin</small></a>
+        <a className="brand" href="#/overview" title="Dashboard overview"><img className="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="" />Shopilier<small>Admin</small></a>
         <nav className="side-nav">
           <a className="nav-item" data-route="overview" href="#/overview"><Icon name="home" />Overview</a>
           <a className="nav-item" data-route="users" href="#/users"><Icon name="customers" />Users<span className="count" id="count-users" /></a>
