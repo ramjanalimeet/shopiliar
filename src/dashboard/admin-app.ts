@@ -200,6 +200,9 @@ export const start = async () => {
     document.getElementById("menu-name").textContent = account.name;
     document.getElementById("me-email").textContent = account.email;
     document.getElementById("me-plan").textContent = plan().name + " · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
+    // The plan beside the Shopilier name, and this store in the store switcher
+    const bp = document.getElementById("brand-plan"); if (bp) bp.textContent = plan().name;
+    const an = document.getElementById("acct-name"); if (an) { an.textContent = account.business || "My Store"; document.getElementById("acct-sub").textContent = `${plan().name} · ${taka(plan().price)}/mo`; document.getElementById("acct-ava").innerHTML = avatar(account.business || account.name); }
     chatFab.classList.toggle("locked", !hasSupport());
   };
   const profileBtn = document.getElementById("profile-btn");
@@ -214,9 +217,61 @@ export const start = async () => {
     if (!ok) return;
     toggleMenu(false);
     if (saveTimer) await saveNow();
-    await fetch("/api/signout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
-    location.href = "/signin";
+    const out = await fetch("/api/signout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).then((r) => r.json()).catch(() => ({}));
+    // Another store signed in on this device takes over; otherwise back to sign in
+    location.href = out.switchedTo ? "/admin" : "/signin";
   });
+
+  // ---------- Store switcher ----------
+  // Every store is its own account with its own plan, so each one is paid for separately
+  const acctBtn = document.getElementById("acct-btn"), acctMenu = document.getElementById("acct-menu");
+  const closeAcct = () => { if (acctMenu) { acctMenu.hidden = true; acctBtn.setAttribute("aria-expanded", "false"); } };
+  const paintAcct = async () => {
+    acctMenu.innerHTML = '<p class="acct-load">Loading your stores…</p>';
+    let list = [];
+    try { const r = await fetch("/api/accounts"); const d = await r.json(); if (!r.ok) throw new Error(); list = d.accounts; }
+    catch (e) { list = [{ id: "me", ...account, current: true }]; }
+    const price = (a) => { const pl = PLANS[a.plan] || PLANS.starter; return a.billing === "yearly" ? `${taka(pl.price * 12)}/yr` : `${taka(pl.price)}/mo`; };
+    acctMenu.innerHTML = `<div class="acct-head">Your stores</div>
+      ${list.map((a) => `<button type="button" role="menuitem" class="acct-item${a.current ? " on" : ""}" ${a.current ? 'aria-current="true"' : `data-switch="${esc(a.id)}"`}>
+        ${avatar(a.business || a.name)}<span class="acct-text" title="${esc(a.email)}"><b>${esc(a.business || a.name)}</b><small>${esc((PLANS[a.plan] || PLANS.starter).name)} · ${price(a)}</small></span>${a.current ? icon("check") : ""}</button>`).join("")}
+      <div class="acct-sep"></div>
+      <button type="button" role="menuitem" class="acct-add" data-acct-add>${icon("plus")}<span><b>Add another store</b><small>Each store has its own plan and payment</small></span></button>`;
+  };
+  if (acctBtn) {
+    acctBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = acctMenu.hidden;
+      if (!open) { closeAcct(); return; }
+      acctMenu.hidden = false; acctBtn.setAttribute("aria-expanded", "true"); paintAcct();
+    });
+    acctMenu.addEventListener("click", async (e) => {
+      const sw = e.target.closest("[data-switch]");
+      if (sw) {
+        sw.disabled = true;
+        if (saveTimer) await saveNow();
+        const r = await fetch("/api/accounts/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: sw.dataset.switch }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { sw.disabled = false; toast(d.error || "Couldn't switch stores."); return; }
+        location.href = "/admin";
+        return;
+      }
+      if (e.target.closest("[data-acct-add]")) {
+        closeAcct();
+        dialog({
+          title: "Add another store", submit: "",
+          body: `<p class="muted">Each store is a separate account with its own website, products, orders and plan, so each one is paid for on its own. Plans start at ${taka(PLANS.starter.price)} a month.</p>
+            <div class="acct-choices">
+              <a class="acct-choice" href="/signup?add=1">${icon("plus")}<span><b>Create a new store</b><small>Pick a template and a plan, with a different email</small></span></a>
+              <a class="acct-choice" href="/signin?add=1&amp;next=/admin">${icon("store")}<span><b>Sign in to a store you already have</b><small>It joins this list, and you can switch any time</small></span></a>
+            </div>
+            <p class="muted small" style="margin-top:12px">Your stores stay signed in on this device, so switching takes one click.</p>`,
+        });
+      }
+    });
+    document.addEventListener("click", (e) => { if (!e.target.closest(".acct")) closeAcct(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAcct(); });
+  }
 
   // ---------- Helpers ----------
   const ORDER_STATUS = { Pending: "yellow", Paid: "blue", Shipped: "purple", Delivered: "green", Cancelled: "red" };

@@ -4,6 +4,9 @@ import { getCookie } from "./http";
 import { CATEGORY, currentPlan } from "./plans";
 
 export const SESSION_COOKIE = "shopiliar_session";
+// Other stores signed in on this device (their session tokens, "."-separated), for the store switcher
+export const ACCOUNTS_COOKIE = "shopiliar_accounts";
+export const MAX_ACCOUNTS = 5;
 export const REMEMBER_DAYS = 30;
 export const SESSION_HOURS = 24; // "Remember me" unticked
 
@@ -38,8 +41,27 @@ export async function currentUserFromCookies(env: CloudflareEnv) {
   return userForToken(jar.get(SESSION_COOKIE)?.value, env);
 }
 
-/** Starts a session for the user and sets its cookie on the response. */
-export async function withSession(env: CloudflareEnv, userId: string, remember: boolean, res: Response) {
+/** The other stores' session tokens saved on this device. */
+export const otherTokens = (request: Request) => (getCookie(request, ACCOUNTS_COOKIE) || "").split(".").filter((t) => /^[\w-]{20,80}$/.test(t)).slice(0, MAX_ACCOUNTS);
+export const setOtherTokens = (res: Response, tokens: string[]) => {
+  const list = [...new Set(tokens.filter(Boolean))].slice(0, MAX_ACCOUNTS);
+  res.headers.append("Set-Cookie", list.length
+    ? `${ACCOUNTS_COOKIE}=${list.join(".")}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${REMEMBER_DAYS * 86400}`
+    : `${ACCOUNTS_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
+  return res;
+};
+export const setSessionCookie = (res: Response, token: string) => {
+  res.headers.append("Set-Cookie", `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${REMEMBER_DAYS * 86400}`);
+  return res;
+};
+
+/** Starts a session for the user and sets its cookie on the response. With the request, the store that was
+ *  signed in before stays on this device's store switcher (signing in to a second store doesn't sign out the first). */
+export async function withSession(env: CloudflareEnv, userId: string, remember: boolean, res: Response, request?: Request) {
+  if (request) {
+    const before = getCookie(request, SESSION_COOKIE);
+    if (before) setOtherTokens(res, [before, ...otherTokens(request)]);
+  }
   const token = b64(randomBytes(32));
   const ttl = remember ? REMEMBER_DAYS * 864e5 : SESSION_HOURS * 36e5;
   await env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)")

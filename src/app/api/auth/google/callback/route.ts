@@ -59,5 +59,5 @@ export const GET = api(async (request, env, url) => {
 
   const res = redirect(url, nextPath(pick.next));
   res.headers.append("Set-Cookie", `${GOOGLE_STATE_COOKIE}=; Path=/api/auth/google; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
-  return withSession(env, user.id, true, res);
+  return withSession(env, user.id, true, res, request);
 });
