@@ -937,3 +937,26 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
 @media (max-width: 480px) {
   .store-admin.demo .demo-bar .demo-sep, .store-admin.demo .demo-bar .demo-short, .store-admin.demo.embedded .demo-bar .demo-short { display: none; }
 }
+
+/* Master dashboard: the ⋯ menu on a user's row, and the Settings popup */
+.row-menu { width: 250px; z-index: 60; }
+.st-dialog .dialog-body { padding-top: 6px; }
+.st-tabs { position: sticky; top: -1px; z-index: 2; display: flex; gap: 4px; margin: 0 -2px 16px; padding: 8px 2px; background: #fff; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.st-tabs button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border: 0; border-radius: 9px; background: none; color: var(--muted); font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.st-tabs button .i { width: 17px; height: 17px; }
+.st-tabs button:hover { background: var(--hover); color: var(--ink); }
+.st-tabs button.on { background: var(--accent-soft, #e8f5ee); color: var(--accent); }
+.st-panel[hidden] { display: none; }
+.st-intro { margin-bottom: 14px; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+.st-sub { margin: 18px 0 8px; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.st-pay { padding: 4px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.st-staff { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.st-ava { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; }
+.st-who { flex: 1; min-width: 0; display: grid; }
+.st-who small { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; }
+.st-staff .select { width: 130px; }
+.st-staff-add { display: grid; grid-template-columns: 1fr 1.3fr 130px auto; gap: 8px; margin-top: 14px; }
+@media (max-width: 640px) { .st-staff-add { grid-template-columns: 1fr 1fr; } }
+/* Store dashboard: a notice from Shopilier (maintenance) */
+.platform-notice { display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: #fff7e6; border-bottom: 1px solid #f5d9a8; color: #7a4d00; font-size: 14px; }
+.platform-notice .i { width: 18px; height: 18px; flex: none; }

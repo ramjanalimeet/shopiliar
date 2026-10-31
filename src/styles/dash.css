@@ -246,7 +246,7 @@ svg { display: block; }
 .g-body { padding: 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .g-title { font-weight: 600; color: var(--ink); }
 .g-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.g-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; align-items: center; }
+.g-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px; align-items: center; }
 .g-actions .btn { flex: 1; }
 .g-actions .icon-btn { flex: none; }
 .g-new { display: grid; place-items: center; min-height: 300px; color: var(--muted); border: 2px dashed var(--border-strong); border-radius: var(--radius); font-weight: 500; gap: 6px; }

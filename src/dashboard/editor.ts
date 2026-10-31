@@ -93,9 +93,11 @@ export const SiteEditor = (() => {
     im.onerror = () => reject(new Error("That file isn't an image we can use. Try a JPG, PNG or WebP."));
     im.src = URL.createObjectURL(file);
   });
+  // Where photos go: the store's own uploads, or the template builder's (set by mount)
+  let uploadUrl = "/api/upload";
   const upload = async (file) => {
     const blob = await compress(file);
-    const res = await fetch("/api/upload", { method: "POST", headers: { "Content-Type": blob.type }, body: blob });
+    const res = await fetch(uploadUrl, { method: "POST", headers: { "Content-Type": blob.type }, body: blob });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "Couldn't upload the image. Check your connection.");
     return data.url;
@@ -103,6 +105,7 @@ export const SiteEditor = (() => {
 
   const mount = (root, d) => {
     const { store, icon, toast, confirm, dialog } = d;
+    uploadUrl = d.uploadUrl || "/api/upload";
     const ctx = () => ({ site: store.site, products: store.products });
     K.ensure(store.site, store.pages, ctx());
 
@@ -201,7 +204,7 @@ export const SiteEditor = (() => {
       $("#ed-page-name").textContent = "Pages · " + page().title;
       $("#ed-undo").disabled = !undoStack.length && !recordTimer;
       $("#ed-redo").disabled = !redoStack.length;
-      $("#ed-publish-label").textContent = store.published ? "Publish changes" : "Publish website";
+      $("#ed-publish-label").textContent = d.publishLabel ? d.publishLabel() : store.published ? "Publish changes" : "Publish website";
       $(".ed").classList.toggle("panel-open", state.panelOpen);
     };
 
@@ -229,7 +232,8 @@ export const SiteEditor = (() => {
     const scrollToSelected = () => {
       if (!frameReady || !state.selected) return;
       const el = frame.contentDocument.querySelector(`[data-sid="${CSS.escape(state.selected)}"]`);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Scroll only the preview, never the dashboard around it
+      if (el) frame.contentWindow.scrollTo({ top: el.getBoundingClientRect().top + frame.contentWindow.scrollY, behavior: "smooth" });
     };
 
     // ---------- Panel ----------
@@ -246,6 +250,10 @@ export const SiteEditor = (() => {
       if (type === "number") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><input class="input" type="number" id="${id}" min="${o.min ?? 0}" max="${o.max ?? 99}" ${bind} data-num value="${esc(val)}"></div>`;
       if (type === "toggle") return `<div class="ed-toggle"><span>${esc(label)}</span><label class="switch"><input type="checkbox" ${bind} data-rerender ${val ? "checked" : ""} aria-label="${esc(label)}"><i></i></label></div>`;
       if (type === "select") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><select class="select" id="${id}" ${bind} data-rerender>${o.options.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(val ?? "") ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div>`;
+      if (type === "color") {
+        const c = /^#[0-9a-f]{6}$/i.test(String(val || "")) ? val : "";
+        return `<div class="ed-field"><label for="${id}">${esc(label)}</label><div class="ed-color"><input type="color" id="${id}" ${bind} value="${esc(c || o.fallback || "#ffffff")}"><span>${esc(c || "Website default")}</span>${c ? `<button type="button" class="btn btn-sm" data-clear ${bind}>Reset</button>` : ""}</div></div>`;
+      }
       if (type === "icon") return `<div class="ed-field"><label for="${id}">${esc(label)}</label><select class="select" id="${id}" ${bind}>${K.FEATURE_ICONS.map((n) => `<option ${n === val ? "selected" : ""}>${n}</option>`).join("")}</select></div>`;
       if (type === "link") return `<div class="ed-field"><label>${esc(label)}</label><div class="ed-link"><input class="input" ${bind.replace(path, path + ".text")} value="${esc(val?.text)}" placeholder="Button text" aria-label="${esc(label)} text"><input class="input" ${bind.replace(path, path + ".link")} value="${esc(val?.link)}" placeholder="Link, e.g. /shop" aria-label="${esc(label)} link"></div></div>`;
       if (type === "image") {
@@ -290,13 +298,13 @@ export const SiteEditor = (() => {
 
     const outline = () => {
       const p = page();
-      const row = (id, label, ico, s) => `<div class="ed-row ${state.selected === id ? "on" : ""}" data-select="${id}">
+      const row = (id, label, ico, s) => `<div class="ed-row ${state.selected === id ? "on" : ""}" data-select="${id}"${s && s.type !== "checkout" ? ` draggable="true" data-drag="${s.id}" title="Drag to move"` : ""}>${s && s.type !== "checkout" ? `<span class="ed-grip" aria-hidden="true">${icon("grip")}</span>` : ""}
         <span class="ed-row-ico">${icon(ico)}</span><span class="ed-row-label">${esc(label)}</span>
         ${s && s.type !== "checkout" ? `<span class="ed-row-tools"><button type="button" data-row="hide" data-id="${s.id}" aria-label="${s.hidden ? "Show" : "Hide"} section" title="${s.hidden ? "Show" : "Hide"}">${icon(s.hidden ? "eyeOff" : "eye")}</button></span>` : ""}
       </div>`;
       return `<div class="ed-sub">Sections on ${esc(p.title)}</div>
         <div class="ed-outline">${row("header", "Header", "layout")}${p.sections.map((s) => row(s.id, (K.TYPES[s.type] || {}).label || s.type, (K.TYPES[s.type] || {}).icon || "layout", s)).join("")}${row("footer", "Footer", "layout")}</div>
-        <p class="ed-note">To add a section, point at the line between two sections on your website and click the green <b>+</b>.</p>`;
+        <p class="ed-note">Drag sections in this list to change their order. To add a section, point at the line between two sections on your website and click the green <b>+</b>.</p>`;
     };
 
     const elements = (t) => {
@@ -314,9 +322,20 @@ export const SiteEditor = (() => {
         <div class="ed-chips">${Object.entries(K.BLOCKS).map(([k, v]) => `<button type="button" class="btn btn-sm" data-add-block="${k}">${icon("plus")}${v}</button>`).join("")}</div>`;
     };
 
+    const styleGroup = (t) => {
+      const st = t.style || {};
+      const fixed = t.type === "header" || t.type === "footer";
+      return `<div class="ed-sub">Style</div>
+        ${field(["color", "bg", "Background"], st, "style")}${field(["color", "text", "Text color", { fallback: "#111111" }], st, "style")}
+        ${fixed || t.type === "checkout" ? "" : seg("style", "padding", "Space above and below", [["s", "Small"], ["m", "Medium"], ["l", "Large"]], st.padding || "m")}
+        ${fixed || t.type === "checkout" ? "" : seg("style", "align", "Text alignment", [["left", "Left"], ["center", "Center"]], st.align || "left")}
+        ${t.type === "checkout" ? "" : `<div class="ed-sub">Show on</div>
+        <p class="ed-note">Turn a screen off to hide this ${fixed ? "part" : "section"} there, e.g. a big banner only on computers.</p>
+        <div class="ed-show">${[["hideDesktop", "Desktop", "monitor"], ["hideTablet", "Tablet", "tablet"], ["hidePhone", "Phone", "phone"]].map(([k, l, ic]) => `<label class="ed-show-item${st[k] ? "" : " on"}"><input type="checkbox" data-scope="style" data-path="${k}" data-invert data-rerender ${st[k] ? "" : "checked"}>${icon(ic)}<span>${l}</span></label>`).join("")}</div>`}`;
+    };
     const contentTab = (t) => {
       if (!t) return outline();
-      return `${(STYLE[t.type] || []).map((f) => field(f, t.style, "style")).join("")}${(CONTENT[t.type] || []).map((f) => field(f, t.content, "content")).join("")}${elements(t)}`;
+      return `${(STYLE[t.type] || []).map((f) => field(f, t.style, "style")).join("")}${(CONTENT[t.type] || []).map((f) => field(f, t.content, "content")).join("")}${elements(t)}${styleGroup(t)}`;
     };
     const pagesPanel = () => `<div class="ed-panel-head"><b>Pages</b><button class="ed-icon-btn" data-close aria-label="Close">${icon("x")}</button></div>
       <div class="ed-panel-body"><div class="ed-outline">${store.pages.map((p) => `<div class="ed-row ${p.id === state.pageId ? "on" : ""}" data-page="${p.id}"><span class="ed-row-ico">${icon("pages")}</span><span class="ed-row-label">${esc(p.title)}<small>/${esc(p.slug)}</small></span>${p.inNav ? "" : '<span class="tag">Not in menu</span>'}</div>`).join("")}</div>
@@ -425,13 +444,45 @@ export const SiteEditor = (() => {
     const write = (el) => {
       const obj = scopeObj(el.dataset.scope);
       if (!obj) return;
-      let v = el.type === "checkbox" ? el.checked : el.value;
+      let v = el.type === "checkbox" ? (el.dataset.invert !== undefined ? !el.checked : el.checked) : el.value;
       if (el.dataset.num !== undefined) { const n = Number(v); v = Number.isFinite(n) ? Math.min(Number(el.max) || n, Math.max(Number(el.min) || 0, n)) : 0; }
       set(obj, el.dataset.path, v);
       if (el.dataset.scope === "page" && el.dataset.path === "title") $("#ed-page-name").textContent = "Pages · " + page().title;
       changed({ panel: el.dataset.rerender !== undefined });
     };
     panel.addEventListener("input", (e) => { const el = e.target; if (el.dataset.scope && el.type !== "file" && el.type !== "checkbox") write(el); });
+    // Drag a section in the list onto another to move it there (before it, or after it on its lower half)
+    let dragId = null;
+    const clearDrop = () => panel.querySelectorAll(".drop-before, .drop-after").forEach((r) => r.classList.remove("drop-before", "drop-after"));
+    panel.addEventListener("dragstart", (e) => {
+      const r = e.target.closest("[data-drag]");
+      if (!r) return;
+      dragId = r.dataset.drag; r.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId);
+    });
+    panel.addEventListener("dragover", (e) => {
+      const r = e.target.closest("[data-drag]");
+      if (!dragId || !r) return;
+      e.preventDefault();
+      const after = e.clientY > r.getBoundingClientRect().top + r.offsetHeight / 2;
+      clearDrop(); if (r.dataset.drag !== dragId) r.classList.add(after ? "drop-after" : "drop-before");
+    });
+    panel.addEventListener("drop", (e) => {
+      const r = e.target.closest("[data-drag]");
+      if (!dragId || !r) return;
+      e.preventDefault();
+      const list = page().sections, from = list.findIndex((x) => x.id === dragId);
+      const after = r.classList.contains("drop-after");
+      clearDrop();
+      if (from < 0 || r.dataset.drag === dragId) return;
+      const [moved] = list.splice(from, 1);
+      let to = list.findIndex((x) => x.id === r.dataset.drag) + (after ? 1 : 0);
+      // The Checkout section stays first on its page
+      if (list[0] && list[0].type === "checkout") to = Math.max(1, to);
+      list.splice(to, 0, moved);
+      dragId = null; changed({ panel: true }); toast("Section moved");
+    });
+    panel.addEventListener("dragend", () => { dragId = null; clearDrop(); panel.querySelectorAll(".dragging").forEach((r) => r.classList.remove("dragging")); });
     panel.addEventListener("change", async (e) => {
       const el = e.target;
       if (el.type === "checkbox" && el.dataset.scope) { write(el); return; }
