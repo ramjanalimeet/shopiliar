@@ -21,7 +21,7 @@ export default function DashboardShell({ demo = false }: { demo?: boolean }) {
       )}
       <div className="app">
         <aside className="side" id="dashboard-nav" aria-label="Dashboard navigation">
-          <a className="brand" href="/"><img className="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="" />Shopilier</a>
+          <a className="brand" href="#/home" title="Dashboard home"><img className="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="" />Shopilier</a>
           <nav className="side-nav">
             {NAV.map(([route, icon, label]) => (
               <a key={route} className="nav-item" data-route={route} href={`#/${route}`}><Icon name={icon} />{label}{route === "orders" && <span className="count" data-badge />}</a>
