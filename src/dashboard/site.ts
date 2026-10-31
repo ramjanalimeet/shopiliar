@@ -794,6 +794,7 @@ export const SiteKit = (() => {
       ${site.seo && safeImg(site.seo.image) ? `<meta property="og:image" content="${esc((site.seo.image.startsWith("/") ? origin : "") + site.seo.image)}">` : ""}
       <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
       <link rel="stylesheet" href="${FONT_LINK}"><link rel="stylesheet" href="${origin}/assets/site.css">
+      ${opts.thumb ? "<style>html{scrollbar-width:none}html::-webkit-scrollbar{display:none}</style>" : opts.ed ? "<style>html{scrollbar-width:thin;scrollbar-color:rgba(16,24,40,.2) transparent}</style>" : ""}
       </head><body${opts.ed ? ' class="editing"' : ""}>${renderBody(site, pages, opts)}</body></html>`;
   };
 
