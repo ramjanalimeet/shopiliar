@@ -408,3 +408,11 @@ svg { display: block; }
 .as-yearly { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13.5px; }
 .as-go { width: 100%; justify-content: center; margin-top: 6px; }
 @media (max-width: 560px) { .as-plans { grid-template-columns: 1fr; } }
+
+/* Scrollbars: thin, and only shown while the pointer is over the part that scrolls */
+.store-admin, .store-admin * { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.store-admin :hover { scrollbar-color: rgba(16, 24, 40, .22) transparent; }
+.store-admin ::-webkit-scrollbar { width: 8px; height: 8px; }
+.store-admin ::-webkit-scrollbar-thumb { border-radius: 8px; background: transparent; }
+.store-admin :hover::-webkit-scrollbar-thumb { background: rgba(16, 24, 40, .22); }
+.store-admin ::-webkit-scrollbar-track { background: transparent; }

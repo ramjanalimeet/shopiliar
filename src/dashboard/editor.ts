@@ -406,7 +406,7 @@ export const SiteEditor = (() => {
           <nav class="lib-cats" aria-label="Section types"><button type="button" class="on" data-cat="">All sections</button>${types.map((t) => `<button type="button" data-cat="${t}">${icon(K.TYPES[t].icon)}${esc(K.TYPES[t].label)}</button>`).join("")}</nav>
           <div class="lib-grid">${items.map((it, i) => `
             <button type="button" class="lib-card" data-pick="${i}" data-type="${it.type}">
-              <span class="lib-prev"><iframe tabindex="-1" aria-hidden="true" loading="lazy" srcdoc="${esc(K.documentHTML(store.site, store.pages, { page: { sections: [it.preview] }, products: store.products, bare: true }))}"></iframe><span class="lib-add">${icon("plus")}Add section</span></span>
+              <span class="lib-prev"><iframe tabindex="-1" aria-hidden="true" loading="lazy" srcdoc="${esc(K.documentHTML(store.site, store.pages, { thumb: true, page: { sections: [it.preview] }, products: store.products, bare: true }))}"></iframe><span class="lib-add">${icon("plus")}Add section</span></span>
               <span class="lib-name"><b>${esc(K.TYPES[it.type].label)}</b><span>${esc(it.name)}</span></span>
             </button>`).join("")}</div>
         </div>

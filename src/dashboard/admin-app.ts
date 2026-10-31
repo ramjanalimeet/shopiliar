@@ -657,7 +657,7 @@ export const start = async () => {
   };
   let previewObserver = null;
   const devicePreviews = (site, pages) => {
-    const html = esc(SiteKit.documentHTML(site, pages, { products: store.products }));
+    const html = esc(SiteKit.documentHTML(site, pages, { thumb: true, products: store.products }));
     return `<div class="theme-stage">
       <div class="th-desktop"><div class="th-bar"><i></i><i></i><i></i><span>${esc(siteUrl())}</span></div><div class="th-screen" data-w="1280"><iframe class="th-canvas" style="width:1280px" srcdoc="${html}" title="Desktop preview" tabindex="-1" loading="lazy"></iframe></div></div>
       <div class="th-phone"><div class="th-screen" data-w="390"><iframe class="th-canvas" style="width:390px" srcdoc="${html}" title="Phone preview" tabindex="-1" loading="lazy"></iframe></div></div>
@@ -1139,7 +1139,7 @@ export const start = async () => {
         const rows = menuRows(), hasDd = rows.some((r) => r.child);
         let topN = 0;
         // The real header of the website, so the preview matches it exactly (with the first dropdown open)
-        const doc = (o = {}) => esc(SiteKit.documentHTML(store.site, store.pages, { page: store.pages[0], products: store.products, headerOnly: true, ddOpenFirst: hasDd, ...o }));
+        const doc = (o = {}) => esc(SiteKit.documentHTML(store.site, store.pages, { thumb: true, page: store.pages[0], products: store.products, headerOnly: true, ddOpenFirst: hasDd, ...o }));
         const ddStyle = store.site.header.dropdown || "simple";
         const h = store.site.header, on = [h.search, h.account, h.cart, ...Object.values(h.buttons || {}), h.cta && h.cta.show].filter(Boolean).length;
         const tabs = [["menu", "menu", "Menu", rows.length], ["banner", "megaphone", "Banner", h.announcement.show ? "On" : "Off"], ["buttons", "cart", "Buttons", on]];
@@ -1235,7 +1235,7 @@ export const start = async () => {
         const nx = view.querySelector(".nv-panel");
         const hset = (k, val) => { const ks = k.split("."), last = ks.pop(); ks.reduce((o, x) => (o[x] ??= {}), store.site.header)[last] = val; };
         let nt = 0;
-        const refresh = () => view.navPreview(SiteKit.documentHTML(store.site, store.pages, { page: store.pages[0], products: store.products, headerOnly: true, ddOpenFirst: menuRows().some((r) => r.child) }));
+        const refresh = () => view.navPreview(SiteKit.documentHTML(store.site, store.pages, { thumb: true, page: store.pages[0], products: store.products, headerOnly: true, ddOpenFirst: menuRows().some((r) => r.child) }));
         nx.addEventListener("input", (e) => {
           const el = e.target;
           if (el.dataset.annCustom !== undefined) { hset("announcement.bg", el.value); hset("announcement.color", ""); }
@@ -1381,7 +1381,7 @@ export const start = async () => {
                     ${seg("lang", "Website language", SiteKit.LANGS, s.lang || "en")}
                     <span class="pf-hint" style="margin-top:-6px;display:block">The words your website shows on its own: Add to cart, the cart, prices and checkout totals. Your own text stays as you wrote it.</span>
                   </div>
-                  <div class="pf-preview"><span class="pf-preview-label">Live preview</span><div class="th-screen" data-w="1280"><iframe class="th-canvas" style="width:1280px" id="pf-frame" srcdoc="${esc(SiteKit.documentHTML(s, store.pages, { page: store.pages[0], products: store.products }))}" title="Website preview" tabindex="-1"></iframe></div></div>
+                  <div class="pf-preview"><span class="pf-preview-label">Live preview</span><div class="th-screen" data-w="1280"><iframe class="th-canvas" style="width:1280px" id="pf-frame" srcdoc="${esc(SiteKit.documentHTML(s, store.pages, { thumb: true, page: store.pages[0], products: store.products }))}" title="Website preview" tabindex="-1"></iframe></div></div>
                 </div>
               </div>
               <div class="card pf-status ${store.published ? "live" : ""}">
@@ -1407,7 +1407,7 @@ export const start = async () => {
           clearTimeout(t); t = setTimeout(() => { saved.classList.remove("saving"); saved.lastChild.textContent = "All changes saved"; }, 900);
           if (rerender) { const y = document.querySelector(".scroll").scrollTop; go(); document.querySelector(".scroll").scrollTop = y; return; }
           // Typing: refresh the live preview after a short pause
-          clearTimeout(pt); pt = setTimeout(() => { const fr = view.querySelector("#pf-frame"); if (fr) fr.srcdoc = SiteKit.documentHTML(store.site, store.pages, { page: store.pages[0], products: store.products }); }, 500);
+          clearTimeout(pt); pt = setTimeout(() => { const fr = view.querySelector("#pf-frame"); if (fr) fr.srcdoc = SiteKit.documentHTML(store.site, store.pages, { thumb: true, page: store.pages[0], products: store.products }); }, 500);
         };
         form.addEventListener("input", (e) => {
           const el = e.target, k = el.dataset.k;
@@ -1468,7 +1468,7 @@ export const start = async () => {
             const count = (p.sections || []).filter((x) => !x.hidden).length;
             return `<article class="pg-card">
               <a class="pg-thumb th-screen" data-w="1280" href="#/website?page=${p.id}" aria-label="Edit ${esc(p.title)}" tabindex="-1">
-                <iframe class="th-canvas" style="width:1280px" srcdoc="${esc(SiteKit.documentHTML(store.site, store.pages, { page: p, products: store.products }))}" title="${esc(p.title)} preview" tabindex="-1" loading="lazy"></iframe>
+                <iframe class="th-canvas" style="width:1280px" srcdoc="${esc(SiteKit.documentHTML(store.site, store.pages, { thumb: true, page: p, products: store.products }))}" title="${esc(p.title)} preview" tabindex="-1" loading="lazy"></iframe>
               </a>
               <div class="pg-body">
                 <div class="pg-name"><b>${esc(p.title)}</b>${p.system === "checkout" ? '<span class="tag">Checkout</span>' : p.locked ? '<span class="tag green">Home page</span>' : ""}</div>
