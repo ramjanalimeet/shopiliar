@@ -39,5 +39,5 @@ export const POST = api(async (request, env) => {
     if (String(err).includes("UNIQUE")) return json({ error: "An account with this email already exists. Please sign in." }, 409);
     throw err;
   }
-  return withSession(env, user.id, body.remember !== false, json({ account: publicAccount({ ...user, password_hash: "set" }) }, 201));
+  return withSession(env, user.id, body.remember !== false, json({ account: publicAccount({ ...user, password_hash: "set" }) }, 201), request);
 }, { limit: true });

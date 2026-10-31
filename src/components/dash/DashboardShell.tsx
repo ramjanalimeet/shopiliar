@@ -21,7 +21,14 @@ export default function DashboardShell({ demo = false }: { demo?: boolean }) {
       )}
       <div className="app">
         <aside className="side" id="dashboard-nav" aria-label="Dashboard navigation">
-          <a className="brand" href="#/home" title="Dashboard home"><img className="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="" />Shopilier</a>
+          <a className="brand" href="#/home" title="Dashboard home"><img className="brand-mark" src="/assets/logo.webp" width="34" height="34" alt="" />Shopilier<small id="brand-plan" title="Your plan" /></a>
+          {/* Store switcher: the stores signed in on this device (filled by the dashboard) */}
+          <div className="acct">
+            <button className="acct-btn" type="button" id="acct-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="acct-menu">
+              <span className="acct-ava" id="acct-ava" /><span className="acct-text"><b id="acct-name" /><small id="acct-sub" /></span><Icon name="chevronDown" />
+            </button>
+            <div className="acct-menu" id="acct-menu" role="menu" hidden />
+          </div>
           <nav className="side-nav">
             {NAV.map(([route, icon, label]) => (
               <a key={route} className="nav-item" data-route={route} href={`#/${route}`}><Icon name={icon} />{label}{route === "orders" && <span className="count" data-badge />}</a>

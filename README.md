@@ -92,6 +92,9 @@ Accounts, sessions and each user's store live in D1 (tables in `schema.sql`). Ro
 - `POST /api/signup`, `POST /api/signin`, `POST /api/signout` — passwords hashed with PBKDF2, session in an HttpOnly
   cookie, 10 attempts/min per IP (the `AUTH_LIMITER` rate limit binding)
 - `GET /api/me` — the signed-in account and its store
+- `GET /api/accounts`, `POST /api/accounts/switch` — the store switcher. Each store is its own account with its own plan.
+  Signing in or signing up while signed in keeps the earlier store on this device (its session token in the HttpOnly
+  `shopiliar_accounts` cookie, up to 5), and signing out of one store moves to the next one still signed in.
 - `PUT /api/store` — saves the store dashboard and account details
 - `POST /api/password` — change (or set) the password; signs out every other device
 - `GET /api/messages`, `POST /api/messages`, `GET|POST /api/messages/<id>` — support conversations

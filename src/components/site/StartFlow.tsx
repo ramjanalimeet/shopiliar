@@ -60,7 +60,9 @@ export default function StartFlow() {
   useEffect(() => {
     const st = initial();
     setS(st);
-    // Already signed in: straight to the dashboard (applying a template picked on the Templates page)
+    // Already signed in: straight to the dashboard (applying a template picked on the Templates page),
+    // unless they're adding another store from the dashboard's store switcher (?add=1)
+    if (new URLSearchParams(location.search).has("add")) return;
     fetch("/api/me").then((r) => { if (r.ok) location.replace("/admin" + (st.presetTemplate ? "?template=" + st.presetTemplate : "")); }).catch(() => {});
   }, []);
 

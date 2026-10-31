@@ -14,5 +14,5 @@ export const POST = api(async (request, env) => {
   if (!row || !safeEqual(hash, row.password_hash)) return json({ error: "Wrong email or password." }, 401);
 
   await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND expires_at < ?").bind(row.id, Date.now()).run();
-  return withSession(env, row.id, body.remember === true, json({ account: publicAccount(row) }));
+  return withSession(env, row.id, body.remember === true, json({ account: publicAccount(row) }), request);
 }, { limit: true });
