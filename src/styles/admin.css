@@ -249,13 +249,13 @@
 .profile-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
 
 /* ---------- Desktop scale ----------
-   Laptops and desktops show both dashboards at 80% (the same as 80% browser zoom),
-   like the public website. Zoom shrinks vh units too, so full-height parts use 125vh. */
+   Laptops and desktops show both dashboards at 75% (the same as 75% browser zoom).
+   Zoom shrinks vh units too, so full-height parts use 133.33vh (100 ÷ 0.75). */
 @media (min-width: 1024px) {
-  .store-admin { zoom: .8; }
-  .store-admin .app { height: 125vh; }
+  .store-admin { zoom: .75; }
+  .store-admin .app { height: 133.33vh; }
   .store-admin .page { max-width: 1680px; }
-  .store-admin .dialog.settings { height: min(680px, calc(125vh - 60px)); }
+  .store-admin .dialog.settings { height: min(720px, calc(133.33vh - 60px)); }
 }
 
 /* ---------- Messages inbox (both dashboards) ---------- */
@@ -303,7 +303,7 @@
 .thread-reply textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .thread-reply .btn { height: 44px; }
 .thread-note { padding: 0 14px 12px; background: #fff; font-size: 12px; color: var(--muted); }
-@media (min-width: 1024px) { .inbox { height: calc(125vh - 260px); } }
+@media (min-width: 1024px) { .inbox { height: calc(133.33vh - 260px); } }
 @media (max-width: 900px) {
   .inbox { grid-template-columns: 1fr; height: calc(100vh - 210px); }
   .inbox .inbox-thread { display: none; }
@@ -923,7 +923,7 @@ body.editor-open .chat-fab, body.editor-open .chat-panel { display: none; }
 .demo-bar .btn-cta:hover { background: #eef8e7; }
 .demo-bar .btn .i { width: 15px; height: 15px; }
 .store-admin.demo .app { height: calc(100vh - 46px); }
-@media (min-width: 1024px) { .store-admin.demo .app { height: calc(125vh - 46px); } }
+@media (min-width: 1024px) { .store-admin.demo .app { height: calc(133.33vh - 46px); } }
 @media (max-width: 700px) {
   .demo-bar { padding: 6px 12px; gap: 8px; font-size: 12.5px; }
   .demo-bar .demo-long { display: none; }
