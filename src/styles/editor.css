@@ -163,3 +163,29 @@ body.editor-open .toast { z-index: 310; }
   .lib-cats button { flex: none; }
   .lib-grid { grid-template-columns: 1fr; padding: 14px; }
 }
+
+/* Style group: color fields and which screens show a section */
+.ed-color { display: flex; align-items: center; gap: 10px; }
+.ed-color input[type="color"] { width: 42px; height: 34px; padding: 2px; border: 1px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; }
+.ed-color span { flex: 1; font-size: 13px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ed-show { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.ed-show-item { display: grid; justify-items: center; gap: 4px; padding: 10px 6px; border: 1.5px solid var(--border); border-radius: 10px; color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.ed-show-item input { position: absolute; opacity: 0; pointer-events: none; }
+.ed-show-item .i { width: 20px; height: 20px; }
+.ed-show-item.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.ed-show-item:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Drag sections in the list to reorder them */
+.ed-row[draggable="true"] { cursor: grab; }
+.ed-grip { display: grid; place-items: center; width: 16px; margin-right: -4px; color: var(--muted); opacity: .55; }
+.ed-grip .i { width: 14px; height: 14px; }
+.ed-row.dragging { opacity: .45; }
+.ed-row.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.ed-row.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+
+/* Master dashboard template builder: a bar naming the template above the editor */
+.tb-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--border); background: #fff; }
+.tb-bar b { font-size: 15px; }
+.tb-bar [data-tb-reset] { margin-left: auto; }
+.tb-bar [hidden] { display: none; }
+body.editor-open .ed-root:has(> .tb-bar) { flex-direction: column; }
+.ed-root > .tb-bar ~ .ed { flex: 1; min-height: 0; }

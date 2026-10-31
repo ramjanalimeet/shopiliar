@@ -101,7 +101,12 @@ Accounts, sessions and each user's store live in D1 (tables in `schema.sql`). Ro
 - `GET /api/auth/google`, `GET /api/auth/google/callback` — "Continue with Google". Create an OAuth client
   (Web application) in Google Cloud with the redirect URI `https://<your site>/api/auth/google/callback`, then run
   `npx wrangler secret put GOOGLE_CLIENT_ID` and `npx wrangler secret put GOOGLE_CLIENT_SECRET`
-- `/master-admin/api/users`, `/master-admin/api/conversations…` — the master dashboard's API. Cloudflare Access
+- `/master-admin/api/users` (list), `/master-admin/api/users/<id>` (PATCH edits a user; DELETE removes the account and
+  everything in it, and needs the business name sent as `confirm`), `/master-admin/api/settings` (the Settings popup:
+  website details, staff, payment details, the sign-up and maintenance switches), `/master-admin/api/templates/<id>/design`
+  (the template builder) and `/master-admin/api/upload` (its photos) — the master dashboard's API. `GET /api/platform` and
+  `GET /api/templates/<id>/design` are the public reads: the footer and Contact page use the first, new stores the second.
+- `/master-admin/api/conversations…` — support messages in the master dashboard. Cloudflare Access
   guards `/master-admin`, and these handlers verify the signed Access token (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` in
   `wrangler.jsonc`). Locally, `ACCESS_DEV_BYPASS=1` in `.dev.vars` lets you open it without Access.
 

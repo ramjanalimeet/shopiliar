@@ -22,9 +22,21 @@ export const start = async () => {
     return;
   }
   const account = me.account;
+  // A notice from Shopilier (maintenance), set in the master dashboard
+  if (me.notice) {
+    const bar = document.createElement("div");
+    bar.className = "platform-notice"; bar.setAttribute("role", "status");
+    bar.innerHTML = `${icon("info")}<span>${esc(me.notice)}</span>`;
+    document.querySelector(".main")?.prepend(bar);
+  }
   const catalog = (load("shopiliar.master", null) || {}).templates || Dash.TEMPLATES();
   const findTemplate = (id) => catalog.find((t) => t.id === id) || catalog[0];
 
+  // A design made in the master dashboard's template builder, for a brand-new store on that template
+  let design = null;
+  if (!me.store) {
+    try { const r = await fetch("/api/templates/" + encodeURIComponent(account.template || "") + "/design"); if (r.ok) design = await r.json(); } catch (e) { /* use the built-in design */ }
+  }
   const seedStore = () => {
     const t = findTemplate(account.template);
     // A template with its own sample products (in its language) uses those in the demo store
@@ -57,19 +69,21 @@ export const start = async () => {
       };
     });
     // Templates with a starter website (pages, sections, language) start from it
-    const pages = SiteKit.starterPages(t.id) || [
+    // The design's sample name (e.g. in "Why <name>?") becomes this store's name
+    const renamed = (x) => { const from = JSON.stringify(String(design.site.name || "")).slice(1, -1), to = JSON.stringify(account.business || "My Store").slice(1, -1); const s = JSON.stringify(x); return JSON.parse(from ? s.split(from).join(to) : s); };
+    const pages = design ? renamed(design.pages) : SiteKit.starterPages(t.id) || [
       { id: uid("pg"), title: "Home", slug: "", inNav: true, locked: true },
       { id: uid("pg"), title: "Shop", slug: "shop", inNav: true },
       { id: uid("pg"), title: "About", slug: "about", inNav: true },
       { id: uid("pg"), title: "Contact", slug: "contact", inNav: true },
     ];
-    const site = SiteKit.applyStarter({
+    const site = design ? { ...renamed(design.site), name: account.business || "My Store", template: t.id, email: account.email } : SiteKit.applyStarter({
         name: account.business || "My Store", template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, font: "modern",
         headline: t.headline, sub: t.sub, cta: t.cta, showProducts: true, showAbout: true, showContact: true,
         about: "We make simple, beautiful things for everyday life — designed and delivered across Bangladesh.",
         phone: "01700-000000", email: account.email, address: "Dhaka, Bangladesh",
       }, t.id);
-    if (site.lang === "bn") site.address = "ঢাকা, বাংলাদেশ";
+    if (site.lang === "bn" && !design) site.address = "ঢাকা, বাংলাদেশ";
     return {
       site,
       published: false, publishedAt: null,

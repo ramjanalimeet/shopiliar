@@ -64,3 +64,20 @@ CREATE TABLE IF NOT EXISTS media (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS media_user ON media(user_id);
+
+-- Shopilier's own settings (key "settings") and template designs from the master dashboard's builder
+-- (key "design:<template id>"). Created on first use too, so no manual step is needed.
+CREATE TABLE IF NOT EXISTS platform (
+  key TEXT PRIMARY KEY,
+  data TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- Photos uploaded in the template builder, served at /media/t<id>. Created on first upload too.
+CREATE TABLE IF NOT EXISTS template_media (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,
+  data BLOB NOT NULL,
+  size INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);

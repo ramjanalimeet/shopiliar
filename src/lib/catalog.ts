@@ -38,4 +38,5 @@ export const GOOGLE_ERRORS: Record<string, string> = {
   google: "Google sign-in didn't finish. Please try again.",
   google_email: "Your Google email isn't verified yet.",
   google_off: "Google sign-in isn't set up yet. Please use your email and password.",
+  signups_off: "New sign-ups are paused for now. Please try again later.",
 };

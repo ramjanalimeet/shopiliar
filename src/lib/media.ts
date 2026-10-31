@@ -3,6 +3,14 @@ export const MEDIA_TYPES: Record<string, string> = { "image/webp": "webp", "imag
 export const MAX_IMAGE_BYTES = 1_500_000;
 export const MAX_IMAGES_PER_USER = 300;
 export const MEDIA_ID = /^[a-f0-9]{32}$/;
+// Photos uploaded in the master dashboard's template builder: "t" + 32 hex characters, in their own table
+export const TEMPLATE_MEDIA_ID = /^t[a-f0-9]{32}$/;
+let templateMediaReady = false;
+export async function ensureTemplateMedia(env: CloudflareEnv) {
+  if (templateMediaReady) return;
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS template_media (id TEXT PRIMARY KEY, type TEXT NOT NULL, data BLOB NOT NULL, size INTEGER NOT NULL, created_at TEXT NOT NULL)").run();
+  templateMediaReady = true;
+}
 
 // The media table is created on first use, so no manual database step is needed
 let mediaReady = false;

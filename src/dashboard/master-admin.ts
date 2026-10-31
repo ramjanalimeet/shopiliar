@@ -1,6 +1,8 @@
 // @ts-nocheck — ported as-is from the original dashboard script; types can be tightened over time.
 import { Dash } from "./dash";
 import { ShopilierInbox } from "./inbox";
+import { SiteEditor } from "./editor";
+import { SiteKit } from "./site";
 
 // Shopilier master dashboard (/master-admin): users, templates, payments and plans. start() runs once the shell is on the page.
 export const start = () => {
@@ -13,7 +15,6 @@ export const start = () => {
   const DATA_VERSION = 2;
   const fresh = () => ({
     v: DATA_VERSION, plans: Dash.PLANS(), templates: Dash.TEMPLATES().map((t) => ({ ...t, uses: 0 })), users: [], payments: [], activity: [],
-    settings: { company: "Shopilier", supportEmail: "support@shopilier.com", supportPhone: "", signups: true, maintenance: false },
   });
   const db = load(KEY, fresh);
   // Plans were restructured (the Free plan was retired and the limits changed): data saved by an older version gets the new plans
@@ -96,7 +97,7 @@ export const start = () => {
         const topTpl = [...db.templates].sort((a, b) => b.uses - a.uses).slice(0, 4);
         return `${head("Welcome back, Admin", "Here's how Shopilier is doing.",
           `<label class="range">${icon("calendar")}<select data-action="range" aria-label="Date range">${[7, 30, 90].map((d) => `<option value="${d}"${d === range ? " selected" : ""}>Last ${d} days</option>`).join("")}</select>${icon("chevronDown")}</label>
-           <button class="btn btn-primary" data-action="add-user">${icon("plus")}Add user</button>`)}
+           <a class="btn btn-primary" href="#/users">${icon("customers")}See users</a>`)}
           ${due.length ? `<div class="callout yellow"><span class="ico">${icon("alert")}</span><div><b>${due.length} invoice${due.length > 1 ? "s" : ""} need attention</b> · ${taka(due.reduce((s, p) => s + p.amount, 0))} unpaid</div><a class="btn btn-sm btn-dark" href="#/payments">Review</a></div>` : ""}
           <div class="stats">
             ${stat("Revenue collected", taka(paid(curPay)), "money", "c1", Dash.delta(paid(curPay), paid(prevPay)) + vs)}
@@ -149,7 +150,7 @@ export const start = () => {
         const list = db.users
           .filter((u) => userTab === "All" || (userTab === "suspended" ? u.status === "suspended" : u.plan === userTab))
           .filter((u) => !q || (u.name + u.business + u.email + u.site).toLowerCase().includes(q));
-        return `${head("Users", "Everyone who uses Shopilier. Open a user to change their plan, template or status.", `<button class="btn btn-primary" data-action="add-user">${icon("plus")}Add user</button>`)}
+        return `${head("Users", "Everyone who signed up for Shopilier. Use the ⋯ menu to edit, suspend or delete a user.")}
           <div class="card">
             <div class="card-head"><div class="seg" style="margin-right:auto">${tabs.map((t) => `<button class="${t === userTab ? "on" : ""}" data-action="user-tab" data-tab="${t}">${label(t)}<span>${count(t)}</span></button>`).join("")}</div>
               ${searchBox("user-search", userSearch, "Search users")}</div>
@@ -163,7 +164,7 @@ export const start = () => {
                   <td>${u.status === "active" ? '<span class="tag dot green">Active</span>' : '<span class="tag dot red">Suspended</span>'}</td>
                   <td class="muted">${day(u.joined)}</td>
                   <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(monthly(u))}</td>
-                  <td class="t-actions"><button class="btn btn-sm" data-action="toggle-user" data-id="${u.id}">${u.status === "active" ? "Suspend" : "Activate"}</button><button class="icon-btn" data-action="open-user" data-id="${u.id}" aria-label="Edit ${esc(u.business)}">${icon("edit")}</button><button class="icon-btn danger" data-action="delete-user" data-id="${u.id}" aria-label="Delete ${esc(u.business)}">${icon("trash")}</button></td>
+                  <td class="t-actions"><button class="icon-btn row-more" data-action="user-menu" data-id="${u.id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions for ${esc(u.business)}" title="More actions">${icon("dots")}</button></td>
                 </tr>`).join("") : `<tr><td colspan="7" class="table-empty">No users match.</td></tr>`}</tbody>
             </table></div>
           </div>
@@ -177,7 +178,7 @@ export const start = () => {
         const tabs = ["All", "published", "draft"];
         const label = { All: "All", published: "Published", draft: "Drafts" };
         const list = db.templates.filter((t) => tplTab === "All" || t.status === tplTab);
-        return `${head("Templates", "Add, customize, publish and delete templates. Only published templates can be chosen by users.", `<button class="btn btn-primary" data-action="new-template">${icon("plus")}New template</button>`)}
+        return `${head("Templates", "Design each template's website with the visual builder (Design), change its name and colors (Details), and publish it. New stores start from the saved design.", `<button class="btn btn-primary" data-action="new-template">${icon("plus")}New template</button>`)}
           <div style="margin-bottom:16px"><div class="seg">${tabs.map((t) => `<button class="${t === tplTab ? "on" : ""}" data-action="tpl-tab" data-tab="${t}">${label[t]}<span>${t === "All" ? db.templates.length : db.templates.filter((x) => x.status === t).length}</span></button>`).join("")}</div></div>
           <div class="gallery">${list.map((t) => `
             <div class="g-card">
@@ -187,7 +188,8 @@ export const start = () => {
                 <div class="g-meta">${tag(t.category, "brown")}${tag(t.layout === "center" ? "Centered" : t.layout === "bleed" ? "Full-width" : t.layout === "story" ? "Big headline with slides" : "Side by side", "gray")}</div>
                 <div class="muted small">${esc(t.desc)}</div>
                 <div class="g-actions">
-                  <button class="btn btn-sm" data-action="edit-template" data-id="${t.id}">${icon("edit")}Customize</button>
+                  <a class="btn btn-sm btn-primary" href="#/design?t=${encodeURIComponent(t.id)}">${icon("brush")}Design</a>
+                  <button class="btn btn-sm" data-action="edit-template" data-id="${t.id}">${icon("edit")}Details</button>
                   <button class="btn btn-sm" data-action="toggle-template" data-id="${t.id}">${t.status === "published" ? "Unpublish" : "Publish"}</button>
                   <button class="icon-btn" data-action="duplicate-template" data-id="${t.id}" aria-label="Duplicate ${esc(t.name)}" title="Duplicate">${icon("copy")}</button>
                   <button class="icon-btn danger" data-action="delete-template" data-id="${t.id}" aria-label="Delete ${esc(t.name)}" title="Delete">${icon("trash")}</button>
@@ -258,6 +260,78 @@ export const start = () => {
       }),
     },
 
+    // The template builder: the same visual editor store owners use, on a template's own design.
+    // Designs are saved in the database; new stores on the template start from them.
+    design: {
+      title: "Template builder",
+      render: () => '<div class="ed-root"><p class="muted" style="padding:28px">Opening the template builder…</p></div>',
+      mount: async (view) => {
+        const id = new URLSearchParams(location.hash.split("?")[1] || "").get("t");
+        const t = db.templates.find((x) => x.id === id);
+        if (!t) { location.hash = "#/templates"; return; }
+        let saved = null;
+        try {
+          const r = await fetch(`/master-admin/api/templates/${encodeURIComponent(t.id)}/design`);
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(data.error || "Couldn't load the saved design.");
+          saved = data.design;
+        } catch (err) { toast(err.message); }
+        const root = view.querySelector(".ed-root");
+        if (!root || !root.isConnected) return;
+        root.innerHTML = "";
+        // Sample products to design with: the template's own, or a few placeholders
+        const samples = SiteKit.sampleProducts(t.id);
+        const products = samples.length ? samples : ["Sample product", "Best seller", "New arrival", "On sale"].map((name, i) => ({
+          id: "sample" + (i + 1), name, price: [1200, 1800, 950, 1500][i], compare: i === 3 ? 2000 : 0, stock: 20, status: "active", category: "", color: "#e9ebee", image: "", images: [], options: [],
+        }));
+        const fresh = () => {
+          const site = SiteKit.applyStarter({ name: t.name, template: t.id, layout: t.layout, bg: t.bg, text: t.text, accent: t.accent, headline: t.headline, sub: t.sub, cta: t.cta,
+            phone: "01700-000000", email: "hello@example.com", address: "Dhaka, Bangladesh", social: {} }, t.id);
+          const pages = SiteKit.starterPages(t.id) || [["Home", ""], ["Shop", "shop"], ["About", "about"], ["Contact", "contact"]].map(([title, slug]) => ({ id: uid("pg"), title, slug, inNav: true, ...(slug ? {} : { locked: true }) }));
+          return { site, pages };
+        };
+        const start = saved || fresh();
+        const store = { site: start.site, pages: start.pages, products, published: !!saved, customized: true };
+        let timer = 0, saving = Promise.resolve(), lastSaved = saved ? "Saved" : "";
+        const save = (announce) => {
+          clearTimeout(timer); timer = 0;
+          saving = saving.then(async () => {
+            const res = await fetch(`/master-admin/api/templates/${encodeURIComponent(t.id)}/design`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ site: store.site, pages: store.pages }) });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || "Couldn't save the template.");
+            store.published = true; lastSaved = "Saved";
+            if (announce) { log(`The ${t.name} template design was saved`); persist(); toast(`${t.name} saved. New stores on this template start from this design.`); }
+          }).catch((err) => toast(err.message));
+          return saving;
+        };
+        // Save a moment after each change, and right away when leaving the builder
+        const flush = () => { if (timer) save(false); };
+        window.addEventListener("hashchange", flush, { once: true });
+        window.addEventListener("pagehide", flush, { once: true });
+        SiteEditor.mount(root, {
+          store, account: { plan: "pro", business: t.name, email: "" }, catalog: db.templates, icon, toast, confirm, dialog,
+          touchSite: () => {}, syncPayments: () => {},
+          persist: () => { lastSaved = ""; clearTimeout(timer); timer = setTimeout(() => save(false), 1200); },
+          publish: () => save(true), publishLabel: () => "Save template",
+          canAddPage: () => true, uploadUrl: "/master-admin/api/upload",
+        });
+        // A bar above the editor: which template this is, and a way back to its built-in design
+        const bar = document.createElement("div");
+        bar.className = "tb-bar";
+        bar.innerHTML = `<a class="btn btn-sm" href="#/templates">${icon("arrowLeft")}Templates</a><b>${esc(t.name)}</b><span class="muted small">${saved ? "Editing the saved design" : "Starting from the built-in design"}</span>
+          <button type="button" class="btn btn-sm" data-tb-reset${saved ? "" : " hidden"}>${icon("history")}Back to built-in design</button>`;
+        root.prepend(bar);
+        bar.querySelector("[data-tb-reset]").addEventListener("click", async () => {
+          if (!(await confirm("Go back to the built-in design?", `The saved ${t.name} design is removed. New stores will start from the template's built-in design again.`, "Remove saved design"))) return;
+          clearTimeout(timer); timer = 0;
+          const r = await fetch(`/master-admin/api/templates/${encodeURIComponent(t.id)}/design`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: "{}" });
+          if (!r.ok) { toast("Couldn't remove the saved design."); return; }
+          log(`The ${t.name} template went back to its built-in design`); persist(); toast("Back to the built-in design");
+          go();
+        });
+      },
+    },
+
     activity: {
       title: "Activity",
       render: () => `${head("Activity", "Everything that happened across Shopilier, newest first.")}
@@ -265,40 +339,161 @@ export const start = () => {
       </div>`,
     },
 
-    settings: {
-      title: "Settings",
-      render: () => {
-        const s = db.settings;
-        return `${head("Settings", "Company details and platform switches.")}
-          <div class="callout red"><span class="ico">${icon("shield")}</span><div><b>Protect this page before real data goes in.</b> Anyone who knows the address can open /master-admin. In Cloudflare, open your <b>shopiliar</b> project → <b>Access</b> and allow only your email for <b>/master-admin*</b>. It's free.</div></div>
-          <form id="settings-form">
-            <div class="grid-2">
-              <div class="card"><div class="card-head"><span class="card-title">Company</span></div><div class="card-body">
-                <div class="field"><label for="c-name">Company name</label><input class="input" id="c-name" name="company" value="${esc(s.company)}"></div>
-                <div class="row">
-                  <div class="field"><label for="c-email">Support email</label><input class="input" id="c-email" name="supportEmail" type="email" value="${esc(s.supportEmail)}"></div>
-                  <div class="field"><label for="c-phone">Support phone</label><input class="input" id="c-phone" name="supportPhone" value="${esc(s.supportPhone)}" placeholder="01XXX-XXXXXX"></div>
-                </div>
-              </div></div>
-              <div class="card"><div class="card-head"><span class="card-title">Platform</span></div><div class="card-body" style="padding-top:6px;padding-bottom:6px">
-                <div class="set-row"><span>Allow new sign-ups<small>Turn off to pause new accounts.</small></span><label class="switch"><input type="checkbox" name="signups" ${s.signups ? "checked" : ""} aria-label="Allow new sign-ups"><i></i></label></div>
-                <div class="set-row"><span>Maintenance mode<small>Show a “back soon” message to users.</small></span><label class="switch"><input type="checkbox" name="maintenance" ${s.maintenance ? "checked" : ""} aria-label="Maintenance mode"><i></i></label></div>
-              </div></div>
-            </div>
-            <div style="margin-top:18px;display:flex;justify-content:flex-end"><button class="btn btn-primary" type="submit">Save settings</button></div>
-          </form>
-          <div class="card" style="margin-top:18px;border-color:#fecaca"><div class="card-head"><span class="card-title" style="color:var(--danger)">Danger zone</span></div>
-            <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="flex:1">Reset the templates, plans, payments and settings kept in this browser. Users always come from the database.</span><button class="btn btn-danger" data-action="reset-all">Reset data</button></div></div>
-        </div>`;
-      },
-      mount: (view) => view.querySelector("#settings-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        const d = new FormData(e.target);
-        Object.assign(db.settings, { company: d.get("company").trim(), supportEmail: d.get("supportEmail").trim(), supportPhone: d.get("supportPhone").trim(), signups: e.target.elements.signups.checked, maintenance: e.target.elements.maintenance.checked });
-        persist(); toast("Settings saved");
-      }),
-    },
   };
+
+  // ---------- Users: changes saved to the database ----------
+  const apiUser = async (method, id, body) => {
+    const res = await fetch(`/master-admin/api/users/${encodeURIComponent(id)}`, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Couldn't save. Check your connection.");
+    return data;
+  };
+  // The ⋯ menu on a user's row: a small menu by the button (kept on the page, so the table doesn't clip it)
+  const closeUserMenu = () => {
+    document.querySelectorAll(".row-menu").forEach((m) => m.remove());
+    document.querySelectorAll('[data-action="user-menu"][aria-expanded="true"]').forEach((b) => b.setAttribute("aria-expanded", "false"));
+  };
+  const userMenu = (btn) => {
+    const wasOpen = btn.getAttribute("aria-expanded") === "true";
+    closeUserMenu();
+    if (wasOpen) return;
+    const u = userById(btn.dataset.id);
+    if (!u) return;
+    const m = document.createElement("div");
+    m.className = "v-menu row-menu"; m.setAttribute("role", "menu");
+    m.innerHTML = `<button type="button" role="menuitem" data-do="open-user">${icon("edit")}<span><b>Edit details</b><small>Name, email, plan and template</small></span></button>
+      <button type="button" role="menuitem" data-do="toggle-user">${icon(u.status === "active" ? "lock" : "check")}<span><b>${u.status === "active" ? "Suspend" : "Activate"}</b><small>${u.status === "active" ? "Mark this account as suspended" : "Mark this account as active"}</small></span></button>
+      <button type="button" role="menuitem" class="danger" data-do="delete-user">${icon("trash")}<span><b>Delete user</b><small>Removes the account and website</small></span></button>`;
+    document.body.appendChild(m);
+    const r = btn.getBoundingClientRect(), h = m.offsetHeight;
+    const below = r.bottom + 6 + h < innerHeight - 8;
+    m.style.cssText = `position:fixed;right:${Math.max(8, innerWidth - r.right)}px;top:${below ? r.bottom + 6 : Math.max(8, r.top - 6 - h)}px`;
+    btn.setAttribute("aria-expanded", "true");
+    m.addEventListener("click", (e) => {
+      const it = e.target.closest("[data-do]");
+      if (!it) return;
+      closeUserMenu();
+      actions[it.dataset.do]({ dataset: { id: u.id } });
+    });
+    m.querySelector("button").focus();
+  };
+  document.addEventListener("click", (e) => { if (!e.target.closest(".row-menu, [data-action=\"user-menu\"]")) closeUserMenu(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeUserMenu(); });
+  window.addEventListener("hashchange", closeUserMenu);
+  document.addEventListener("scroll", closeUserMenu, true);
+
+  // ---------- Settings (a popup from the sidebar) ----------
+  // Shopilier's website details, the admin team and payment details, saved in the database (/master-admin/api/settings)
+  const ROLES = [["owner", "Owner"], ["admin", "Admin"], ["support", "Support"], ["finance", "Finance"]];
+  const openSettings = async (tab = "website") => {
+    let s;
+    try {
+      const res = await fetch("/master-admin/api/settings");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't load settings.");
+      s = data.settings;
+    } catch (err) { toast(err.message); return; }
+    const staff = s.staff.map((x) => ({ ...x }));
+    const v = (x) => esc(x ?? "");
+    const field = (name, label, val, o = {}) => `<div class="field"><label for="st-${name}">${label}</label><input class="input" id="st-${name}" name="${name}" value="${v(val)}"${o.type ? ` type="${o.type}"` : ""} placeholder="${v(o.ph)}"${o.max ? ` maxlength="${o.max}"` : ""}></div>`;
+    const sw = (name, label, hint, on) => `<div class="set-row"><span>${label}<small>${hint}</small></span><label class="switch"><input type="checkbox" name="${name}" ${on ? "checked" : ""} aria-label="${label}"><i></i></label></div>`;
+    const pay = (k, label) => { const m = s.payments[k]; return `<div class="st-pay">
+        <div class="set-row"><span><b>${label}</b><small>Customers can pay their plan with ${label}</small></span><label class="switch"><input type="checkbox" name="pay_${k}_on" ${m.on ? "checked" : ""} aria-label="Accept ${label}"><i></i></label></div>
+        <div class="row">${field(`pay_${k}_number`, `${label} number`, m.number, { ph: "01XXX-XXXXXX", max: 30 })}
+          <div class="field"><label for="st-pay_${k}_type">Account type</label><select class="select" id="st-pay_${k}_type" name="pay_${k}_type">${[["merchant", "Merchant"], ["personal", "Personal"], ["agent", "Agent"]].map(([x, l]) => `<option value="${x}"${m.type === x ? " selected" : ""}>${l}</option>`).join("")}</select></div></div></div>`; };
+    const staffRows = () => staff.length ? staff.map((x, i) => `<div class="st-staff">
+        <span class="st-ava">${esc((x.name || "?").slice(0, 1).toUpperCase())}</span>
+        <span class="st-who"><b>${esc(x.name)}</b><small>${esc(x.email)}</small></span>
+        <select class="select" data-staff-role="${i}" aria-label="Role of ${esc(x.name)}">${ROLES.map(([r, l]) => `<option value="${r}"${x.role === r ? " selected" : ""}>${l}</option>`).join("")}</select>
+        <button type="button" class="icon-btn danger" data-staff-rm="${i}" aria-label="Remove ${esc(x.name)}" title="Remove">${icon("trash")}</button></div>`).join("")
+      : '<p class="muted small" style="padding:6px 0">No team members yet. Add the people who help run Shopilier.</p>';
+    const TABS = [["website", "Website", "globe"], ["staff", "Staff", "customers"], ["payments", "Payments", "money"], ["advanced", "Advanced", "settings"]];
+    const d = dialog({
+      title: "Settings", size: "lg", submit: "Save settings",
+      body: `<div class="st-tabs" role="tablist">${TABS.map(([k, l, ic]) => `<button type="button" role="tab" data-st-tab="${k}" class="${k === tab ? "on" : ""}" aria-selected="${k === tab}">${icon(ic)}${l}</button>`).join("")}</div>
+        <div class="st-panel" data-st-panel="website"${tab === "website" ? "" : " hidden"}>
+          <p class="st-intro">Shopilier's details. The contact and social links show on the website's footer and Contact page.</p>
+          <div class="row">${field("company", "Company name", s.company, { max: 80 })}${field("supportEmail", "Support email", s.supportEmail, { type: "email" })}</div>
+          <div class="row">${field("supportPhone", "Support phone", s.supportPhone, { ph: "01XXX-XXXXXX" })}${field("whatsapp", "WhatsApp", s.whatsapp, { ph: "01XXX-XXXXXX" })}</div>
+          ${field("address", "Address", s.address, { max: 200 })}
+          <h4 class="st-sub">Social links</h4>
+          <div class="row">${field("facebook", "Facebook", s.social.facebook, { type: "url", ph: "https://facebook.com/…" })}${field("youtube", "YouTube", s.social.youtube, { type: "url", ph: "https://youtube.com/@…" })}</div>
+          <div class="row">${field("tiktok", "TikTok", s.social.tiktok, { type: "url", ph: "https://tiktok.com/@…" })}${field("instagram", "Instagram", s.social.instagram, { type: "url", ph: "https://instagram.com/…" })}</div>
+          <h4 class="st-sub">Platform</h4>
+          ${sw("signups", "Allow new sign-ups", "Turn off to pause new accounts. Existing users still sign in.", s.signups)}
+          ${sw("maintenance", "Maintenance notice", "Shows a message at the top of every store dashboard.", s.maintenance)}
+          ${field("maintenanceText", "Notice text", s.maintenanceText, { max: 200 })}
+        </div>
+        <div class="st-panel" data-st-panel="staff"${tab === "staff" ? "" : " hidden"}>
+          <p class="st-intro">The people who run Shopilier with you. Also add each email to Cloudflare Access for <b>/master-admin*</b>, which is what lets them open this dashboard.</p>
+          <div class="st-staff-list" data-staff-list>${staffRows()}</div>
+          <div class="st-staff-add"><input class="input" data-new="name" placeholder="Name" maxlength="80" aria-label="New member's name"><input class="input" data-new="email" type="email" placeholder="email@example.com" aria-label="New member's email">
+            <select class="select" data-new="role" aria-label="New member's role">${ROLES.map(([r, l]) => `<option value="${r}"${r === "support" ? " selected" : ""}>${l}</option>`).join("")}</select>
+            <button type="button" class="btn" data-staff-add>${icon("plus")}Add</button></div>
+        </div>
+        <div class="st-panel" data-st-panel="payments"${tab === "payments" ? "" : " hidden"}>
+          <p class="st-intro">Where store owners send money for their plan. Online payment isn't connected yet, so these are the details your team gives out and checks.</p>
+          ${pay("bkash", "bKash")}${pay("nagad", "Nagad")}${pay("rocket", "Rocket")}
+          <div class="st-pay"><div class="set-row"><span><b>Bank transfer</b><small>Account name, number, bank and branch</small></span><label class="switch"><input type="checkbox" name="bank_on" ${s.payments.bank.on ? "checked" : ""} aria-label="Accept bank transfer"><i></i></label></div>
+            <div class="field"><label for="st-bank">Bank details</label><textarea class="textarea" id="st-bank" name="bank_details" rows="3" maxlength="500" placeholder="Account name, account number, bank, branch">${v(s.payments.bank.details)}</textarea></div></div>
+          <div class="row">${field("invoicePrefix", "Invoice number prefix", s.payments.invoicePrefix, { ph: "INV-", max: 10 })}${field("payNote", "Payment note", s.payments.note, { ph: "e.g. Write your store name in the reference", max: 300 })}</div>
+        </div>
+        <div class="st-panel" data-st-panel="advanced"${tab === "advanced" ? "" : " hidden"}>
+          <div class="callout red" style="margin-bottom:14px"><span class="ico">${icon("shield")}</span><div><b>Keep this dashboard private.</b> In Cloudflare, open your <b>shopiliar</b> project → <b>Access</b> and allow only your team's emails for <b>/master-admin*</b>.</div></div>
+          <div class="set-row"><span>Reset this browser's data<small>Templates, plans and payments kept in this browser go back to the start. Users and settings stay in the database.</small></span><button type="button" class="btn btn-danger" data-action-reset>Reset data</button></div>
+        </div>`,
+      onOpen: (form) => {
+        form.classList.add("st-dialog");
+        form.addEventListener("click", (e) => {
+          const t = e.target.closest("[data-st-tab]");
+          if (t) {
+            form.querySelectorAll("[data-st-tab]").forEach((b) => { b.classList.toggle("on", b === t); b.setAttribute("aria-selected", String(b === t)); });
+            form.querySelectorAll("[data-st-panel]").forEach((p) => { p.hidden = p.dataset.stPanel !== t.dataset.stTab; });
+            return;
+          }
+          const rm = e.target.closest("[data-staff-rm]");
+          if (rm) { staff.splice(Number(rm.dataset.staffRm), 1); form.querySelector("[data-staff-list]").innerHTML = staffRows(); return; }
+          if (e.target.closest("[data-staff-add]")) {
+            const get = (k) => form.querySelector(`[data-new="${k}"]`);
+            const name = get("name").value.trim(), email = get("email").value.trim().toLowerCase();
+            if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast("Enter a name and a valid email"); return; }
+            if (staff.some((x) => x.email === email)) { toast("That email is already on the team"); return; }
+            staff.push({ id: uid("st"), name, email, role: get("role").value });
+            get("name").value = ""; get("email").value = "";
+            form.querySelector("[data-staff-list]").innerHTML = staffRows(); get("name").focus();
+            return;
+          }
+          if (e.target.closest("[data-action-reset]")) { d.close(); actions["reset-all"](); }
+        });
+        form.addEventListener("change", (e) => { const r = e.target.closest("[data-staff-role]"); if (r) staff[Number(r.dataset.staffRole)].role = r.value; });
+        // Enter in the "add member" boxes adds the member instead of saving the whole form
+        form.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.closest("[data-new]")) { e.preventDefault(); form.querySelector("[data-staff-add]").click(); } });
+      },
+      onSubmit: (val, close, form) => {
+        const el = form.elements, num = (k) => ({ on: el[`pay_${k}_on`].checked, number: val[`pay_${k}_number`], type: val[`pay_${k}_type`] });
+        const body = {
+          company: val.company, supportEmail: val.supportEmail, supportPhone: val.supportPhone, whatsapp: val.whatsapp, address: val.address,
+          social: { facebook: val.facebook, youtube: val.youtube, tiktok: val.tiktok, instagram: val.instagram },
+          signups: el.signups.checked, maintenance: el.maintenance.checked, maintenanceText: val.maintenanceText, staff,
+          payments: { bkash: num("bkash"), nagad: num("nagad"), rocket: num("rocket"), bank: { on: el.bank_on.checked, details: val.bank_details }, invoicePrefix: val.invoicePrefix, note: val.payNote },
+        };
+        const btn = form.querySelector("[type=submit]"); btn.disabled = true;
+        fetch("/master-admin/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+          .then(async (res) => { const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || "Couldn't save settings."); return data; })
+          .then(() => { log("Settings were updated"); persist(); close(); toast("Settings saved"); })
+          .catch((err) => { btn.disabled = false; toast(err.message); });
+        return false;
+      },
+    });
+  };
+  // Settings opens as a popup from the sidebar and the profile menu, wherever you are
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a[href="#/settings"]');
+    if (!a) return;
+    e.preventDefault();
+    profileMenu.hidden = true;
+    openSettings();
+  });
 
   // ---------- Dialogs ----------
   let rerender;
@@ -317,15 +512,12 @@ export const start = () => {
       <div class="field"><label>Status</label><select class="select" name="status"><option value="active">Active</option><option value="suspended"${u?.status === "suspended" ? " selected" : ""}>Suspended</option></select></div></div>`,
     submit: u ? "Save changes" : "Add user",
     onSubmit: (v) => {
-      if (u) {
-        if (u.plan !== v.plan) log(`${u.business} moved from ${planName(u.plan)} to ${planName(v.plan)}`);
-        Object.assign(u, v);
-      } else {
-        const site = v.business.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopilier.com";
-        db.users.unshift({ id: uid("u"), ...v, joined: new Date().toISOString(), site, products: 0, published: false });
-        log(`${v.name} was added on the ${planName(v.plan)} plan`);
-      }
-      persist(); go(); toast(u ? "User updated" : "User added");
+      if (!u) return;
+      apiUser("PATCH", u.id, { name: v.name, business: v.business, email: v.email, plan: v.plan, billing: v.billing, template: v.template }).then((res) => {
+        if (u.plan !== res.user.plan) log(`${u.business} moved from ${planName(u.plan)} to ${planName(res.user.plan)}`);
+        Object.assign(u, res.user, { phone: v.phone, status: v.status });
+        countUses(); persist(); go(); toast("User updated");
+      }).catch((err) => toast(err.message));
     },
   });
 
@@ -391,19 +583,36 @@ export const start = () => {
   const actions = {
     "new-message": () => inbox && inbox.newMessage(),
     "user-tab": (el) => { userTab = el.dataset.tab; go(); },
-    "add-user": () => userDialog(null),
     "open-user": (el) => userDialog(userById(el.dataset.id)),
+    "user-menu": (el) => userMenu(el),
     "toggle-user": (el) => {
       const u = userById(el.dataset.id);
       u.status = u.status === "active" ? "suspended" : "active";
       log(`${u.business} was ${u.status === "active" ? "re-activated" : "suspended"}`);
       persist(); go(); toast(`${u.business} ${u.status === "active" ? "activated" : "suspended"}`);
     },
-    "delete-user": async (el) => {
+    // Deleting asks for the business name to be typed, then removes the account and everything in it
+    "delete-user": (el) => {
       const u = userById(el.dataset.id);
-      if (!(await confirm("Delete user?", `${u.business} (${u.email}) and their website will be deleted. This can't be undone.`))) return;
-      db.users = db.users.filter((x) => x !== u);
-      log(`${u.business} was deleted`); persist(); go(); toast("User deleted");
+      if (!u) return;
+      dialog({
+        title: "Delete user?", submit: "Delete user", danger: true,
+        body: `<p class="muted">${esc(u.business)} (${esc(u.email)}) will be deleted with their website, products, orders, photos and messages. This can't be undone.</p>
+          <div class="field" style="margin-top:14px"><label for="del-confirm">Type <b>${esc(u.business)}</b> to confirm</label>
+          <input class="input" id="del-confirm" name="confirm" autocomplete="off" spellcheck="false" placeholder="${esc(u.business)}"></div>`,
+        onOpen: (form) => {
+          const input = form.elements.confirm, btn = form.querySelector("[type=submit]");
+          const sync = () => { btn.disabled = input.value.trim() !== u.business.trim(); };
+          input.addEventListener("input", sync); sync();
+        },
+        onSubmit: (v) => {
+          if (v.confirm !== u.business.trim()) { toast("Type the business name exactly"); return false; }
+          apiUser("DELETE", u.id, { confirm: v.confirm }).then(() => {
+            db.users = db.users.filter((x) => x !== u);
+            log(`${u.business} was deleted`); countUses(); persist(); go(); toast(`${u.business} was deleted`);
+          }).catch((err) => toast(err.message));
+        },
+      });
     },
     "tpl-tab": (el) => { tplTab = el.dataset.tab; go(); },
     "new-template": () => templateDialog(null),
@@ -471,6 +680,7 @@ export const start = () => {
   countUses();
   save(KEY, db);
   chrome();
+  if (location.hash === "#/settings") { history.replaceState(null, "", "#/overview"); setTimeout(() => openSettings(), 0); }
   rerender = router(routes, "overview");
   loadUsers();
 };

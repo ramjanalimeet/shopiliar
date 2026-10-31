@@ -6,7 +6,8 @@ type Handler = (request: Request, env: CloudflareEnv, url: URL) => Promise<Respo
 
 // Master admin API (/master-admin/api/*): Cloudflare Access guards /master-admin, and the signed Access token
 // is checked here too, so these routes can never be reached without your Access login.
-export const adminApi = (fn: Handler) => async (request: Request): Promise<Response> => {
+// options.json false: writes may send another body type (image uploads)
+export const adminApi = (fn: Handler, options: { json?: boolean } = {}) => async (request: Request): Promise<Response> => {
   const url = publicUrl(request);
   try {
     const env = await getEnv();
@@ -17,7 +18,7 @@ export const adminApi = (fn: Handler) => async (request: Request): Promise<Respo
       let ok = false;
       try { ok = !!origin && new URL(origin).host === url.host; } catch { ok = false; }
       if (!ok) return json({ error: "Bad origin." }, 403);
-      if (!(request.headers.get("Content-Type") || "").includes("application/json")) return json({ error: "Expected JSON." }, 415);
+      if (options.json !== false && !(request.headers.get("Content-Type") || "").includes("application/json")) return json({ error: "Expected JSON." }, 415);
     }
     return await fn(request, env, url);
   } catch (err) {

@@ -567,6 +567,11 @@ figcaption span { font-size: 14px; opacity: .7; }
   .theme-fashion .news-form .btn { padding: 0 14px; }
 }
 
+/* Sections hidden on some screens (Style → Show on, in the editor). The editor shows them faded instead. */
+@media (min-width: 1025px) { body:not(.editing) .hide-d { display: none !important; } .editing .hide-d { opacity: .35; } }
+@media (min-width: 761px) and (max-width: 1024px) { body:not(.editing) .hide-t { display: none !important; } .editing .hide-t { opacity: .35; } }
+@media (max-width: 760px) { body:not(.editing) .hide-m { display: none !important; } .editing .hide-m { opacity: .35; } }
+
 /* ---------- Editor only ---------- */
 .editing [data-sid] { cursor: pointer; }
 .editing [data-sid]:hover { outline: 2px dashed #3b82f6; outline-offset: -2px; }

@@ -2,8 +2,11 @@ import { publicAccount, withSession } from "@/lib/auth";
 import { b64, hashPassword, randomBytes } from "@/lib/crypto";
 import { api, clean, json, readJson } from "@/lib/http";
 import { billingOf, CATEGORY, DEFAULT_PLAN, EMAIL, isPlan, templateOf } from "@/lib/plans";
+import { getSettings } from "@/lib/platform";
 
 export const POST = api(async (request, env) => {
+  // Sign-ups can be paused from the master dashboard (Settings)
+  if (!(await getSettings(env)).signups) return json({ error: "New sign-ups are paused for now. Please try again later." }, 403);
   const body = await readJson(request);
   const name = clean(body.name, 80);
   const email = clean(body.email, 254).toLowerCase();

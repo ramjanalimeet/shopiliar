@@ -3,6 +3,7 @@ import { decodeText, unb64 } from "@/lib/crypto";
 import { GOOGLE_STATE_COOKIE, googleRedirectUri, nextPath } from "@/lib/google";
 import { api, clean, getCookie, redirect } from "@/lib/http";
 import { billingOf, CATEGORY, DEFAULT_PLAN, isPlan, templateOf } from "@/lib/plans";
+import { getSettings } from "@/lib/platform";
 
 type Pick = { state: string; next?: string; plan?: string; billing?: string; template?: string };
 
@@ -37,6 +38,8 @@ export const GET = api(async (request, env, url) => {
   const email = String(claims.email).toLowerCase();
   let user = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first<UserRow>();
   if (!user) {
+    // New accounts wait while sign-ups are paused (Settings in the master dashboard); existing ones still sign in
+    if (!(await getSettings(env)).signups) return fail("signups_off");
     const name = clean(claims.name, 80) || email.split("@")[0];
     const fresh = {
       id: crypto.randomUUID(), email, name, business: name + "'s Store",

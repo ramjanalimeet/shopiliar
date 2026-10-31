@@ -723,7 +723,8 @@ export const SiteKit = (() => {
     const T = (s) => tr(site, s);
     const x = h.buttons || {};
     const firstDd = opts.ddOpenFirst ? navPages(pages).find((p) => navChildren(pages, p).length) : null;
-    return `<header class="s-header" data-sid="header" style="${sectionStyle(h.style)}">
+    const hs = h.style || {};
+    return `<header class="s-header${hs.hideDesktop ? " hide-d" : ""}${hs.hideTablet ? " hide-t" : ""}${hs.hidePhone ? " hide-m" : ""}" data-sid="header" style="${sectionStyle(h.style)}">
       ${h.announcement?.show && h.announcement.text ? `<div class="announce" style="${esc(announceStyle(h.announcement))}">${h.announcement.link ? `<a href="${esc(safeLink(h.announcement.link))}">${esc(h.announcement.text)}${svg("arrow")}</a>` : esc(h.announcement.text)}</div>` : ""}
       <div class="wrap nav">
         ${brand(site, "a", "logo")}
@@ -741,7 +742,8 @@ export const SiteKit = (() => {
   const renderFooter = (site, pages) => {
     const f = site.footer, socials = Object.entries(site.social || {}).filter(([k, v]) => v && SOCIAL_NAMES[k]);
     const T = (s) => tr(site, s);
-    return `<footer class="s-footer" data-sid="footer" style="${sectionStyle(f.style)}">
+    const fs = f.style || {};
+    return `<footer class="s-footer${fs.hideDesktop ? " hide-d" : ""}${fs.hideTablet ? " hide-t" : ""}${fs.hidePhone ? " hide-m" : ""}" data-sid="footer" style="${sectionStyle(f.style)}">
       <div class="wrap foot-grid">
         <div>${brand(site, "b", "logo")}${f.text ? `<p>${esc(f.text)}</p>` : ""}</div>
         ${f.showMenu ? `<div><b>${esc(T("Pages"))}</b>${navPages(pages).map((p) => `<a href="${esc(pageHref(p))}">${esc(p.title)}</a>`).join("")}</div>` : ""}
@@ -768,14 +770,15 @@ export const SiteKit = (() => {
     const theme = themeOf(site);
     const T = (s, v) => tr(site, s, v), m = (n) => money(site, n);
     return `<div class="site${theme.cls ? " " + theme.cls : ""}" style="${esc(rootStyle(site))}">
-      ${opts.bare ? "" : renderHeader(site, pages, { page, products: opts.products }).replace('class="s-header"', `class="s-header${sel("header")}"`).replace(/(<header[^>]*>)/, `$1${fixedLabel("header", "Header")}`)}
+      ${opts.bare ? "" : renderHeader(site, pages, { page, products: opts.products }).replace('class="s-header', `class="s-header${sel("header")}`).replace(/(<header[^>]*>)/, `$1${fixedLabel("header", "Header")}`)}
       <main>${insert(0)}${sections.map((s, i) => {
         const R = RENDER[s.type];
         if (!R) return "";
         const st = s.style || {};
-        return `<section class="s s-${esc(s.type)} pad-${esc(st.padding || "m")} align-${esc(st.align || "left")}${s.hidden ? " is-hidden" : ""}${sel(s.id)}" data-sid="${esc(s.id)}" style="${sectionStyle(st)}">${label(s)}${R(s.content || {}, st, { products: opts.products, ed, blocks: renderBlocks(s.blocks, ed), site, theme, hints: !!opts.hints, T, money: m })}</section>${insert(i + 1)}`;
+        const hide = `${st.hideDesktop ? " hide-d" : ""}${st.hideTablet ? " hide-t" : ""}${st.hidePhone ? " hide-m" : ""}`;
+        return `<section class="s s-${esc(s.type)} pad-${esc(st.padding || "m")} align-${esc(st.align || "left")}${hide}${s.hidden ? " is-hidden" : ""}${sel(s.id)}" data-sid="${esc(s.id)}" style="${sectionStyle(st)}">${label(s)}${R(s.content || {}, st, { products: opts.products, ed, blocks: renderBlocks(s.blocks, ed), site, theme, hints: !!opts.hints, T, money: m })}</section>${insert(i + 1)}`;
       }).join("") || (ed ? '<section class="s pad-l align-center"><div class="wrap"><p class="empty">This page has no sections yet. Click + to add one.</p></div></section>' : "")}</main>
-      ${opts.bare ? "" : renderFooter(site, pages).replace('class="s-footer"', `class="s-footer${sel("footer")}"`).replace(/(<footer[^>]*>)/, `$1${fixedLabel("footer", "Footer")}`)}
+      ${opts.bare ? "" : renderFooter(site, pages).replace('class="s-footer', `class="s-footer${sel("footer")}`).replace(/(<footer[^>]*>)/, `$1${fixedLabel("footer", "Footer")}`)}
     </div>`;
   };
 
