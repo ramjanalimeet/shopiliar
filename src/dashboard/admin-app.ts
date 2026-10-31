@@ -254,6 +254,84 @@ export const start = async () => {
       <div class="acct-sep"></div>
       <button type="button" role="menuitem" class="acct-add" data-acct-add>${icon("plus")}<span><b>Add another store</b><small>Each store has its own plan and payment</small></span></button>`;
   };
+  // Add another store, all inside this popup: create a new one (its own account and plan) or sign in to one you have.
+  // Either way this store stays signed in on the device, and the dashboard opens the other one.
+  const addStoreDialog = () => {
+    let mode = "choose";
+    const tpls = catalog.filter((t) => t.status !== "draft");
+    const planCards = Object.entries(PLANS).map(([id, pl], i) => `<label class="as-plan"><input type="radio" name="plan" value="${id}"${i ? "" : " checked"}>
+      <span><b>${esc(pl.name)}</b><span class="as-price">${taka(pl.price)}<small>/month</small></span><small>${limitText(pl.pages)} pages · ${limitText(pl.products)} products</small></span></label>`).join("");
+    const d = dialog({
+      title: "Add another store", submit: "",
+      body: `<div data-as="choose">
+          <p class="muted">Each store is a separate account with its own website, products, orders and plan, so each one is paid for on its own. Plans start at ${taka(PLANS.starter.price)} a month.</p>
+          <div class="acct-choices">
+            <button type="button" class="acct-choice" data-as-go="create">${icon("plus")}<span><b>Create a new store</b><small>Name it, pick a template and a plan</small></span>${icon("chevronRight")}</button>
+            <button type="button" class="acct-choice" data-as-go="signin">${icon("store")}<span><b>Sign in to a store you already have</b><small>It joins your stores, and you can switch any time</small></span>${icon("chevronRight")}</button>
+          </div>
+          <p class="muted small" style="margin-top:12px">Your stores stay signed in on this device, so switching takes one click.</p>
+        </div>
+        <div data-as="create" hidden>
+          <button type="button" class="as-back" data-as-go="choose">${icon("arrowLeft")}Back</button>
+          <div class="field"><label for="as-business">Store name</label><input class="input" id="as-business" name="business" maxlength="80" placeholder="e.g. Rupkotha Fashion"></div>
+          <div class="row"><div class="field"><label for="as-name">Your name</label><input class="input" id="as-name" name="name" maxlength="80" value="${esc(account.name)}"></div>
+            <div class="field"><label for="as-email">Email for this store</label><input class="input" id="as-email" name="email" type="email" maxlength="254" placeholder="A different email from ${esc(account.email)}"></div></div>
+          <div class="row"><div class="field"><label for="as-pass">Password</label><input class="input" id="as-pass" name="password" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="At least 8 characters"></div>
+            <div class="field"><label for="as-tpl">Template</label><select class="select" id="as-tpl" name="template">${tpls.map((t) => `<option value="${esc(t.id)}"${t.id === account.template ? " selected" : ""}>${esc(t.name)}</option>`).join("")}</select></div></div>
+          <div class="field"><label>Plan</label><div class="as-plans">${planCards}</div>
+            <label class="as-yearly"><input type="checkbox" name="yearly"> Pay yearly <span class="muted small">(free custom domain on Business and Pro)</span></label></div>
+          <p class="muted small">Online payment isn't connected yet, so the new store starts on its plan straight away.</p>
+          <button type="submit" class="btn btn-primary as-go">${icon("plus")}Create store</button>
+        </div>
+        <div data-as="signin" hidden>
+          <button type="button" class="as-back" data-as-go="choose">${icon("arrowLeft")}Back</button>
+          <div class="field"><label for="as-semail">Email</label><input class="input" id="as-semail" name="semail" type="email" maxlength="254" autocomplete="username"></div>
+          <div class="field"><label for="as-spass">Password</label><input class="input" id="as-spass" name="spassword" type="password" maxlength="200" autocomplete="current-password"></div>
+          <button type="submit" class="btn btn-primary as-go">${icon("store")}Sign in and open</button>
+          <p class="muted small" style="margin-top:10px">Signs in with Google? <a class="link" href="/api/auth/google?next=/admin">Continue with Google</a></p>
+        </div>`,
+      onOpen: (form) => {
+        form.classList.add("as-dialog");
+        form.addEventListener("click", (e) => {
+          const go = e.target.closest("[data-as-go]");
+          if (!go) return;
+          mode = go.dataset.asGo;
+          form.querySelectorAll("[data-as]").forEach((p) => { p.hidden = p.dataset.as !== mode; });
+          const h = form.querySelector(".dialog-head h3");
+          h.textContent = mode === "create" ? "Create a new store" : mode === "signin" ? "Sign in to another store" : "Add another store";
+          const first = form.querySelector(`[data-as="${mode}"] input`); if (first) first.focus();
+        });
+      },
+      onSubmit: (v, close, form) => {
+        if (mode === "choose") return false;
+        const btn = form.querySelector(`[data-as="${mode}"] .as-go`);
+        let url, body;
+        if (mode === "create") {
+          if (!v.business) { toast("Give the new store a name"); return false; }
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email || "")) { toast("Enter an email for the new store"); return false; }
+          if ((v.email || "").toLowerCase() === account.email.toLowerCase()) { toast("Use a different email: each store is its own account"); return false; }
+          if ((v.password || "").length < 8) { toast("The password needs at least 8 characters"); return false; }
+          url = "/api/signup"; body = { business: v.business, name: v.name || account.name, email: v.email, password: v.password, template: v.template, plan: v.plan, billing: v.yearly ? "yearly" : "monthly", remember: true };
+        } else {
+          if (!v.semail || !v.spassword) { toast("Enter the store's email and password"); return false; }
+          if (v.semail.toLowerCase() === account.email.toLowerCase()) { toast("You're already in this store"); return false; }
+          url = "/api/signin"; body = { email: v.semail, password: v.spassword, remember: true };
+        }
+        btn.disabled = true;
+        const label = btn.innerHTML; btn.textContent = mode === "create" ? "Creating your store…" : "Signing in…";
+        (async () => {
+          if (saveTimer) await saveNow();
+          const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(data.error || "Something went wrong. Please try again.");
+          try { localStorage.removeItem(ACCT_CACHE); } catch (e) { /* storage blocked */ }
+          location.href = "/admin";
+        })().catch((err) => { btn.disabled = false; btn.innerHTML = label; toast(err.message); });
+        return false;
+      },
+    });
+    return d;
+  };
   if (acctBtn) {
     acctBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -274,18 +352,7 @@ export const start = async () => {
         location.href = "/admin";
         return;
       }
-      if (e.target.closest("[data-acct-add]")) {
-        closeAcct();
-        dialog({
-          title: "Add another store", submit: "",
-          body: `<p class="muted">Each store is a separate account with its own website, products, orders and plan, so each one is paid for on its own. Plans start at ${taka(PLANS.starter.price)} a month.</p>
-            <div class="acct-choices">
-              <a class="acct-choice" href="/signup?add=1">${icon("plus")}<span><b>Create a new store</b><small>Pick a template and a plan, with a different email</small></span></a>
-              <a class="acct-choice" href="/signin?add=1&amp;next=/admin">${icon("store")}<span><b>Sign in to a store you already have</b><small>It joins this list, and you can switch any time</small></span></a>
-            </div>
-            <p class="muted small" style="margin-top:12px">Your stores stay signed in on this device, so switching takes one click.</p>`,
-        });
-      }
+      if (e.target.closest("[data-acct-add]")) { closeAcct(); addStoreDialog(); }
     });
     document.addEventListener("click", (e) => { if (!e.target.closest(".acct")) closeAcct(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAcct(); });

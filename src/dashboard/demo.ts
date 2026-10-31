@@ -133,6 +133,7 @@ export const start = () => {
     // The store switcher: the demo has just its one sample store
     ["GET", /^\/api\/accounts$/, () => json({ accounts: [{ id: "demo", ...db.account, current: true }] })],
     ["POST", /^\/api\/accounts\/switch$/, () => fail("The demo has one store. Create your own to run several.")],
+    ["POST", /^\/api\/(signup|signin)$/, () => fail("The demo has one sample store. Create your own store at shopilier.com to run several.")],
     // Couriers: the demo pretends to be Steadfast, Pathao and RedX (nothing is sent anywhere)
     ["GET", /^\/api\/couriers$/, () => json({ couriers: db.couriers || {} })],
     ["PUT", /^\/api\/couriers\/(steadfast|pathao|redx)$/, (req, m) => {

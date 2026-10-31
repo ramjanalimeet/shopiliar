@@ -388,3 +388,23 @@ svg { display: block; }
 .acct-choice > .i { width: 20px; height: 20px; color: var(--accent); flex: none; }
 .acct-choice b { display: block; }
 .acct-choice small { display: block; font-size: 12.5px; color: var(--muted); }
+/* Add another store: choices, then the create or sign-in form, in one popup */
+.acct-choices button.acct-choice { width: 100%; background: #fff; font: inherit; text-align: left; cursor: pointer; }
+.acct-choice > span { flex: 1; }
+.acct-choice > .i:last-child { width: 16px; height: 16px; color: var(--muted); }
+.as-dialog [data-as][hidden] { display: none; }
+.as-back { display: inline-flex; align-items: center; gap: 6px; margin: -4px 0 12px; padding: 4px 8px 4px 4px; border: 0; border-radius: 8px; background: none; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.as-back:hover { background: var(--hover); color: var(--ink); }
+.as-back .i { width: 16px; height: 16px; }
+.as-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.as-plan { position: relative; display: block; cursor: pointer; }
+.as-plan input { position: absolute; opacity: 0; }
+.as-plan > span { display: grid; gap: 2px; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; }
+.as-plan b { font-size: 14px; }
+.as-price { font-size: 18px; font-weight: 700; color: var(--ink); }
+.as-price small, .as-plan small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.as-plan input:checked + span { border-color: var(--accent); background: var(--accent-soft); }
+.as-plan input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.as-yearly { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13.5px; }
+.as-go { width: 100%; justify-content: center; margin-top: 6px; }
+@media (max-width: 560px) { .as-plans { grid-template-columns: 1fr; } }
