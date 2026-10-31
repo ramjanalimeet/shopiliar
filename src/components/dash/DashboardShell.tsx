@@ -4,7 +4,7 @@ import Icon from "@/components/Icon";
 
 const NAV: [string, string, string][] = [
   ["home", "home", "Home"], ["orders", "orders", "Orders"], ["products", "tag", "Products"], ["categories", "grid", "Categories"],
-  ["customers", "customers", "Customers"], ["analytics", "barchart", "Analytics"], ["marketing", "megaphone", "Marketing"], ["discounts", "discount", "Discounts"],
+  ["customers", "customers", "Customers"], ["shipping", "truck", "Shipping & Delivery"], ["analytics", "barchart", "Analytics"], ["marketing", "megaphone", "Marketing"], ["discounts", "discount", "Discounts"],
 ];
 
 export default function DashboardShell({ demo = false }: { demo?: boolean }) {

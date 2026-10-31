@@ -81,3 +81,12 @@ CREATE TABLE IF NOT EXISTS template_media (
   size INTEGER NOT NULL,
   created_at TEXT NOT NULL
 );
+
+-- Each store's courier accounts (Steadfast, Pathao, RedX API keys), used only on the server. Created on first use too.
+CREATE TABLE IF NOT EXISTS courier_accounts (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  courier TEXT NOT NULL,
+  data TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, courier)
+);
