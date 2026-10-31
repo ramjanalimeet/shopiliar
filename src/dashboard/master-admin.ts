@@ -8,70 +8,38 @@ export const start = () => {
   const KEY = "shopiliar.master";
 
   // ---------- Data ----------
-  const seed = () => {
-    const plans = Dash.PLANS();
-    const people = [
-      ["Rahim Uddin", "Rahim Fashion House", "starter", "monthly", "active", 160], ["Farzana Akter", "Farzana's Kitchen", "business", "yearly", "active", 140],
-      ["Tanvir Ahmed", "TechZone BD", "pro", "yearly", "active", 130], ["Nusrat Jahan", "Nusrat Boutique", "business", "monthly", "active", 110],
-      ["Kamal Hossain", "Kamal Electronics", "starter", "monthly", "suspended", 95], ["Sadia Islam", "Glow by Sadia", "business", "monthly", "active", 80],
-      ["Arif Chowdhury", "Arif Travels", "starter", "yearly", "active", 64], ["Mitu Rahman", "Mitu Crafts", "starter", "monthly", "active", 41],
-      ["Shakil Khan", "Dhaka Gadget Hub", "pro", "monthly", "active", 33], ["Ruma Begum", "Ruma Home Decor", "business", "yearly", "active", 21],
-      ["Imran Kabir", "Kabir Consultancy", "starter", "monthly", "active", 12], ["Lamia Haque", "Lamia Studio", "business", "monthly", "active", 6],
-      ["Sohel Rana", "Rana Auto Parts", "starter", "monthly", "active", 3], ["Jannat Ara", "Jannat's Pitha Ghor", "starter", "monthly", "active", 9],
-      ["Rakib Hasan", "Rakib Mobile Point", "starter", "monthly", "active", 2], ["Sumaiya Khatun", "Sumaiya Handicrafts", "starter", "monthly", "active", 1],
-    ];
-    const tpl = Dash.TEMPLATES();
-    const users = people.map(([name, business, plan, billing, status, ago], i) => ({
-      id: uid("u"), name, business, email: name.toLowerCase().split(" ")[0] + "@" + business.toLowerCase().replace(/[^a-z]+/g, "") + ".com",
-      phone: "01" + (700000000 + i * 1234567).toString().slice(0, 9), plan, billing, status, joined: daysAgo(ago),
-      template: tpl[i % tpl.length].id, site: business.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopilier.com",
-      products: plan === "starter" ? 3 + (i % 8) : plan === "business" ? 40 + i * 5 : 320 + i * 11, published: i % 5 !== 4,
-    }));
-    const methods = ["bKash", "Nagad", "Card", "bKash", "Bank transfer"];
-    const payments = [];
-    users.forEach((u, i) => {
-      const price = plans[u.plan].price;
-      if (!price) return; // a plan without a price has no invoices
-      const periods = u.billing === "yearly" ? 1 : Math.min(3, Math.ceil((Date.now() - new Date(u.joined)) / (30 * 864e5)));
-      for (let k = 0; k < periods; k++) {
-        payments.push({
-          id: uid("pay"), invoice: "INV-" + (2400 + payments.length), user: u.id, plan: u.plan, billing: u.billing,
-          amount: u.billing === "yearly" ? price * 12 : price, method: methods[(i + k) % methods.length],
-          status: u.status === "suspended" && k === 0 ? "Failed" : k === 0 && i % 6 === 3 ? "Due" : "Paid", date: daysAgo(k * 30 + (i % 9)),
-        });
-      }
-    });
-    const activity = users.slice(0, 8).map((u, i) => ({
-      id: uid("a"), date: daysAgo(i * 0.7 + 0.1),
-      text: [`${u.name} signed up on the ${plans[u.plan].name} plan`, `${u.business} published their website`, `${u.name} switched to the ${tpl[i % tpl.length].name} template`, `Payment received from ${u.business}`][i % 4],
-    }));
-    return {
-      plans, templates: tpl, users, payments, activity,
-      settings: { company: "Shopilier", supportEmail: "support@shopilier.com", supportPhone: "", signups: true, maintenance: false },
-    };
-  };
-  const db = load(KEY, seed);
+  // Users come from the database (/master-admin/api/users). Plans, templates, settings, payments and the
+  // activity log are kept in this browser. Nothing is made up: a new browser starts with no users or payments.
+  const DATA_VERSION = 2;
+  const fresh = () => ({
+    v: DATA_VERSION, plans: Dash.PLANS(), templates: Dash.TEMPLATES().map((t) => ({ ...t, uses: 0 })), users: [], payments: [], activity: [],
+    settings: { company: "Shopilier", supportEmail: "support@shopilier.com", supportPhone: "", signups: true, maintenance: false },
+  });
+  const db = load(KEY, fresh);
   // Plans were restructured (the Free plan was retired and the limits changed): data saved by an older version gets the new plans
   if (!db.plans || db.plans.free || !db.plans.starter) db.plans = Dash.PLANS();
-  db.users.forEach((u) => { if (u.plan === "free") u.plan = "starter"; });
-
-  // A real sign-up from this browser joins the user list.
-  const account = load("shopiliar.account", null);
-  if (account && !account.demo && !db.users.some((u) => u.email === account.email)) {
-    db.users.unshift({
-      id: uid("u"), name: account.name, business: account.business || account.name, email: account.email, phone: "", plan: account.plan || "starter",
-      billing: account.billing || "monthly", status: "active", joined: account.createdAt || new Date().toISOString(), template: account.template || "luxe-store",
-      site: (account.business || "store").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".shopilier.com", products: 0, published: false,
-    });
-    db.activity.unshift({ id: uid("a"), date: new Date().toISOString(), text: `${account.name} signed up on the ${(db.plans[account.plan] || db.plans.starter).name} plan` });
+  // Older versions filled this browser with sample users, invoices and activity: clear them once
+  if (db.v !== DATA_VERSION) {
+    Object.assign(db, { v: DATA_VERSION, users: [], payments: [], activity: [] });
+    db.templates = (db.templates && db.templates.length ? db.templates : Dash.TEMPLATES()).map((t) => ({ ...t, uses: 0 }));
   }
-  // Keep that user's plan and website status in sync with their dashboard.
-  const ownStore = load("shopiliar.store", null);
-  const ownUser = account && !account.demo && db.users.find((u) => u.email === account.email);
-  if (ownUser) {
-    Object.assign(ownUser, { plan: account.plan, billing: account.billing, business: account.business, name: account.name, template: account.template });
-    if (ownStore) Object.assign(ownUser, { products: ownStore.products.length, published: !!ownStore.published });
-  }
+  // How many users are on each template, from the real user list
+  const countUses = () => db.templates.forEach((t) => { t.uses = db.users.filter((u) => u.template === t.id).length; });
+  // Real users from the database. What only this dashboard knows (suspended or not) stays as it was.
+  const loadUsers = async () => {
+    try {
+      const res = await fetch("/master-admin/api/users");
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Couldn't load users.");
+      const { users } = await res.json();
+      const before = new Map(db.users.map((u) => [u.id, u]));
+      db.users = users.map((u) => ({
+        id: u.id, name: u.name, business: u.business || u.name, email: u.email, phone: "", plan: db.plans[u.plan] ? u.plan : "starter",
+        billing: u.billing === "yearly" ? "yearly" : "monthly", status: (before.get(u.id) || {}).status || "active", joined: u.joined, template: u.template || "",
+        site: "", products: null, published: null,
+      }));
+      countUses(); persist(); if (rerender) go();
+    } catch (err) { toast(err.message || "Couldn't load users."); }
+  };
   const log = (text) => { db.activity.unshift({ id: uid("a"), date: new Date().toISOString(), text }); db.activity = db.activity.slice(0, 60); };
   const persist = () => { save(KEY, db); chrome(); };
   const chrome = () => {
@@ -191,7 +159,7 @@ export const start = () => {
                 <tr>
                   <td><button class="t-title" data-action="open-user" data-id="${u.id}">${avatar(u.business)}<span>${esc(u.business)}<span class="sub">${esc(u.name)} · ${esc(u.email)}</span></span></button></td>
                   <td>${planTag(u.plan)} <span class="muted small">${u.billing === "yearly" ? "Yearly" : "Monthly"}</span></td>
-                  <td><span class="small">${esc(u.site)}</span><span class="sub">${u.published ? "Live" : "Not published"}</span></td>
+                  <td><span class="small">${esc(u.site || "—")}</span>${u.published == null ? "" : `<span class="sub">${u.published ? "Live" : "Not published"}</span>`}</td>
                   <td>${u.status === "active" ? '<span class="tag dot green">Active</span>' : '<span class="tag dot red">Suspended</span>'}</td>
                   <td class="muted">${day(u.joined)}</td>
                   <td class="t-right" style="font-weight:600;color:var(--ink)">${taka(monthly(u))}</td>
@@ -253,7 +221,7 @@ export const start = () => {
                 <td>${esc(p.method)}</td><td class="muted">${day(p.date)}</td><td class="t-right" style="font-weight:600;color:var(--ink)">${taka(p.amount)}</td><td><span class="tag dot ${PAY_COLOR[p.status]}">${esc(p.status)}</span></td>
                 <td class="t-actions">${p.status === "Paid" ? "" : `<button class="btn btn-sm" data-action="mark-paid" data-id="${p.id}">Mark paid</button>`}</td></tr>`; }).join("") || `<tr><td colspan="8" class="table-empty">No invoices.</td></tr>`}</tbody>
             </table></div>
-            <div class="card-foot muted small">Invoices are sample data until bKash, Nagad or card payments are connected.</div>
+            <div class="card-foot muted small">Invoices show here once bKash, Nagad or card payments are connected.</div>
           </div>
         </div>`;
       },
@@ -320,7 +288,7 @@ export const start = () => {
             <div style="margin-top:18px;display:flex;justify-content:flex-end"><button class="btn btn-primary" type="submit">Save settings</button></div>
           </form>
           <div class="card" style="margin-top:18px;border-color:#fecaca"><div class="card-head"><span class="card-title" style="color:var(--danger)">Danger zone</span></div>
-            <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="flex:1">Reset all master data in this browser (users, templates, payments, plans) back to the sample data.</span><button class="btn btn-danger" data-action="reset-all">Reset data</button></div></div>
+            <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="flex:1">Reset the templates, plans, payments and settings kept in this browser. Users always come from the database.</span><button class="btn btn-danger" data-action="reset-all">Reset data</button></div></div>
         </div>`;
       },
       mount: (view) => view.querySelector("#settings-form").addEventListener("submit", (e) => {
@@ -338,7 +306,7 @@ export const start = () => {
 
   const userDialog = (u) => dialog({
     title: u ? u.business : "New user",
-    body: `${u ? `<p class="muted small" style="margin-bottom:12px">Joined ${day(u.joined)} · ${esc(u.site)} · ${u.products} products · ${u.published ? "website live" : "website not published"}</p>` : ""}
+    body: `${u ? `<p class="muted small" style="margin-bottom:12px">Joined ${day(u.joined)}${u.site ? ` · ${esc(u.site)}` : ""}${u.products == null ? "" : ` · ${u.products} products`}${u.published == null ? "" : ` · ${u.published ? "website live" : "website not published"}`}</p>` : ""}
       <div class="row"><div class="field"><label>Owner name</label><input class="input" name="name" required value="${esc(u?.name)}"></div>
       <div class="field"><label>Business name</label><input class="input" name="business" required value="${esc(u?.business)}"></div></div>
       <div class="row"><div class="field"><label>Email</label><input class="input" type="email" name="email" required value="${esc(u?.email)}"></div>
@@ -469,7 +437,7 @@ export const start = () => {
       log(`Payment ${p.invoice} from ${u ? u.business : "a user"} was marked paid`); persist(); go(); toast(p.invoice + " marked paid");
     },
     "reset-all": async () => {
-      if (!(await confirm("Reset all data?", "Users, templates, payments, plans and settings in this browser go back to the sample data.", "Reset data"))) return;
+      if (!(await confirm("Reset all data?", "Templates, plans, payments and settings in this browser go back to the start. Users are loaded again from the database.", "Reset data"))) return;
       remove(KEY); location.reload();
     },
   };
@@ -500,7 +468,9 @@ export const start = () => {
   });
 
   hydrateIcons();
+  countUses();
   save(KEY, db);
   chrome();
   rerender = router(routes, "overview");
+  loadUsers();
 };
