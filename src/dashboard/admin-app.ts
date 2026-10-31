@@ -692,6 +692,7 @@ export const start = async () => {
       <tbody>${orderRows(orders, compact)}</tbody></table></div>`;
 
   // ---------- Views ----------
+  let shipTab = "All";
   let orderFilter = "All", orderSearch = "", productView = "table", productSearch = "", customerSearch = "";
 
   // Backups, newest first. The active one is highlighted in the brand green; each row has
@@ -959,43 +960,68 @@ export const start = async () => {
     shipping: {
       title: "Shipping & Delivery",
       render: () => {
-        const sh = shipping(), shipped = store.orders.filter((o) => o.shipment).sort((a, b) => new Date(b.shipment.sentAt) - new Date(a.shipment.sentAt));
-        const card = (id) => {
+        const sh = shipping(), all = store.orders.filter((o) => o.shipment).sort((a, b) => new Date(b.shipment.sentAt) - new Date(a.shipment.sentAt));
+        const done = (o) => /deliver/i.test(o.shipment.status) && !/progress|transit|out/i.test(o.shipment.status);
+        const groups = { All: all, "On the way": all.filter((o) => !done(o) && !/cancel|return/i.test(o.shipment.status)), Delivered: all.filter(done) };
+        const list = groups[shipTab] || all;
+        const apiIds = Object.keys(COURIERS).filter((k) => COURIERS[k].api), manualIds = Object.keys(COURIERS).filter((k) => !COURIERS[k].api);
+        const connectedN = couriers ? apiIds.filter((k) => couriers[k]).length : 0;
+        const stat = (label, value, ico, c) => `<div class="stat"><div class="stat-top"><span class="stat-label">${label}</span><span class="stat-ico ${c}">${icon(ico)}</span></div><div class="stat-value">${value}</div></div>`;
+        const apiCard = (id) => {
           const c = COURIERS[id], acc = couriers && couriers[id];
-          return `<div class="cr-card${acc ? " on" : ""}">
-            <div class="cr-top">${courierBadge(id)}<div class="cr-name"><b>${esc(c.name)}</b><small>${c.api ? "Book parcels from your orders" : "Add the tracking number by hand"}</small></div>
-              ${sh.defaultCourier === id ? '<span class="tag green">Default</span>' : ""}</div>
-            ${c.api ? (couriers == null ? '<p class="muted small">Checking…</p>' : acc ? `<p class="cr-status"><span class="tag dot green">Connected</span> <span class="muted small">${esc(acc.info || "")}</span></p>` : '<p class="cr-status"><span class="tag dot gray">Not connected</span></p>') : '<p class="cr-status"><span class="tag gray">Manual</span></p>'}
-            <div class="cr-actions">${c.api ? (acc ? `<button class="btn btn-sm" data-action="courier-disconnect" data-id="${id}">Disconnect</button>` : `<button class="btn btn-sm btn-primary" data-action="courier-connect" data-id="${id}">${icon("plus")}Connect</button>`) : ""}
-              ${sh.defaultCourier === id ? "" : `<button class="btn btn-sm" data-action="courier-default" data-id="${id}"${c.api && !acc ? " disabled" : ""}>Make default</button>`}</div>
+          return `<div class="sp-courier${acc ? " on" : ""}">
+            <div class="sp-courier-top">${courierBadge(id)}<div class="sp-courier-name"><b>${esc(c.name)}</b>${sh.defaultCourier === id ? '<span class="tag green">Default</span>' : ""}</div></div>
+            <p class="sp-courier-text">${acc ? `<span class="tag dot green">Connected</span><span class="muted small">${esc(acc.info || "")}</span>` : couriers == null ? '<span class="muted small">Checking…</span>' : '<span class="tag dot gray">Not connected</span>'}</p>
+            ${acc ? `<button class="btn btn-sm" data-action="courier-disconnect" data-id="${id}">Disconnect</button>` : `<button class="btn btn-sm btn-primary" data-action="courier-connect" data-id="${id}">${icon("plus")}Connect</button>`}
           </div>`;
         };
-        return `${head("Shipping &amp; Delivery", "Delivery charges, courier partners and every parcel you've sent.")}
-          <div class="card"><div class="card-head"><span class="card-title">Courier partners<small>Connect a courier once, then send any order to it in one click</small></span></div>
-            <div class="card-body"><div class="cr-grid">${Object.keys(COURIERS).map(card).join("")}</div>
-            <p class="muted small" style="margin-top:12px">Steadfast, Pathao and RedX book parcels through their merchant API with your own account, so their charges and payouts work as usual. Your API keys are kept on Shopilier's server and never shown again.</p></div></div>
-          <div class="grid-2" style="margin-top:18px;align-items:start">
-            <div class="card"><div class="card-head"><span class="card-title">Delivery charges<small>Shown on your checkout as the delivery options</small></span></div>
+        return `${head("Shipping &amp; Delivery", "Book parcels with Bangladeshi couriers, set your delivery charges and follow every parcel.")}
+          <div class="stats sp-stats">
+            ${stat("Couriers connected", `${connectedN}<span class="sp-of"> of ${apiIds.length}</span>`, "truck", "c1")}
+            ${stat("Parcels sent", all.length, "orders", "c2")}
+            ${stat("On the way", groups["On the way"].length, "clock", "c3")}
+            ${stat("Delivered", groups.Delivered.length, "check", "c4")}
+          </div>
+
+          <div class="card sp-block">
+            <div class="card-head"><span class="card-title">Book from Shopilier<small>Connect once with your own merchant API keys, then send any order in one click</small></span></div>
+            <div class="card-body">
+              <div class="sp-couriers">${apiIds.map(apiCard).join("")}</div>
+              <div class="sp-manual">
+                <div><b>Other couriers</b><span class="muted small">Send the parcel as usual, then add its tracking number to the order.</span></div>
+                <div class="sp-chips">${manualIds.map((id) => `<span class="sp-chip">${courierBadge(id)}${esc(COURIERS[id].name)}</span>`).join("")}</div>
+              </div>
+              <p class="sp-note">${icon("lock")}Your API keys stay on Shopilier's server and are never shown again. Courier charges and payouts work through your own courier account as usual.</p>
+            </div>
+          </div>
+
+          <div class="sp-row">
+            <div class="card"><div class="card-head"><span class="card-title">Delivery charges<small>Your checkout shows these as delivery options</small></span></div>
               <div class="card-body"><form id="zones-form">
-                <div class="zn-head"><span>Area</span><span>Charge (৳)</span><span>Time</span><span></span></div>
+                <div class="zn-head"><span>Area</span><span>Charge (৳)</span><span>Delivery time</span><span></span></div>
                 <div data-zones>${sh.zones.map((z, i) => zoneRow(z, i)).join("")}</div>
-                <div style="display:flex;gap:8px;justify-content:space-between;margin-top:12px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-zone-add>${icon("plus")}Add area</button><button type="submit" class="btn btn-primary btn-sm">Save charges</button></div>
+                <div class="sp-form-foot"><button type="button" class="btn btn-sm" data-zone-add>${icon("plus")}Add area</button><button type="submit" class="btn btn-primary btn-sm">Save charges</button></div>
               </form></div></div>
-            <div class="card"><div class="card-head"><span class="card-title">Parcel defaults</span></div>
+            <div class="card"><div class="card-head"><span class="card-title">Parcel defaults<small>Filled in when you send an order</small></span></div>
               <div class="card-body"><form id="ship-defaults">
-                <div class="field"><label for="sd-courier">Default courier</label><select class="select" id="sd-courier" name="courier"><option value="">Ask each time</option>${Object.entries(COURIERS).map(([id, c]) => `<option value="${id}"${sh.defaultCourier === id ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
+                <div class="field"><label for="sd-courier">Default courier</label><select class="select" id="sd-courier" name="courier"><option value="">Ask each time</option>${Object.entries(COURIERS).map(([id, c]) => `<option value="${id}"${sh.defaultCourier === id ? " selected" : ""}${c.api && couriers && !couriers[id] ? " disabled" : ""}>${esc(c.name)}${c.api && couriers && !couriers[id] ? " (connect first)" : ""}</option>`).join("")}</select></div>
                 <div class="field"><label for="sd-weight">Usual parcel weight (kg)</label><input class="input" id="sd-weight" name="weight" type="number" min="0.1" max="30" step="0.1" value="${esc(sh.weight)}"></div>
-                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                <div class="sp-form-foot"><span></span><button type="submit" class="btn btn-primary btn-sm">Save defaults</button></div>
               </form></div></div>
           </div>
-          <div class="card" style="margin-top:18px"><div class="card-head"><span class="card-title">Shipments<small>${shipped.length} parcel${shipped.length === 1 ? "" : "s"} sent</small></span></div>
-            ${shipped.length ? `<div class="table-wrap"><table class="table" style="min-width:760px"><thead><tr><th>Order</th><th>Customer</th><th>Courier</th><th>Tracking</th><th>Status</th><th>Sent</th><th class="t-actions"></th></tr></thead><tbody>
-              ${shipped.map((o) => `<tr><td><button class="t-title" data-action="view-order" data-id="${o.id}">${orderNo(o)}</button></td><td>${esc(o.customer)}<span class="sub">${esc(o.phone || "")}</span></td>
+
+          <div class="card sp-block">
+            <div class="card-head"><div class="seg" style="margin-right:auto">${Object.keys(groups).map((t) => `<button class="${t === shipTab ? "on" : ""}" data-action="ship-tab" data-tab="${t}">${t}<span>${groups[t].length}</span></button>`).join("")}</div>
+              <a class="btn btn-sm" href="#/orders">${icon("orders")}Go to orders</a></div>
+            ${list.length ? `<div class="table-wrap"><table class="table" style="min-width:760px"><thead><tr><th>Order</th><th>Customer</th><th>Courier</th><th>Tracking</th><th>Status</th><th>Sent</th><th class="t-actions"></th></tr></thead><tbody>
+              ${list.map((o) => `<tr><td><button class="t-title" data-action="view-order" data-id="${o.id}">${orderNo(o)}</button></td><td>${esc(o.customer)}<span class="sub">${esc(o.phone || "")}</span></td>
                 <td><span class="cr-inline">${courierBadge(o.shipment.courier)}${esc((COURIERS[o.shipment.courier] || {}).name || o.shipment.courier)}</span></td>
                 <td>${o.shipment.trackUrl ? `<a class="link" href="${esc(o.shipment.trackUrl)}" target="_blank" rel="noopener">${esc(o.shipment.trackingCode)}</a>` : esc(o.shipment.trackingCode)}</td>
                 <td>${shipTag(o)}</td><td class="muted">${day(o.shipment.sentAt)}</td>
                 <td class="t-actions">${(COURIERS[o.shipment.courier] || {}).api ? `<button class="btn btn-sm" data-action="ship-refresh" data-id="${o.id}">${icon("history")}Update</button>` : ""}</td></tr>`).join("")}
-            </tbody></table></div>` : `<div class="card-body"><p class="muted">No parcels yet. Open an order and choose <b>Send to courier</b>.</p></div>`}</div>
+            </tbody></table></div>`
+            : `<div class="sp-empty">${icon("truck")}<b>${all.length ? "Nothing here" : "No parcels yet"}</b><span>${all.length ? "No parcels in this group right now." : "Open an order and choose <b>Send to courier</b>. Its tracking shows here."}</span></div>`}
+          </div>
         </div>`;
       },
       mount: (view) => {
@@ -1930,6 +1956,7 @@ export const start = async () => {
       if (!(await confirm(`Disconnect ${c.name}?`, "Your saved API keys are deleted. Parcels you've already sent keep their tracking numbers.", "Disconnect"))) return;
       try { await courierApi("DELETE", "/" + id); delete couriers[id]; if (shipping().defaultCourier === id) { shipping().defaultCourier = ""; persist(); } go(); toast(c.name + " disconnected"); } catch (err) { toast(err.message); }
     },
+    "ship-tab": (el) => { shipTab = el.dataset.tab; go(); },
     "courier-default": (el) => { shipping().defaultCourier = el.dataset.id; persist(); go(); toast(COURIERS[el.dataset.id].name + " is now your default courier"); },
     "ship-order": async (el) => {
       const o = store.orders.find((x) => x.id === el.dataset.id);
