@@ -10,6 +10,18 @@ export const start = async () => {
   const PLANS = Dash.PLANS();
   const SIGN_IN = "/signin?next=" + encodeURIComponent(location.pathname + location.search);
 
+  // The store switcher shows straight away what it showed last time on this device
+  const ACCT_CACHE = "shopilier.acct";
+  const paintAcctBtn = (a) => {
+    const n = document.getElementById("acct-name");
+    if (!n || !a) return;
+    n.textContent = a.business || "My Store";
+    document.getElementById("acct-sub").textContent = a.planName ? a.planName + " plan" : "";
+    document.getElementById("acct-ava").innerHTML = a.logo ? `<img class="acct-logo" src="${esc(a.logo)}" alt="">` : avatar(a.business || "S");
+    const bp = document.getElementById("brand-plan"); if (bp && a.planName) bp.textContent = a.planName;
+  };
+  try { paintAcctBtn(JSON.parse(localStorage.getItem(ACCT_CACHE) || "null")); } catch (e) { /* storage blocked */ }
+
   // ---------- Data (saved to the signed-in account by the Worker) ----------
   let me;
   try {
@@ -200,9 +212,11 @@ export const start = async () => {
     document.getElementById("menu-name").textContent = account.name;
     document.getElementById("me-email").textContent = account.email;
     document.getElementById("me-plan").textContent = plan().name + " · " + (account.billing === "yearly" ? "Yearly" : "Monthly");
-    // The plan beside the Shopilier name, and this store in the store switcher
-    const bp = document.getElementById("brand-plan"); if (bp) bp.textContent = plan().name;
-    const an = document.getElementById("acct-name"); if (an) { an.textContent = account.business || "My Store"; document.getElementById("acct-sub").textContent = `${plan().name} · ${taka(plan().price)}/mo`; document.getElementById("acct-ava").innerHTML = avatar(account.business || account.name); }
+    // The plan beside the Shopilier name, and this store in the store switcher (remembered for the next visit)
+    const logo = SiteKit.safeImg(store.site.header && store.site.header.logo);
+    const acct = { business: account.business || "My Store", planName: plan().name, logo: logo && logo.length < 2000 ? logo : "" };
+    paintAcctBtn(acct);
+    try { localStorage.setItem(ACCT_CACHE, JSON.stringify(acct)); } catch (e) { /* storage blocked */ }
     chatFab.classList.toggle("locked", !hasSupport());
   };
   const profileBtn = document.getElementById("profile-btn");
@@ -226,15 +240,17 @@ export const start = async () => {
   // Every store is its own account with its own plan, so each one is paid for separately
   const acctBtn = document.getElementById("acct-btn"), acctMenu = document.getElementById("acct-menu");
   const closeAcct = () => { if (acctMenu) { acctMenu.hidden = true; acctBtn.setAttribute("aria-expanded", "false"); } };
-  const paintAcct = async () => {
-    acctMenu.innerHTML = '<p class="acct-load">Loading your stores…</p>';
-    let list = [];
-    try { const r = await fetch("/api/accounts"); const d = await r.json(); if (!r.ok) throw new Error(); list = d.accounts; }
-    catch (e) { list = [{ id: "me", ...account, current: true }]; }
-    const price = (a) => { const pl = PLANS[a.plan] || PLANS.starter; return a.billing === "yearly" ? `${taka(pl.price * 12)}/yr` : `${taka(pl.price)}/mo`; };
+  // The list is fetched once in the background after the dashboard starts, so the menu opens instantly
+  let acctList = null, acctFetch = null;
+  const fetchAccounts = () => (acctFetch ||= fetch("/api/accounts").then((r) => r.ok ? r.json() : Promise.reject()).then((d) => { acctList = d.accounts; return acctList; }).catch(() => acctList).finally(() => { acctFetch = null; }));
+  setTimeout(fetchAccounts, 1200);
+  const acctLogo = (a) => (a.logo ? `<img class="acct-logo" src="${esc(a.logo)}" alt="">` : avatar(a.business || a.name || "S"));
+  const paintAcct = () => {
+    const mine = { id: "me", ...account, logo: SiteKit.safeImg(store.site.header && store.site.header.logo) || "", current: true };
+    const list = acctList && acctList.length ? acctList.map((a) => (a.current ? { ...a, ...mine, id: a.id } : a)) : [mine];
     acctMenu.innerHTML = `<div class="acct-head">Your stores</div>
       ${list.map((a) => `<button type="button" role="menuitem" class="acct-item${a.current ? " on" : ""}" ${a.current ? 'aria-current="true"' : `data-switch="${esc(a.id)}"`}>
-        ${avatar(a.business || a.name)}<span class="acct-text" title="${esc(a.email)}"><b>${esc(a.business || a.name)}</b><small>${esc((PLANS[a.plan] || PLANS.starter).name)} · ${price(a)}</small></span>${a.current ? icon("check") : ""}</button>`).join("")}
+        ${acctLogo(a)}<span class="acct-text" title="${esc(a.email || "")}"><b>${esc(a.business || a.name)}</b><small>${esc((PLANS[a.plan] || PLANS.starter).name)} plan</small></span>${a.current ? icon("check") : ""}</button>`).join("")}
       <div class="acct-sep"></div>
       <button type="button" role="menuitem" class="acct-add" data-acct-add>${icon("plus")}<span><b>Add another store</b><small>Each store has its own plan and payment</small></span></button>`;
   };
@@ -244,6 +260,8 @@ export const start = async () => {
       const open = acctMenu.hidden;
       if (!open) { closeAcct(); return; }
       acctMenu.hidden = false; acctBtn.setAttribute("aria-expanded", "true"); paintAcct();
+      // Then check for changes (another store signed in or out)
+      fetchAccounts().then(() => { if (!acctMenu.hidden) paintAcct(); });
     });
     acctMenu.addEventListener("click", async (e) => {
       const sw = e.target.closest("[data-switch]");
